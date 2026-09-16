@@ -1,0 +1,301 @@
+# AGENTS.md — StudyForge PWA (study-forge-learn-platform)
+
+> Guide for AI agents and human contributors working on Satyam's StudyForge app.
+> Single user today (Satyam, ADGIPS B.Tech IT Sem 1, Sec E); scaling to whole-college use later.
+
+## 1. Project Overview
+
+**StudyForge** is an offline-first, installable PWA study companion: goals/tasks/notes, XP + streaks,
+weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study buddy, and a live
+Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
+local bypass flag). All user data lives in the browser's `localStorage` on the device.
+
+Status: live in production at `https://studyforged.netlify.app` (currently **v45**). AI buddy, voice,
+and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
+`node --check` + purpose-built smoke harnesses + live serve checks (see §6).
+
+Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — do not confuse them):
+- `study-forge-pwa/` — **THE WORKSHOP. All edits go here.**
+- `study-forge-deploy/` — clean copy for Netlify Drop (no `serve-pwa.js`, plus `version.json`). Rebuilt, never hand-edited.
+- `study-forge-real-app/` — **PRISTINE backup** of the original August APK extraction. Never edit; reference only.
+- Phone holds the original native app `com.studyforge.app` v1.0 (Capacitor shell, installed via EasyShare). Never modify/delete it from here.
+
+## 2. Tech Stack
+
+| Layer | Tech | Notes |
+|---|---|---|
+| Language | Vanilla JS + HTML5 + CSS3, no bundler | `script.js` ~3.2k lines, `styles.css` ~2.7k lines, single files |
+| Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
+| Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme`, `isLoggedIn`, `userEmail` |
+| Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
+| PWA install | `manifest.json` + `icons/` (192/512/maskable-512/apple-180) | Icon `sizes` must match real pixels exactly or Chrome rejects them |
+| AI | Token Harbor unified API gateway (`https://tokenharbor.ai/v1`) with Zhipu AI `glm-5.3-flash` (multimodal vision + reasoning) + Deepgram nova-2 STT + aura TTS | Key in `localStorage` (`sf_tokenharbor_api_key`), model in `sf_tokenharbor_model` via in-app 🔑 dialog; Deepgram key in `script.js` |
+| Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
+| CDN (progressive enhancement only) | Tailwind (login page), KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
+| Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
+| Phone link | `adb reverse tcp:3000 tcp:3000` + `http://localhost:3000` on device | Campus/home Wi-Fi blocks phone↔PC; USB is the reliable pipe |
+| Hosting | Netlify Drop (`studyforged.netlify.app`) | Drag-drop `study-forge-deploy`; old `studyfrg` site is 404, no archive |
+| Future APK route | Capacitor re-wrap of this exact folder | Same codebase ships native; needs same signing key forever once released |
+
+## 3. Project Structure
+
+```
+Desktop/study-forge-pwa/     # edit here
+├── AGENTS.md                # this file (dev doc — exclude from Netlify deploys)
+├── index.html               # 5 panels (timetable/goals/tasks/notes/snapshot) + bottom nav + dialogs
+│                            # + AI page. Loads: confetti CDN, syllabus.js, script.js, SW register
+├── script.js                # all app logic (~87 top-level functions, see §4)
+├── syllabus.js              # SF_* data pack: profile, timetable, faculty, subjects, seed/migration helpers
+├── styles.css               # neo-brutalist theme via CSS vars, mobile-first
+├── sw.js                    # network-first worker; CACHE_NAME bumped every release
+├── manifest.json            # StudyForge identity + icons[]
+├── icons/                   # generated from logo.png (book+flame brand); app.png/logo.jpg are unused leftovers
+├── login.html               # Tailwind bypass login → sets isLoggedIn
+├── serve-pwa.js             # dev-only static server (never deployed)
+├── _redirects               # SPA fallback (keep)
+└── cordova.js / cordova_plugins.js  # 0-byte legacy stubs, harmless
+
+Desktop/study-forge-deploy/  # = pwa minus serve-pwa.js/AGENTS.md, plus version.json {latest, versionCode, apkUrl}
+Desktop/study-forge-real-app/ # pristine extraction — reference only
+%LOCALAPPDATA%/Temp/opencode/ # sf-smoke-*.js harnesses, audit/analysis scripts (not part of the app)
+```
+
+Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state = loadState()` →
+`DOMContentLoaded` wires events, renders all). Debug from `renderAll()` and `getTodayAgenda()`.
+
+## 4. Core Architecture & Key Decisions
+
+- **One global `state` + explicit persistence.** `loadState()` merges stored JSON over fresh seed through
+  `normalizeGoal/normalizeTask/normalizeNote/normalizeGauges`; `saveState()` writes whole object.
+  New state fields must extend the normalizers + seed, never assume stored shape.
+- **Seed + versioned migration, never wipe.** `buildIPUSeed()` builds the Sec-E starter pack;
+  `migrateStateVersion()` (current `SF_STATE_VERSION = 5`) merges new content by title/ID match.
+  Migrations must be idempotent (re-runs add zero dupes) and preserve user progress/XP.
+- **Full re-render.** Every `render*()` rebuilds its panel from `state`; `renderAll()` refreshes all plus
+  a 60s interval for the live timetable. No fine-grained reactivity — keep it that way.
+- **Data pack pattern.** Timetable (`SF_TIMETABLE` Mon–Fri, `SF_TT_SLOTS`), faculty (`SF_FACULTY`),
+  subjects (`SF_SEM1_SUBJECTS`), exam intel live in `syllabus.js`; `script.js` degrades gracefully if absent.
+  Timetable aliases resolve via `ttResolve`/`ttInfo`; labs never show Room 2310 (lab halls differ).
+- **Today engine is the hub.** `getTodayAgenda(state, now)` (pure, injectable date — always unit-test it)
+  feeds greeting, today's subjects, focus-task matching (goal title prefix `ALIAS · …`), sprint-staleness.
+- **AI layer (Token Harbor Unified Gateway):** Powered by Token Harbor with default model `glm-5.3-flash` (Zhipu AI / Z-AI GLM 5.3 Flash, multimodal vision + text reasoning). Uses same-origin reverse proxy `/th-api/v1/chat/completions` (routed via `serve-pwa.js` locally and Netlify `_redirects` in production) to bypass upstream browser CORS blocks. Multimodal vision inputs supported (camera capture, file upload, `Ctrl+V` clipboard paste) with image thumbnail preview tray and client-side 1200px compression. Key in `DEFAULT_TOKENHARBOR_KEY` and configurable in `localStorage.sf_tokenharbor_api_key` via in-app 🔑 settings modal. Notes AI flashcard generator also powered by Token Harbor. `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Never claim to be anything but "Study Forge" tutor.
+- **Hold-to-select, not native selection.** Global `user-select:none`; 2s press-and-hold (`HOLD_SELECT_MS`)
+  unlocks + auto-selects; inputs stay native. A post-hold click is consumed so holds never trigger tap actions.
+- **Triple version discipline (load-bearing).** Every release bumps together:
+  `SF_APP_VERSION` (syllabus.js) + `CACHE_NAME` (sw.js) + `version.json` (`latest`/`versionCode`).
+  `version.json` is the future in-app-APK-updater backbone — keep its schema stable.
+- **AGENTS.md sync (user demand).** Update this file after every build: version, `SF_STATE_VERSION`,
+  AI provider, new seed/migration notes, and known gaps. Doc stays excluded from Netlify deploys.
+- **Origins are separate universes.** `localhost:3000` (USB) vs LAN IP vs Netlify URL = three isolated
+  storages. Always confirm which origin the user runs before debugging "lost data".
+- **Default landing is forced to timetable** (`initBottomNav` pins `timetable`, middle tab). This was an
+  explicit user demand after the branch-tab saga — do not "restore last tab" without asking.
+
+## 5. Coding Style & Rules
+
+Must-follow:
+- Vanilla JS only, function declarations, `const`/`let` (note: `var` used for harness-tunable constants).
+- Build DOM with `createElement`/`textContent` — **never `innerHTML` with user data** (XSS).
+- Open/close dialogs only via `openDialog`/`closeDialog`; dismiss buttons use `data-close` (auto-wired).
+- Z-index scale: content < menus (500) < bottom-nav (1000) < AI page (2000). Popups must paint above the AI bar; never restyle the AI bar to fix overlap.
+- Mobile-first: design at 360px; no fixed px widths on layout elements; wide grids scroll internally (`overflow-x:auto`), never push the viewport (`body overflow-x:hidden` hides sins — audit instead).
+- Fixed-height grid cells for alignment (timetable boxes), ellipsis + tap-toast for overflow text.
+- Keep `user-select` discipline: locked by default, `allow-select` only via hold flow; never re-enable globally.
+- Every change is verified: `node --check`, relevant `sf-smoke-*.js` harness, live-serve assertion. No exceptions.
+
+Things to NEVER do:
+- Never edit `study-forge-deploy/` by hand (rebuild it) or `study-forge-real-app/` at all.
+- Never ship without bumping all three versions (§4); never rename `version.json` fields.
+- Never add/remove bottom-nav tabs, change landing tab, or reorder nav without explicit approval (sore spot — see §7).
+- Never add backend/auth/database/bundler/build step without approval — static files only.
+- Never trust campus Wi-Fi for phone↔PC; always offer the USB path.
+- Never paste API keys into chat/outputs; never commit new secrets; flag key rotation before any public share.
+- Never present 2025-scheme syllabus content as current — user gathers official 2026 syllabi first (syllabus viewer was removed for exactly this; restore only on their data).
+- Never invent timetable/faculty/subject facts — Sec-E PDF + photo legend are ground truth; mark anything uncertain.
+
+Project constraints:
+- Timetable = Sec E, Room 2310, AY 2026–27, Mon–Fri (Sat/Sun = weekend mode). E1/E2 are lab batches.
+- EGL (Engineering Graphics) + PD (Personality Development) are college-run papers — not in USS scheme docs; EGL units follow the ETME-159 pattern.
+- Hardcoded keys (`DEEPGRAM_API_KEY`, `TOKENFORGE_API_KEY`) are live — rotate before college-scale use.
+- Keep total cached assets small; SW ASSETS must list every new static file (icons!) or offline breaks.
+
+## 6. Common Commands & Workflows
+
+```powershell
+# Dev server (from study-forge-pwa; serves live, no restart needed)
+node serve-pwa.js   # → http://localhost:3000 (PC) — background it
+
+# Verify after any JS edit
+node --check C:\Users\Administrator\Desktop\study-forge-pwa\script.js
+node --check C:\Users\Administrator\Desktop\study-forge-pwa\syllabus.js
+
+# Smoke harnesses (AppData\Local\Temp\opencode)
+node sf-smoke3.js        # seed + v2→v3 migration + AI prompt grounding
+node sf-smoke-today.js   # Today agenda on fixed dates
+node sf-smoke-sat.js     # weekend mode + 5-day grid
+node sf-smoke-hold.js    # hold-to-select state machine
+node sf-smoke-liquid.js  # liquid-fill states on mocked Tue 11:45
+node sf-smoke-branch.js  # (retired with branch tab; keep for reference)
+node sf-smoke-syllabus.js# (retired with viewer; keep for reference)
+
+# Phone over USB
+& '...\platform-tools\adb.exe' devices
+& '...\platform-tools\adb.exe' reverse tcp:3000 tcp:3000  # then phone opens http://localhost:3000
+
+# Ship a release: rebuild deploy dir + bump version.json, then drag-drop to Netlify
+Copy-Item "$src\*" $dst -Recurse -Exclude 'serve-pwa.js','AGENTS.md'
+# set version.json {latest:"vN", versionCode:N, ...}
+
+# Inspect phone artifacts (read-only; never modify the device)
+adb shell pm list packages | grep -i forge
+adb pull /data/app/~~.../com.studyforge.app-.../base.apk
+adb pull /sdcard/Download/<file>
+
+# PDF syllabus extraction
+python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/opencode
+```
+
+## 7. Current Status / Important Notes
+
+Recent major changes (Sep 2026, now v45):
+- Sec-E personalization pack: profile, timetable, faculty, exam intel, seed + migration (v1→v3).
+- Timetable tab: 5-day aligned grid, live liquid-fill + done states, tap-to-toast (labs omit room), Today card.
+- App hardening: responsive overhaul, hold-to-select, menu-over-AI-bar fix, no-wrap header, inner breathing room.
+- PWA install fixed with exact-size icons; SW is network-first (v9+) after painful stuck-cache saga.
+- v28→v31: timetable re-decoded from Sec-E photo (v4: Tue/Wed/Thu/Fri; v5: Mon lab double + BEE shift),
+  E1/E2 batch splits in lab tap-toast, AI provider now TokenForge `claude-opus-5`. Deploy = exact copy of
+  workshop at v31 (`versionCode` 31) minus `serve-pwa.js`/`AGENTS.md`.
+- v32: XSS safe-display fix (`escapeHtml` + `textContent` builds for calendar preview, flashcards,
+  deck list, chat history titles, `mdToHtml` escape-first) + `login.html` added to SW ASSETS.
+  Triple bump `v32`/`versionCode` 32. No visual change by design.
+- v33: SK signature strip (`sf-base-sign`, background gap below card, shared by all tabs) +
+  Generate overflow fix (input `min-width:0` + row wrap) + AI logo hover tilt→zoom +
+  `SMT-1`→`SMT` rename (data + stored-goal/task migration) + short lab labels (`ttShort`) +
+  stacked timetable boxes (time/subject/teacher, 2-line clamp, fixed heights kept).
+  Triple bump `v33`/`versionCode` 33.
+- v34: Shifted top-actions buttons (theme toggle, calendar, new sprint) 9px left + removed visible sprint date
+  line from top header + moved compact 3-dot sprint menu (`22×22px`) directly beside "Study Forge" title
+  in `.title-row` with rightward dropdown alignment (`.title-row .menu-list { left: 0; right: auto; }`).
+  Triple bump `v34`/`versionCode` 34.
+- v35: Replaced Snapshot page with 4-card Official Syllabus & Academic OS guide matching the official ADGIPS
+  Sec-E 4-page PDF blueprint (`StudyForge_ADGIPS_BTech_IT_Guide_4p.pdf`). Card 1: Schedule & Exam Architecture;
+  Card 2: PPS, SMT-1, BEE; Card 3: PHL, EM, CSL; Card 4: EVSL, EGL, PD + Academic Action Playbook.
+  Bottom nav tab 5 updated to 📜 Syllabus with quick sticky jump pills. PDF bundled for direct download.
+  Other 4 panels (TT, Goals, Tasks, Notes) kept 100% untouched. Triple bump `v35`/`versionCode` 35.
+- v36: Whole-app auto-adjusting responsive architecture. Fixed DOM tree bug where `.top-actions` was trapped
+  in unclosed `.brand` container. Added `viewport-fit=cover` and safe-area insets (`env(safe-area-inset-*)`).
+  Fluid header with icon-pill adaptation: compact 36px icon circles on mobile (<480px) that never clip or touch screen
+  edges; expanding to full labelled pills on tablets/iPads/desktops. App container centered with `max-width: 1100px`
+  preventing awkward stretched layouts on iPads and monitors. Fluid `clamp()` typography and radii across panels,
+  cards, and headings. Mobile taskboard stacked; tablet/desktop 3-column Kanban.
+  Syllabus panel polish: eliminated panel-level jumping on button clicks, unnested 4 syllabus cards, removed redundant
+  banner, and repositioned PDF download button cleanly as a badge beside the title.
+  Vertical header alignment: shifted `.top-actions` 7px upward (`top: -7px`), aligning buttons with the Study Forge title
+  baseline and opening an 8px clean vertical gap above the `🔥 0` streak badge.
+  Triple bump `v36`/`versionCode` 36. Deploy dir rebuilt and synchronized.
+- v37:
+  - Softened whole-app tone and glare across `styles.css` (archival paper `#f2ebd9`, muted ambient radial gradient, toned-down mint/accent/sky colors, reduced search backdrop saturation boost).
+  - Token Harbor unified API integration: connected to `https://tokenharbor.ai/v1/chat/completions` with user pass model `glm-5.3-flash` (Zhipu AI / Z-AI GLM 5.3 Flash, tier "value", full multimodal vision + reasoning support).
+  - Multimodal vision support for diagrams/notes/equations, camera/file upload button, `Ctrl+V` clipboard paste, thumbnail preview tray, in-app Token Harbor settings modal (`#tokenharborKeyDialog`) with Universal Key (`thk_live_...`) and model selector.
+  - Upgraded AI Flashcards in Notes: powered by Token Harbor `glm-5.3-flash`, full curriculum grounding, Focus Mode selector (High-Yield End-Sem 12-markers, Formulas & KaTeX Derivations, Viva Voce & Lab Traps, Quick Recall), Card Count selector (4 Blitz, 6 Standard, 8 Deep Dive), Quick Subject Chips (PPS, BEE, SMT, PHL, EM, PPS Viva, BEE Viva), 3D flip card animation, KaTeX math formula rendering on front & back, subject tags, difficulty badges (High-Yield, Medium, Easy), viva trap / exam intel callouts (`💡 Exam Intel / Trap:`), deck controls (Flip, Shuffle, Prev/Next, Clear All), and a custom state-machine JSON parser that robustly preserves all LaTeX backslashes without syntax errors.
+  - Deep academic context & curriculum grounding: tailored AI tutor persona for Satyam Kumar (ADGIPS B.Tech IT Sem-1, Sec-E, Room 2310). Injects faculty details, textbooks, lab requirements, and unit intel for all 9 subjects (PPS, SMT, BEE, PHL, EM, CSL, EVSL, PD, EGL). Real-time schedule injection via `getTodayAgenda()`, active sprint goals (% progress), Kanban tasks, recent notes with focus ratings, and 40 Internal / 60 External exam blueprint. KaTeX math syntax formatting.
+  - Gemini/ChatGPT chatbot experience & input hygiene: fixed bug where "Hi" was auto-filled/restored on reload/open (added `autocomplete="off"` to `aiChatInput`, explicit clearing on open/load, purged orphan 1-message chats from localStorage, and starts with fresh session). Added personalized time-of-day greeting ("Good morning / afternoon / evening, Satyam Kumar 👋"), live timetable schedule status pill, 4 contextual prompt starter cards, balanced header layout (left back button, centered title, right settings/history/new chat), and Copy response + Deepgram Aura TTS Read action bar on assistant messages.
+  - Added interactive `[ 🔄 Retry ]` button with smooth spin animation on hover/click to re-generate assistant responses without duplicate bubbles or loss of context.
+  - Triple bump `v37` / `versionCode: 37` / `CACHE_NAME: study-forge-v37`. Deploy dir rebuilt and synchronized.
+- v38:
+  - Overhauled AI Flashcards into animated, flashy Visual Revision Cheat-Sheet Study Cards (responding to user demand for quick revision notes instead of interrogative Q&A quizzes).
+  - Hybrid Visual Generative Component Engine: StudyForge native neo-brutalist shell with 3D flip physics, coupled with Token Harbor `glm-5.3-flash` generating structured micro-components.
+  - Front of card: Concept title, 1-line essence definition, visual illustration container (supporting live-parsed inline SVG circuit/memory diagrams with dark-mode stroke inversion and display KaTeX math formula blocks), and 3 bullet takeaways with accent chevrons.
+  - Back of card: 4-step numbered procedure/derivation flow, prominent ⚠️ Common Exam Trap warning callout (highlighting professor mark deductions and viva traps), and 💡 memorable Memory Hook/mnemonic.
+  - Slim customized scrollbars for card faces and KaTeX visual containers; expanded card min-height to 350px for zero vertical overflow on standard viewports.
+  - Backward compatibility: gracefully handles legacy `{ q, a, tip }` decks stored in `localStorage`.
+  - Triple bump `v38` / `versionCode: 38` / `CACHE_NAME: study-forge-v38`. Deploy dir rebuilt and synchronized.
+- v39:
+  - Progressive real-time streaming card-by-card engine for AI Flashcards (`stream: true` SSE over Token Harbor `glm-5.3-flash`).
+  - First-card time drastically dropped from ~40s blocking wait to **~4.3s**: Card 1 renders on screen immediately with full SVG diagrams, KaTeX display math, essence definition, and 3 takeaway points.
+  - Background streaming pipeline: parses balanced `{ ... }` card objects on-the-fly (`extractCompleteObjects`) while user reads/flips Card 1; dynamic counter updates (`1 / 1 (Generating...)` → `1 / 4 Complete`) and `Next →` button unlocks automatically when Card 2 arrives.
+  - Interactive live stream badge: `.fc-stream-status` with amber pulsing dot (`🟡 Card 1 ready • Generating card 2 of 4...`) converting to green checkmark (`🟢 ✓ All 4 visual cards ready! 🔥`) on completion.
+  - Multi-generation cancellation protection (`currentGenerationId`) and non-streaming fallback.
+  - Triple bump `v39` / `versionCode: 39` / `CACHE_NAME: study-forge-v39`. Deploy dir rebuilt and synchronized.
+- v40:
+  - Subject Chip Selection Before Generation: Addressed user demand where clicking a subject chip button (`PPS`, `BEE`, `SMT`, `PHL`, `EM`, `PPS Viva`, `BEE Viva`) previously auto-generated cards immediately.
+  - Chips now highlight cleanly (`.fc-chip.active` with neo-brutalist amber fill and offset shadow) on click and populate the input with `${subject}: ` (e.g. `EM: `) while dynamically updating the input placeholder with contextual high-yield topic hints (e.g. `e.g. Friction, Coplanar Forces, Equilibrium...`).
+  - Cursor is auto-focused at the end of the input so the user can immediately type their specific topic.
+  - Real-time input synchronization: typing a subject prefix (`EM:`, `PPS:`, etc.) automatically activates the corresponding chip button.
+  - Empty-topic validation: clicking `🔥 Generate Cards` when only a subject prefix is present prompts the user via toast (`Please write your specific topic to study in EM!`) without starting an unwanted generation.
+  - Triple bump `v40` / `versionCode: 40` / `CACHE_NAME: study-forge-v40`. Deploy dir rebuilt and synchronized.
+- v41:
+  - Ask AI Fresh Session Engine & Orphan Chat Elimination: Resolved bug where reopening Ask AI displayed an old unanswered user prompt without an assistant answer.
+  - Opening Ask AI from the home search bar now always initiates a brand-new, clean chatbox session with the curated StudyForge academic welcome screen (personalized time-of-day greeting, live today's timetable schedule pill, and 4 high-yield prompt starter cards).
+  - Orphan Chat Purge & Memory Hygiene: `getAllChats()` and startup routines now automatically scrub and purge any empty or orphan 1-message chats without valid assistant answers from `localStorage`.
+  - Conversational Lifecycle Safety: If an AI call fails, is aborted, or if the student taps Back before generation completes, dangling user messages are cleanly popped from `chatHistory` so context remains uncorrupted. Completed conversations are safely archived in the Chat History sidebar.
+  - Tapping `+` (`aiNewChatBtn`) initiates a clean session with `New chat started ✨` visual toast feedback.
+  - Triple bump `v41` / `versionCode: 41` / `CACHE_NAME: study-forge-v41`. Deploy dir rebuilt and synchronized.
+- v42:
+  - Subject-Curated Flashcard Engine: Added active academic subject banner (`#fcSubjectContext`) inside the Flashcard generation area.
+  - Context Banner Display: Displays active subject badge (`#fcSubjBadge` e.g. `PPS · ICT-101 / ETCS-107`), course title (`#fcSubjTitle` e.g. `Programming for Problem Solving`), and academic metadata (`#fcSubjMeta` e.g. `Ms. Alka · Mr. Ankit Jain (Lab) · C Programming · Units I–IV`).
+  - Bi-directional Synchronization: Clicking any subject chip (`PPS`, `BEE`, `SMT`, `PHL`, `EM`, `PPS Viva`, `BEE Viva`) or typing a subject prefix into `fcTopicInput` dynamically updates the subject context banner, input placeholder, and active chip styling.
+  - Strict Academic Grounding in AI Prompts: Injected `TARGET ACADEMIC SUBJECT` and `MANDATORY SUBJECT-CURATION DIRECTIVE` into Token Harbor `glm-5.3-flash` system prompt and user payload. Even when asking general questions (e.g. "What is recursion?"), the model now grounds all cards strictly in that subject (ANSI C99/C11, memory stack frames, pointers, and professor viva traps by Mr. Ankit Jain for PPS; network theorems and KCL/KVL for BEE).
+  - Subject Tags & Saved Decks: Generated cards enforce subject-prefixed tags (`${subjAlias} · Unit X`), and saved decks preserve the subject association.
+  - Triple bump `v42` / `versionCode: 42` / `CACHE_NAME: study-forge-v42`. Deploy dir rebuilt and synchronized.
+- v43:
+  - AI Chat Thinking Animation: Added an animated thinking indicator card in the Ask AI chat while the model processes answers.
+  - Neo-brutalist thinking card component (`.ai-thinking-card`) featuring an animated glowing/spinning sparkle icon, bold "Thinking" label with 3 animated wave dots (`● ● ●`), live elapsed time ticker (`1s`, `2s`...), shimmering gradient progress line, and dynamic academic context status ticker that cycles smoothly through syllabus-relevant processing steps ("Connecting to syllabus & timetable...", "Reviewing core concepts & formulas...", "Synthesizing step-by-step explanation...").
+  - Seamless Lifecycle & Retries: Integrates with `callAI()`, image attachments (triggers "Analyzing attached study diagram..."), `makeRetryHandler()`, and `handleStopGeneration()` (cleanly cancels tickers and cleans up intervals).
+  - Compact Thought Badge: Automatically records `thoughtSec` upon answer delivery and displays a sleek `⚡ Thought for Xs` badge above the assistant's response and during typewriter streaming.
+  - Triple bump `v43` / `versionCode: 43` / `CACHE_NAME: study-forge-v43`. Deploy dir rebuilt and synchronized.
+- v44:
+  - Real-Time SSE Token Streaming & Chat Speed Overhaul: Resolved user report of slow responses (28–45s wait times) by replacing blocking `res.json()` with progressive Server-Sent Events (`stream: true` SSE) over Token Harbor `glm-5.3-flash`.
+  - Sub-2-Second First Token: Time-to-first-visible-word dropped from **~40–45s** down to **1.98s**! The student starts reading the answer almost immediately.
+  - Thinking Animation Transition: The glowing `.ai-thinking-card` animates during the model's brief initial reasoning phase (~1–2s), then seamlessly collapses into the compact `⚡ Thought for Xs` badge right as the first streamed token appears.
+  - Smooth 30fps Typing & Rendering: Tokens stream directly into `.ai-bot-content` using a 35ms throttled renderer with a live blinking block cursor (`.ai-block-cursor`), finalizing with full KaTeX math notation, syllabus unit citations, exam traps, viva pointers, and action buttons (`Copy`, `Read`, `Retry`).
+  - High-Speed Dev Reverse Proxy (`serve-pwa.js`): Added a shared `https.Agent({ keepAlive: true, maxSockets: 16 })` connection pool to reuse warm TLS sockets (saving 500–800ms per request) and unbuffered immediate chunk forwarding with `res.socket.setNoDelay(true)`.
+  - Context & Token Optimization: Set `max_tokens: 1500` and updated `trimmedBuddyBlock()` to produce compact high-yield summaries when 4+ subjects match, preventing runaway prompt bloat.
+  - Lifecycle & Abort Support: Full stop-generation integration (`AbortController` immediately closes stream reader) and seamless retry streaming via `makeRetryHandler()`.
+  - Triple bump `v44` / `versionCode: 44` / `CACHE_NAME: study-forge-v44`. Deploy dir rebuilt and synchronized.
+- v45:
+  - Mobile Aspect Ratio & Responsive Architecture Overhaul for Flashcards: Addressed severe mobile layout collisions on small phone viewports (360px–420px).
+  - Clean Stacked Dropdown Controls: Fixed horizontal collision where `CARD TYPE:` and `CARD COUNT:` previously overlapped and painted over each other. Re-architected both into 100% full-width stacked select controls with label above each select on mobile (<580px) and 2-column grid on desktop, custom inline SVG arrow indicators, and graceful text truncation (`text-overflow: ellipsis`) preventing container blowout.
+  - Fluid Subject Context Banner: Converted `#fcSubjectContext` into an adaptive 2-tier card on mobile with badge + ellipsis title on row 1 and wrapping, high-yield metadata on row 2, expanding to a wide single row on desktop (>=680px).
+  - Thumb-Friendly Full-Width Input & Generate Button: Stacked `#fcTopicInput` and `#fcGenerateBtn` vertically on mobile (<540px) so the topic input has ample room to display subject prefixes and placeholders, paired with a full-width neo-brutalist action button.
+  - Smooth Quick Chips Scrolling: Added touch momentum scrolling (`-webkit-overflow-scrolling: touch; scroll-padding: 4px;`) with edge padding so chips never clip at the card border.
+  - Responsive 3D Visual Study Cards: Fluid clamp padding (`14px` on mobile, `18px–28px` on desktop) with zero viewport overflow.
+  - Intuitive 2-Tier Flashcard Controls: Restructured mobile controls into a clean 3-column navigation row (`← Prev`, `1 / N`, `Next →`) above a balanced 2-button action row (`🔄 Flip`, `🔀 Shuffle`).
+  - Graceful Saved Decks Truncation: Long deck titles now truncate cleanly with single-line ellipsis, preserving alignment with count badges and delete buttons.
+  - Purged Legacy CSS Overrides: Cleaned out conflicting v33 compact flashcards rules (`styles.css:3798-3836` & `3869-3880`).
+- v46:
+  - AI Flashcards "1 + N" Fast-Path Pipeline: Slashed Card 1 initial wait time from 25–40s down to ~1–2.5s (benchmarked at 0.98s for foundational topics) using a 2-phase architecture.
+  - Phase 1 (Instant Card 1): Dispatches a dedicated, ultra-focused single-card request (`max_tokens: 1400`, `cardCount: 1`) to Token Harbor `glm-5.3-flash`. Instantly renders on screen as soon as it arrives, mounts 3D flip card, compiles KaTeX math and SVG diagrams, sets counter to `1 / N`, and displays pulsing background badge (`⚡ Card 1 ready • Generating remaining N-1 cards in background...`).
+  - Phase 2 (Background Asynchronous Stream): Automatically kicks off in the background while the student is already actively reading Card 1. Passes Card 1's title and essence to prevent duplicate coverage, streams remaining cards (Cards 2..N), dynamically updates navigation (`1 / 2`, `1 / 3`...) and unlocks `Next →` button the moment Card 2 lands.
+  - Fail-Safe JSON Auto-Repair Engine (`repairTruncatedJsonCard`): Dynamically balances unclosed strings, trailing commas, and brackets/braces (`"`, `}`) to prevent lost cards even if model output cuts off mid-stream.
+  - Incremental Persistence (`syncCurrentDeckToStorage`): Automatically syncs each card to `localStorage` (`studyForge_flashcards`) the instant it arrives, preserving decks even if the student leaves or changes tabs early.
+  - Triple bump `v46` / `versionCode: 46` / `CACHE_NAME: study-forge-v46`. Deploy dir rebuilt and synchronized.
+- v47:
+  - Normal Chat ("Ask AI") Latency Overhaul: Fixed 25–50s response delay on Token Harbor `glm-5.3-flash`, achieving sub-2s time-to-first-token (benchmarked at 1.2–1.5s) and 5–8s total answer delivery.
+  - High-Density System Prompt: Replaced verbose 4,200-char static prompt with a crisp, high-yield ~550-char prompt preserving identity, KaTeX rigor, ANSI C code, and GGSIPU exam structure without reasoning attention bloat.
+  - Just-In-Time Context Grounding: Replaced full 9-subject curriculum and 5-day timetable dumps with lightweight, active-day schedule injection (`Today's Classes: ...`), target subject intel, and top 2 active goals/tasks (shrinking prompt from ~2,600 tokens down to ~220 tokens).
+  - Balanced Sliding Chat History: Preserves full formulas, derivations, numbers, and ANSI C code across the last 6 conversation turns in full detail, with a generous 1,500-char safety cap only for outlier essays.
+  - SSE Stream Headers & Proxy Flushing: Added explicit `Accept: text/event-stream` and `Cache-Control: no-cache` in `callAI()` and `serve-pwa.js` to eliminate upstream gateway buffering.
+  - Intelligent Thinking Card Ticker: Displays live gateway queue feedback (`Awaiting Token Harbor gateway response...`) if upstream connection queues during peak traffic.
+  - Triple bump `v47` / `versionCode: 47` / `CACHE_NAME: study-forge-v47`. Deploy dir rebuilt and synchronized.
+- v48:
+  - Model & Provider Brand Sanitization: Removed third-party provider and raw model badges (`GLM 5.3 FLASH`) from Ask AI (`#aiModelBadge`) and Notes AI Study Cards (`.fc-model-badge`) headers.
+  - Neutral UI & System Labels: Replaced "Token Harbor Settings" with "AI Settings" in tooltips, aria labels, and dialog titles; streamlined loading prompts ("Crafting Card 1 for...") and status tickers ("Synthesizing response...").
+  - Triple bump `v48` / `versionCode: 48` / `CACHE_NAME: study-forge-v48`. Deploy dir rebuilt and synchronized.
+- v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
+  so Today helper never paints) — fix on approval.
+- **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the
+  "IT section" meant the timetable itself — now middle tab + forced landing. Do not relitigate nav without asking.
+- **Syllabus viewer added then removed:** 2025-scheme units were correct but user demands official 2026 syllabi,
+  which they will gather. Data file stays dormant; restore viewer only on their data. Same for EGL/PD details.
+
+Open decisions / parked:
+- AI buddy phase 2 (day-aware answers, viva mock), multi-section packs (CSE/ECE/ME), student config panel,
+  homework tracker, attendance, marks ledger, sessional countdown, backup export/import, Capacitor APK +
+  in-app updater via `version.json` (user chose Netlify over GH Pages; APK after dev milestone).
+
+Gotchas:
+- Phone Wi-Fi blocks PC traffic (proven 3×); USB+adb is the only reliable local path. PC DHCP IP drifts (was .33/.50) — always re-check before giving LAN URLs.
+- Installed PWA loads fully offline from cache — "close/reopen the icon" does NOT fetch updates; use a fresh Chrome tab or bump SW.
+- `study-forge-learn-platform/` (old Expo prototype) was deleted; `Studycure/`, `app-release.apk` (Orca), `OmniTutor` files are unrelated — ignore.
+- User communicates by voice-typing; "IT section" meant timetable, "columns" means lines, "E going downwards" meant text-wrap. When in doubt after one misread, ask with concrete options instead of building.

@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Study Forge</title>
+  <link rel="icon" href="logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <!-- PWA & Mobile -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ff6b3d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/apple-180.png">
+  <script>
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+
+<body>
+  <div class="grain"></div>
+  <header class="top-bar">
+    <div class="brand">
+      <p class="eyebrow">ADGIPS · B.Tech IT · Sem 1 · Sec E</p>
+      <div class="title-row">
+        <h1>Study Forge</h1>
+        <div class="menu inline" data-menu="sprint">
+          <button class="menu-button" type="button" aria-label="Sprint menu">⋯</button>
+          <div class="menu-list" role="menu">
+            <button class="menu-item" type="button" data-action="share-sprint">Share</button>
+            <button class="menu-item" type="button" data-action="add-sprint">Add</button>
+            <button class="menu-item" type="button" data-action="archive-sprint">Archive</button>
+            <button class="menu-item danger" type="button" data-action="delete-sprint">Delete</button>
+          </div>
+        </div>
+      </div>
+      <p class="sprint-label" id="sprintLabel" style="display: none;"></p>
+      <div class="xp-row">
+        <div class="xp-bar-container">
+          <div class="xp-bar-fill" id="xpBarFill"></div>
+        </div>
+        <span class="xp-label" id="xpLabel">Lvl 1 · 0 XP</span>
+        <span class="streak-badge" id="streakBadge">🔥 0</span>
+      </div>
+    </div>
+    <nav class="top-actions">
+      <button class="header-btn header-icon-btn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      <button class="header-btn header-ghost-btn" id="calendarBtn" title="Calendar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        <span class="btn-label">Calendar</span>
+      </button>
+      <button class="header-btn header-primary-btn" id="newSprintBtn" title="New Sprint">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        <span class="btn-label">New Sprint</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="board" id="board">
+    <!-- ... (rest of board) ... -->
+  </main>
+
+  <!-- AI Search Bar -->
+  <div class="ai-search-bar" id="aiSearchBar">
+    <div class="ai-search-inner">
+      <div class="ai-search-icon-wrapper">
+        <svg viewBox="0 0 24 24" class="ai-custom-logo">
+          <defs>
+            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:var(--accent);stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#ffcc00;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#logoGradient)"
+            d="M12,2 C12,2 8,5 8,10 C8,14 11,16 12,22 C13,16 16,14 16,10 C16,5 12,2 12,2 Z M12,6 C12,6 14,8 14,10.5 C14,12.5 12.5,14 12,14 C11.5,14 10,12.5 10,10.5 C10,8 12,6 12,6 Z" />
+          <circle cx="18" cy="6" r="2" fill="var(--ink)" opacity="0.2" />
+          <circle cx="6" cy="18" r="1.5" fill="var(--ink)" opacity="0.2" />
+        </svg>
+      </div>
+      <input type="text" class="ai-search-input" id="aiSearchInput" placeholder="Ask AI anything..." readonly />
+      <button class="ai-mic-btn" id="aiMicBtn" type="button" aria-label="Voice input">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="11" rx="3" />
+          <path d="M5 10a7 7 0 0 0 14 0" />
+          <line x1="12" y1="19" x2="12" y2="22" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Ask AI Full Page -->
+  <div class="ai-page" id="aiPage">
+    <!-- History Sidebar -->
+    <div class="ai-history-overlay" id="aiHistoryOverlay"></div>
+    <div class="ai-history-sidebar" id="aiHistorySidebar">
+      <div class="ai-history-header">
+        <h3>Chat History</h3>
+        <button class="ai-history-close" id="aiHistoryClose" type="button" aria-label="Close history">✕</button>
+      </div>
+      <div class="ai-history-list" id="aiHistoryList">
+        <!-- Populated by JS -->
+      </div>
+      <div class="ai-history-footer">
+        <button class="ai-history-clear" id="aiHistoryClear" type="button">🗑 Clear All</button>
+      </div>
+    </div>
+
+    <div class="ai-page-header">
+      <button class="ai-back-btn" id="aiBackBtn" type="button" aria-label="Go back" title="Back to app">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+      </button>
+      <div class="ai-title-wrap">
+        <h2 class="ai-page-title">✨ Ask AI</h2>
+      </div>
+      <button class="ai-key-btn" id="aiKeyBtn" type="button" aria-label="AI settings" title="AI Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="7.5" cy="15.5" r="5.5"/>
+          <path d="m21 2-9.6 9.6"/>
+          <path d="m15.5 7.5 3 3"/>
+        </svg>
+      </button>
+      <button class="ai-history-btn" id="aiHistoryBtn" type="button" aria-label="Chat history" title="Chat History">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
+      <button class="ai-newchat-btn" id="aiNewChatBtn" type="button" aria-label="New chat" title="New Chat">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </button>
+    </div>
+    <div class="ai-chat-area" id="aiChatArea">
+      <div class="ai-welcome">
+        <div class="ai-welcome-icon">🧠</div>
+        <h3>How can I help you study?</h3>
+        <p>Ask questions or send photos of your textbook, notes, diagrams, and equations.</p>
+        <div class="ai-suggestions">
+          <button class="ai-suggestion" data-q="Summarize my weekly progress">📊 Summarize my progress</button>
+          <button class="ai-suggestion" data-q="What should I study next?">🎯 What should I study next?</button>
+          <button class="ai-suggestion" data-q="Create a study plan for this week">📅 Create a study plan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Preview Tray (Multimodal Vision) -->
+    <div class="ai-image-preview-tray" id="aiImagePreviewTray" style="display: none;">
+      <div class="ai-preview-item">
+        <img id="aiPreviewImg" src="" alt="Attached image preview" />
+        <button class="ai-preview-remove" id="aiPreviewRemoveBtn" type="button" aria-label="Remove image">✕</button>
+      </div>
+      <span class="ai-preview-hint">Vision image attached</span>
+    </div>
+
+    <div class="ai-input-bar">
+      <input type="file" id="aiImageInput" accept="image/*" style="display: none;" />
+      <button class="ai-image-btn" id="aiImageBtn" type="button" aria-label="Attach study image or photo" title="Attach study image / photo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </button>
+      <input type="text" class="ai-chat-input" id="aiChatInput" placeholder="Ask anything or paste an image..." autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="true" value="" />
+      <button class="ai-mic-btn" id="aiChatMicBtn" type="button" aria-label="Voice input">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="11" rx="3" />
+          <path d="M5 10a7 7 0 0 0 14 0" />
+          <line x1="12" y1="19" x2="12" y2="22" />
+        </svg>
+      </button>
+      <button class="ai-think-toggle" id="aiThinkToggle" type="button" aria-label="Toggle thinking mode"
+        title="Thinking mode">
+        🧠
+      </button>
+      <button class="ai-send-btn" id="aiSendBtn" type="button" aria-label="Send">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <dialog id="calendarDialog" class="modal">
+    <div class="modal-box large">
+      <div class="modal-header">
+        <h2 id="calendarTitle">Calendar</h2>
+        <button class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="calendar-controls">
+        <button class="icon-btn" id="prevMonthBtn">←</button>
+        <span class="month-label" id="currentMonthLabel">September 2026</span>
+        <button class="icon-btn" id="nextMonthBtn">→</button>
+      </div>
+      <div class="calendar-grid-header">
+        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+      </div>
+      <div class="calendar-grid" id="calendarGrid">
+        <!-- Days generated by JS -->
+      </div>
+      <div class="day-preview" id="dayPreview">
+        <!-- Selected day details -->
+      </div>
+    </div>
+  </dialog>
+
+  <main class="layout">
+    <section class="panel timetable active-page" data-page="timetable">
+      <header>
+        <h2>Today at ADGIPS</h2>
+        <p>Sec E · Room 2310 · tap a period for faculty &amp; venue.</p>
+      </header>
+      <p class="tt-now" id="ttNowLine">Loading today's classes…</p>
+      <div class="tt-grid" id="ttGrid"></div>
+      <p class="tt-foot" id="ttFoot">E1 = first 30 students · E2 = 31–60 · Lunch 11:00–11:30 · Sat off · Time-Table: Dr. Shalini Malik · Incharge: Dr. Daisy Bhat</p>
+    </section>
+
+    <section class="panel goals" data-page="goals">
+      <header>
+        <h2>Learning Goals</h2>
+        <p>Set the milestones that matter this week.</p>
+      </header>
+      <div class="goal-list" id="goalsList"></div>
+      <button class="neo" id="addGoalBtn">+ Add Goal</button>
+    </section>
+
+    <section class="panel taskboard" data-page="tasks">
+      <header>
+        <h2>Task Breakdowns</h2>
+        <p>Split goals into focused sessions and checkpoints.</p>
+      </header>
+      <div class="task-columns">
+        <div class="column" data-status="plan">
+          <h4>Plan</h4>
+          <div class="task-list" id="planList"></div>
+          <button class="ghost full" id="addTaskBtn">+ New Task</button>
+        </div>
+        <div class="column" data-status="progress">
+          <h4>In Progress</h4>
+          <div class="task-list" id="progressList"></div>
+        </div>
+        <div class="column" data-status="done">
+          <h4>Done</h4>
+          <div class="task-list" id="doneList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel notes" data-page="notes">
+      <header>
+        <h2>Progress Notes</h2>
+        <p>Track insights, blockers, and reflections.</p>
+      </header>
+      <div class="fc-top">
+        <div class="fc-top-head">
+          <div class="fc-title-row">
+            <h3>🎴 AI Study Cards</h3>
+          </div>
+          <p class="fc-subtitle">Generate animated visual cheat-sheets with inline diagrams, formulas, step breakdowns & exam traps.</p>
+        </div>
+
+        <!-- Quick Subject Chips -->
+        <div class="fc-quick-chips" id="fcQuickChips">
+          <button type="button" class="fc-chip" data-subject="PPS" data-example="Pointers, Dynamic Memory, Recursion" data-topic="PPS: Pointers, Dynamic Memory & Array Loops" data-mode="exam">💻 PPS</button>
+          <button type="button" class="fc-chip" data-subject="BEE" data-example="Thevenin, Norton, KCL/KVL Circuit Laws" data-topic="BEE: Thevenin, Norton & KCL/KVL Circuit Laws" data-mode="formulas">⚡ BEE</button>
+          <button type="button" class="fc-chip" data-subject="SMT" data-example="Matrices, Cayley-Hamilton, Taylor Series" data-topic="SMT: Matrices, Cayley-Hamilton & Taylor Series" data-mode="formulas">📐 SMT</button>
+          <button type="button" class="fc-chip" data-subject="PHL" data-example="Energy Bands, Semiconductor Diodes, Hall Effect" data-topic="PHL: Energy Bands, Semiconductor Diodes & Hall Effect" data-mode="exam">🔬 PHL</button>
+          <button type="button" class="fc-chip" data-subject="EM" data-example="Friction, Coplanar Forces, Equilibrium" data-topic="EM: Friction, Coplanar Forces & Equilibrium" data-mode="exam">⚙️ EM</button>
+          <button type="button" class="fc-chip" data-subject="PPS Viva" data-example="Pointer Traps, Memory Leaks, Preprocessor" data-topic="PPS Lab: Viva Voce & C Pointer Traps" data-mode="viva">🧪 PPS Viva</button>
+          <button type="button" class="fc-chip" data-subject="BEE Viva" data-example="10 Experiments, Voltmeter/Ammeter, Wattmeter" data-topic="BEE Lab: 10 Experiments & Meter Connections" data-mode="viva">🔌 BEE Viva</button>
+        </div>
+
+        <div class="fc-generate-area">
+          <div class="fc-subject-context" id="fcSubjectContext">
+            <div class="fc-subject-context-left">
+              <span class="fc-subject-context-badge" id="fcSubjBadge">PPS · ETCS-107</span>
+              <span class="fc-subject-context-title" id="fcSubjTitle">Programming for Problem Solving</span>
+            </div>
+            <span class="fc-subject-context-meta" id="fcSubjMeta">Mr. Ankit Jain · 16 Lab Experiments · Unit I–IV</span>
+          </div>
+          <div class="fc-input-row">
+            <input type="text" class="fc-topic-input" id="fcTopicInput"
+              placeholder="Enter any topic... e.g. Thevenin Theorem, C Pointer Traps, Taylor Series" />
+            <button class="neo" id="fcGenerateBtn">🔥 Generate Cards</button>
+          </div>
+          <div class="fc-options-row">
+            <div class="fc-opt-group">
+              <label for="fcModeSelect">Card Type:</label>
+              <select id="fcModeSelect" class="fc-select">
+                <option value="exam" selected>🎯 High-Yield Cheat Sheets (End-Sem)</option>
+                <option value="formulas">📐 Formulas & Step Derivations</option>
+                <option value="viva">🧪 Viva Voce & Lab Traps</option>
+                <option value="recall">💡 Rapid Recall & Mnemonics</option>
+              </select>
+            </div>
+            <div class="fc-opt-group">
+              <label for="fcCountSelect">Card Count:</label>
+              <select id="fcCountSelect" class="fc-select">
+                <option value="4" selected>4 Cards (Blitz)</option>
+                <option value="6">6 Cards (Standard)</option>
+                <option value="8">8 Cards (Deep Dive)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="fc-deck-area" id="fcDeckArea">
+          <div class="fc-empty-state" id="fcEmptyState">
+            <span class="fc-empty-icon">🎴</span>
+            <p>Pick a subject chip above or enter a topic to generate visual revision cards with diagrams, key rules & exam traps!</p>
+          </div>
+        </div>
+
+        <div class="fc-stream-status" id="fcStreamStatus" style="display:none;"></div>
+
+        <div class="fc-controls" id="fcControls" style="display:none;">
+          <button class="ghost" id="fcPrevBtn" title="Previous card">← Prev</button>
+          <button class="ghost fc-flip-btn" id="fcFlipBtn" title="Flip card">🔄 Flip</button>
+          <span class="fc-counter" id="fcCounter">1 / 6</span>
+          <button class="ghost fc-shuffle-btn" id="fcShuffleBtn" title="Shuffle cards">🔀 Shuffle</button>
+          <button class="ghost" id="fcNextBtn" title="Next card">Next →</button>
+        </div>
+
+        <div class="fc-saved-decks" id="fcSavedDecks">
+          <div class="fc-saved-head">
+            <h3>Saved Decks</h3>
+            <button class="ghost fc-clear-decks-btn" id="fcClearDecksBtn" type="button">Clear All</button>
+          </div>
+          <div class="fc-deck-list" id="fcDeckList"></div>
+        </div>
+      </div>
+      <div id="notesList"></div>
+      <div class="note-form">
+        <div class="field-grid">
+          <label>
+            Session Title
+            <input id="noteTitle" type="text" placeholder="Session 14" />
+          </label>
+          <label>
+            Focus (1-10)
+            <input id="noteFocus" type="number" min="1" max="10" value="7" />
+          </label>
+        </div>
+        <textarea id="noteText" placeholder="Add a quick reflection..."></textarea>
+        <div class="stt-row">
+          <button class="ghost stt-btn" id="sttBtn" type="button">Start Dictation</button>
+          <span class="stt-status" id="sttStatus">Mic idle</span>
+        </div>
+        <div class="note-actions">
+          <button class="ghost" id="cancelNoteEditBtn" type="button">Cancel Edit</button>
+          <button class="primary" id="saveNoteBtn">Save Note</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel overview" data-page="snapshot">
+      <header class="syl-header">
+        <div class="syl-title-row">
+          <h2>Official Syllabus &amp; OS</h2>
+          <a href="StudyForge_ADGIPS_BTech_IT_Guide_4p.pdf" target="_blank" download="StudyForge_ADGIPS_BTech_IT_Guide_4p.pdf" class="syl-download-btn" id="sylDownloadPdfBtn" title="Download Official 4-Page PDF">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>PDF</span>
+          </a>
+        </div>
+        <p class="syl-subtitle-desc">GGSIPU · B.Tech IT (Sec-E) · 4-Page Curricular Blueprint</p>
+      </header>
+
+      <!-- Quick Page Jump Bar -->
+      <nav class="syl-jump-bar" aria-label="Syllabus Pages">
+        <button type="button" class="syl-jump-btn" data-target-card="sylPage1">📄 P1: Blueprint & Schedule</button>
+        <button type="button" class="syl-jump-btn" data-target-card="sylPage2">📄 P2: PPS · SMT · BEE</button>
+        <button type="button" class="syl-jump-btn" data-target-card="sylPage3">📄 P3: PHL · EM · CSL</button>
+        <button type="button" class="syl-jump-btn" data-target-card="sylPage4">📄 P4: EVS · EGL · PD & Playbook</button>
+      </nav>
+
+      <!-- CARD 1 (PDF PAGE 1) -->
+      <article class="syl-page-card" id="sylPage1">
+        <div class="syl-section-header">1. CLASS SCHEDULE & FACULTY DIRECTORY</div>
+        <div class="syl-table-wrap">
+          <table class="syl-table">
+            <thead>
+              <tr>
+                <th>DAY</th>
+                <th>8:15–9:10</th>
+                <th>9:10–10:05</th>
+                <th>10:05–11:00</th>
+                <th style="background:#ff6b3d;color:#fff;">11:00–11:30</th>
+                <th>11:30–12:25</th>
+                <th>12:25–1:20</th>
+                <th>1:20–2:15</th>
+                <th>2:15–3:10</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>MON</strong></td>
+                <td><span class="syl-pill-tag">EM</span></td>
+                <td><span class="syl-pill-tag">SMT-1</span></td>
+                <td><span class="syl-pill-tag">PHL</span></td>
+                <td rowspan="5" style="text-align:center;font-weight:900;background:rgba(255,107,61,0.15);color:var(--accent-dark);">L<br>U<br>N<br>C<br>H</td>
+                <td colspan="2" style="text-align:center;"><span class="syl-pill-tag orange">E2 (EVS) / E1 (PHP)</span></td>
+                <td><span class="syl-pill-tag">BEE</span></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><strong>TUE</strong></td>
+                <td>—</td>
+                <td><span class="syl-pill-tag">CSL</span></td>
+                <td><span class="syl-pill-tag">EM</span></td>
+                <td colspan="2" style="text-align:center;"><span class="syl-pill-tag orange">PPS LAB (E1 & E2)</span></td>
+                <td><span class="syl-pill-tag">SMT-1</span></td>
+                <td><span class="syl-pill-tag">EVSL</span></td>
+              </tr>
+              <tr>
+                <td><strong>WED</strong></td>
+                <td><span class="syl-pill-tag">CSL</span></td>
+                <td colspan="2" style="text-align:center;"><span class="syl-pill-tag orange">E1 (EVS Lab) / E2 (BEE)</span></td>
+                <td><span class="syl-pill-tag">PHL</span></td>
+                <td><span class="syl-pill-tag">PPS</span></td>
+                <td><span class="syl-pill-tag">EVS(L/P)</span></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><strong>THU</strong></td>
+                <td><span class="syl-pill-tag">PHL</span></td>
+                <td><span class="syl-pill-tag">EVSL</span></td>
+                <td><span class="syl-pill-tag">SMT-1</span></td>
+                <td><span class="syl-pill-tag">PPS</span></td>
+                <td><span class="syl-pill-tag">CSL</span></td>
+                <td><span class="syl-pill-tag">BEE</span></td>
+                <td><span class="syl-pill-tag">EM</span></td>
+              </tr>
+              <tr>
+                <td><strong>FRI</strong></td>
+                <td><span class="syl-pill-tag">PPS</span></td>
+                <td colspan="2" style="text-align:center;"><span class="syl-pill-tag orange">EGL (Graphics Lab)</span></td>
+                <td colspan="2" style="text-align:center;"><span class="syl-pill-tag orange">E1 (BEE) / E2 (PHP)</span></td>
+                <td><span class="syl-pill-tag">BEE</span></td>
+                <td><span class="syl-pill-tag leather">PD</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="syl-table-wrap">
+          <table class="syl-table">
+            <thead>
+              <tr>
+                <th>TAG</th>
+                <th>CODE</th>
+                <th>SUBJECT TITLE</th>
+                <th>FACULTY IN-CHARGE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="syl-pill-tag orange">PPS</span></td><td>ICT 101 T</td><td>Programming for Problem Solving</td><td>Ms. Alka</td></tr>
+              <tr><td><span class="syl-pill-tag orange">PPS LAB</span></td><td>ICT 151</td><td>Programming for Problem Solving Lab</td><td>Mr. Ankit Jain</td></tr>
+              <tr><td><span class="syl-pill-tag">BEE</span></td><td>ICT 103 T</td><td>Basics of Electrical Engineering</td><td>Ms. Pooja</td></tr>
+              <tr><td><span class="syl-pill-tag">BEE LAB</span></td><td>ICT 103 P</td><td>Basics of Electrical Engineering Lab</td><td>Ms. Pooja</td></tr>
+              <tr><td><span class="syl-pill-tag orange">SMT-1</span></td><td>ICT 107</td><td>System Modeling Techniques - I</td><td>Dr. Suryya Farhat</td></tr>
+              <tr><td><span class="syl-pill-tag">PHL</span></td><td>ICT 111 T</td><td>Engineering Physics - I</td><td>Dr. Mamta Gupta</td></tr>
+              <tr><td><span class="syl-pill-tag">PHP</span></td><td>ICT 111 P</td><td>Engineering Physics Lab - I</td><td>Dr. Mamta Gupta</td></tr>
+              <tr><td><span class="syl-pill-tag sky">CSL</span></td><td>ICT 113</td><td>Communication Skills</td><td>Dr. Samikshya</td></tr>
+              <tr><td><span class="syl-pill-tag">EVSL</span></td><td>EM 117 T</td><td>Environmental Studies (Theory)</td><td>Dr. Kavita Gupta</td></tr>
+              <tr><td><span class="syl-pill-tag">EVS LAB</span></td><td>ICT 117 P</td><td>Environmental Studies Lab</td><td>Dr. Kavita Gupta</td></tr>
+              <tr><td><span class="syl-pill-tag">EM</span></td><td>ICT 119</td><td>Engineering Mechanics</td><td>Mr. Naman Bajpai</td></tr>
+              <tr><td><span class="syl-pill-tag">EGL</span></td><td>ICT 123</td><td>Engineering Graphics - I Lab</td><td>Mr. Naman Bajpai</td></tr>
+              <tr><td><span class="syl-pill-tag leather">PD</span></td><td>PD</td><td>Personality Development</td><td>Dr. Samikshya</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="syl-section-header">2. ACADEMIC & EXAMINATION ARCHITECTURE</div>
+        <div class="syl-box">
+          <div class="syl-box-title">Evaluation & Scoring Blueprint</div>
+          <ul>
+            <li><strong>Theory Papers (40 Int + 60 Ext):</strong> 40 marks internal continuous evaluation (mid-terms, assignments, attendance) + 60 marks 3-hour university end-term exam. Minimum 40% aggregate required to pass.</li>
+            <li><strong>NUES Coursework (EVSL / PD):</strong> 100 marks continuous evaluation managed internally by subject faculty. Zero external university written exam.</li>
+            <li><strong>Question Paper Pattern (60 Marks):</strong> 9 questions total. Q1 (12M compulsory) covers entire syllabus. Units I–IV each feature 2 questions (12M each); students attempt exactly one per unit.</li>
+          </ul>
+        </div>
+
+        <div class="syl-box">
+          <div class="syl-box-title">Degree & Credit Standards</div>
+          <ul>
+            <li><strong>Graduation Target:</strong> Minimum 160 qualifying credits across 8 semesters (176–178 max).</li>
+            <li><strong>Minor Specialization:</strong> 20 optional credits from Sem 3 to 7 via electives / MOOCs (does NOT affect CGPA).</li>
+          </ul>
+        </div>
+
+        <div class="syl-card-footer">
+          <span>STUDYFORGE // ADGIPS IT SEC-E</span>
+          <span>PAGE 1 / 4</span>
+        </div>
+      </article>
+
+      <!-- CARD 2 (PDF PAGE 2) -->
+      <article class="syl-page-card" id="sylPage2">
+        <div class="syl-section-header" style="margin-top:0;">3. DETAILED SYLLABUS BREAKDOWN (PART 1: CORE TECH)</div>
+
+        <!-- PPS -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">Programming for Problem Solving & Lab</h4>
+            <span class="syl-pill-tag orange">PPS / PPS LAB</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> ICT 101 T & ICT 151 / 101 P &nbsp;|&nbsp; <strong>Credits:</strong> 3 + 1 = 4C &nbsp;|&nbsp; <strong>L-P:</strong> 3-2<br>
+            <strong>Faculty:</strong> Ms. Alka (Theory) & Mr. Ankit Jain (Lab in Room 2310)<br>
+            <strong>Weekly Slots:</strong> Wed 12:25, Thu 11:30, Fri 8:15 &nbsp;|&nbsp; <strong>Lab:</strong> Tue 11:30–1:20
+          </div>
+          <div class="syl-co-box">
+            <strong>Course Outcomes:</strong> CO1: Structured C & standards. CO2: Functions, arrays, search/sort. CO3: Pointers, dynamic memory, file I/O. CO4: ADTs (linked lists, stacks, queues, binary trees).
+          </div>
+          <div class="syl-unit-list">
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit I (Foundations & Standards):</span> Structure of C program, basic types (int, char, float, double, bool, fixed-width ints), const, #define, operators & precedence, type conversions (implicit/explicit), I/O (printf, scanf, format specifiers), compound blocks, decision making (if-else, switch), loops (while, do-while, for), jumping (break, continue, goto), flowcharts, dry runs, and C89, C99, C11, C23 extensions.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit II (Functions, Arrays & Strings):</span> Functions, parameter passing (by value, recursion), inline/macro functions, storage classes (auto, static, extern, register, thread_local), scope & lifetime, multi-dim arrays, linear & binary search, bubble/selection/insertion sort, string I/O (fgets, fputs), string manipulation (strlen, strcpy, strcat, strcmp), and command-line arguments.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit III (Pointers, Dynamic Memory & Files):</span> Structs, nested structs, array of structs, unions, enums, bit-fields, memory layout/alignment, pointer arithmetic, pointer to pointer, dynamic memory (malloc, calloc, realloc, free), memory leak prevention, file I/O (fopen, fclose, fprintf, fscanf, fread, fwrite), and errno handling.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit IV (Data Structures & ADTs):</span> Singly and doubly linked lists, stacks (infix-postfix, parenthesis balancing), queues (circular, priority), binary tree traversals (pre, in, postorder), function pointers, generic code via macros, assertions (_Static_assert), and header hygiene.</div>
+          </div>
+          <div class="syl-book-line">Textbooks: B.W. Kernighan & D.M. Ritchie (2nd Ed.); Jens Gustedt, Modern C (2025). Lab: Minimum 16 practicals.</div>
+        </div>
+
+        <!-- SMT-1 -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">System Modeling Techniques - I</h4>
+            <span class="syl-pill-tag orange">SMT-1</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> ICT 107 &nbsp;|&nbsp; <strong>Credits:</strong> 3C &nbsp;|&nbsp; <strong>L-P:</strong> 3-0<br>
+            <strong>Faculty:</strong> Dr. Suryya Farhat &nbsp;|&nbsp; <strong>Weekly Slots:</strong> Mon 9:10, Tue 1:20, Thu 10:05
+          </div>
+          <div class="syl-co-box">
+            <strong>Course Outcomes:</strong> CO1: Multivariable calculus & 1st order ODEs. CO2: Higher ODEs & special functions. CO3: Matrices, eigenvalues & factorizations. CO4: Vector calculus.
+          </div>
+          <div class="syl-unit-list">
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit I (Multivariable Calculus & 1st Order ODEs):</span> Functions of several variables, partial derivatives, chain rule, Jacobians, Taylor/Maclaurin series, maxima/minima, Lagrange multipliers. 1st order ODEs: separable, exact, integrating factors, Bernoulli equations, orthogonal trajectories.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit II (Higher ODEs & Special Functions):</span> Higher-order linear ODEs with constant coeffs, variation of parameters, Cauchy-Euler equations, Wronskian. Power series solutions: Bessel and Legendre polynomials, Gamma and Beta functions.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit III (Linear Algebra & Factorizations):</span> Systems of linear equations, Gauss-Jordan, rank, vector spaces, eigenvalues/eigenvectors, Cayley-Hamilton theorem, quadratic forms, Gram-Schmidt, and LU/Cholesky decomposition.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit IV (Vector Calculus & Field Theorems):</span> Vector differential calculus (grad, div, curl), line/surface/volume integrals, Green's theorem, Gauss divergence theorem, and Stokes' theorem.</div>
+          </div>
+          <div class="syl-book-line">Textbook: Erwin Kreyszig, Advanced Engineering Mathematics (10th Ed., Wiley, 2011).</div>
+        </div>
+
+        <!-- BEE -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">Basics of Electrical Engineering & Lab</h4>
+            <span class="syl-pill-tag">BEE & BEE LAB</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> ICT 103 T & ICT 103 P &nbsp;|&nbsp; <strong>Credits:</strong> 3 + 1 = 4C &nbsp;|&nbsp; <strong>L-P:</strong> 3-2<br>
+            <strong>Faculty:</strong> Ms. Pooja &nbsp;|&nbsp; <strong>Weekly Slots:</strong> Mon 1:20, Thu 1:20, Fri 1:20 &nbsp;|&nbsp; <strong>Lab:</strong> Wed / Fri 11:30–1:20
+          </div>
+          <div class="syl-co-box">
+            <strong>Course Outcomes:</strong> CO1: Kirchhoff's laws & DC circuits. CO2: Network theorems & transients. CO3: AC phasors & 3-phase circuits. CO4: Electrical machines & safety.
+          </div>
+          <div class="syl-unit-list">
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit I:</span> Charge, current, voltage, energy, power, sources, Ohm’s law, series/parallel resistors, KCL, KVL, circuit modeling, and power calculations.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit II:</span> Nodal & mesh analysis, superposition, Thevenin’s, Norton’s, and Maximum Power Transfer theorems, transient analysis of RL and RC circuits.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit III:</span> Phasors, complex impedance/admittance, AC power (real, reactive, complex, power factor correction), RLC resonance, and balanced 3-phase circuits.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit IV:</span> Magnetic circuits, Faraday's/Lenz's laws, transformers, DC motors/generators, 3-phase induction motors (torque-slip), safety, and data center energy auditing.</div>
+          </div>
+          <div class="syl-book-line">Textbooks: Alexander & Sadiku (7th Ed., 2022); D.P. Kothari & I.J. Nagrath. Lab: Min 10 experiments.</div>
+        </div>
+
+        <div class="syl-card-footer">
+          <span>STUDYFORGE // ADGIPS IT SEC-E</span>
+          <span>PAGE 2 / 4</span>
+        </div>
+      </article>
+
+      <!-- CARD 3 (PDF PAGE 3) -->
+      <article class="syl-page-card" id="sylPage3">
+        <div class="syl-section-header" style="margin-top:0;">3. DETAILED SYLLABUS BREAKDOWN (PART 2: APPLIED SCIENCES)</div>
+
+        <!-- PHL -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">Engineering Physics - I & Lab</h4>
+            <span class="syl-pill-tag">PHL & PHP</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> ICT 111 T & ICT 111 P &nbsp;|&nbsp; <strong>Credits:</strong> 3 + 1 = 4C &nbsp;|&nbsp; <strong>L-P:</strong> 3-2<br>
+            <strong>Faculty:</strong> Dr. Mamta Gupta &nbsp;|&nbsp; <strong>Weekly Slots:</strong> Mon 10:05, Wed 11:30, Thu 8:15 &nbsp;|&nbsp; <strong>Lab:</strong> Mon/Fri 11:30–1:20
+          </div>
+          <div class="syl-co-box">
+            <strong>Course Outcomes:</strong> CO1: Mechanics & reference frames. CO2: Conservation laws & central forces. CO3: Damped/forced oscillations. CO4: Rigid body dynamics.
+          </div>
+          <div class="syl-unit-list">
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit I:</span> Coordinate systems (Cartesian, polar, cylindrical, spherical), Newton's laws, friction, constraints, and 2D/3D motion.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit II:</span> Work done, potential energy, momentum conservation, torque, angular momentum, central forces, Kepler’s planetary laws, and satellite orbits.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit III:</span> SHM, damped oscillations, forced oscillations, resonance, quality factor (Q), rotating frames, and Coriolis force.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit IV:</span> Center of mass, moment of inertia, parallel/perpendicular axes theorems, rotational energy, rolling motion, and gyroscopic effects.</div>
+          </div>
+          <div class="syl-book-line">Textbooks: Kleppner & Kolenkow, An Introduction to Mechanics; Serway & Jewett. Lab: Min 10 exercises.</div>
+        </div>
+
+        <!-- EM -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">Engineering Mechanics</h4>
+            <span class="syl-pill-tag">EM</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> ICT 119 &nbsp;|&nbsp; <strong>Credits:</strong> 3C &nbsp;|&nbsp; <strong>L-P:</strong> 3-0<br>
+            <strong>Faculty:</strong> Mr. Naman Bajpai &nbsp;|&nbsp; <strong>Weekly Slots:</strong> Mon 8:15, Tue 10:05, Thu 2:15
+          </div>
+          <div class="syl-co-box">
+            <strong>Course Outcomes:</strong> CO1: Force equilibrium. CO2: Plane trusses & friction. CO3: Particle kinematics/kinetics. CO4: Rigid body dynamics.
+          </div>
+          <div class="syl-unit-list">
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit I:</span> Force systems, Varignon's theorem, couples, free-body diagrams, and 2D/3D static equilibrium equations.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit II:</span> Plane trusses (method of joints, sections), friction laws, angle of repose, cone of friction, belt and collar friction.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit III:</span> Rectilinear/curvilinear motion, D'Alembert’s principle, work-energy, impulse-momentum, impact, and coefficient of restitution.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit IV:</span> Rigid body motion, relative velocity/acceleration, instantaneous center of zero velocity, and fixed-axis rotation.</div>
+          </div>
+          <div class="syl-book-line">Textbook: A.K. Tayal, Engineering Mechanics; Timoshenko & Young.</div>
+        </div>
+
+        <!-- CSL -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">Communication Skills</h4>
+            <span class="syl-pill-tag sky">CSL</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> ICT 113 &nbsp;|&nbsp; <strong>Credits:</strong> 3C &nbsp;|&nbsp; <strong>L-P:</strong> 3-0<br>
+            <strong>Faculty:</strong> Dr. Samikshya &nbsp;|&nbsp; <strong>Weekly Slots:</strong> Tue 9:10, Wed 8:15, Thu 12:25
+          </div>
+          <div class="syl-co-box">
+            <strong>Course Outcomes:</strong> CO1: English grammar & vocabulary. CO2: Paragraph, précis & writing clarity. CO3: Formal correspondence. CO4: Critical speech comprehension.
+          </div>
+          <div class="syl-unit-list">
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit I:</span> Parts of speech, sentence transformation, subject-verb agreement, tenses, voice, speech, vocabulary, technical terms, and common errors.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit II:</span> Effective writing, topic sentences, coherence, paraphrasing, summarizing, précis writing, and editing.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit III:</span> Meeting documentation (agenda, minutes), business letters, applications, notices, memoranda, press releases, and professional e-mails.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit IV:</span> Reading strategies (skimming, scanning). Critical speech analysis: (1) Steven Spielberg's Harvard Commencement Address (2016); (2) Johan Rockström's TED Talk on Planetary Boundaries.</div>
+          </div>
+          <div class="syl-book-line">Textbooks: Wren & Martin; Meenakshi Raman, Technical Communication (4th Ed., Oxford, 2022).</div>
+        </div>
+
+        <div class="syl-card-footer">
+          <span>STUDYFORGE // ADGIPS IT SEC-E</span>
+          <span>PAGE 3 / 4</span>
+        </div>
+      </article>
+
+      <!-- CARD 4 (PDF PAGE 4) -->
+      <article class="syl-page-card" id="sylPage4">
+        <div class="syl-section-header" style="margin-top:0;">3. DETAILED SYLLABUS BREAKDOWN (PART 3: LABS & SKILLS)</div>
+
+        <!-- EVSL -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">Environmental Studies & Lab</h4>
+            <span class="syl-pill-tag">EVSL & EVS LAB</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> EM 117 T & ICT 117 P &nbsp;|&nbsp; <strong>Credits:</strong> 2 + 1 = 3C (NUES)<br>
+            <strong>Faculty:</strong> Dr. Kavita Gupta &nbsp;|&nbsp; <strong>Weekly Slots:</strong> Tue 2:15, Wed 1:20, Thu 9:10 &nbsp;|&nbsp; <strong>Lab:</strong> Mon/Wed
+          </div>
+          <div class="syl-co-box">
+            <strong>Course Outcomes:</strong> CO1: Ecological systems. CO2: Natural resources. CO3: Pollution & E-waste. CO4: Environmental law & field studies.
+          </div>
+          <div class="syl-unit-list">
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit I:</span> Ecosystem structure, energy flow, biogeochemical cycles, biodiversity conservation, hot-spots, and ecosystem services.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit II:</span> Renewable & non-renewable resources, water management, land degradation, mining impacts, and sustainable energy.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit III:</span> Air, water, soil, noise pollution, Electronic Waste (E-Waste) management in IT, toxicology, climate change, and smog.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit IV:</span> Environmental legislation, EIA principles, UN Sustainable Development Goals (SDGs), and mandatory field visit report.</div>
+          </div>
+          <div class="syl-book-line">Textbook: Erach Bharucha, Environmental Studies (3rd Ed., 2020). 10 practicals & field report.</div>
+        </div>
+
+        <!-- EGL -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">Engineering Graphics - I Lab</h4>
+            <span class="syl-pill-tag">EGL</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> ICT 123 &nbsp;|&nbsp; <strong>Credits:</strong> 1C &nbsp;|&nbsp; <strong>L-P:</strong> 0-2<br>
+            <strong>Faculty:</strong> Mr. Naman Bajpai &nbsp;|&nbsp; <strong>Weekly Slot:</strong> Fri 9:10–11:00 (2-Hour Block)
+          </div>
+          <div class="syl-co-box">
+            <strong>Course Outcomes:</strong> CO1: BIS codes & projection of points. CO2: Straight line projections. CO3: Plane projections. CO4: Solid projections & surface development.
+          </div>
+          <div class="syl-unit-list">
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit I:</span> BIS drawing standards, scales, dimensioning, orthographic projections, and projection of points in all quadrants.</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit II:</span> Projection of straight lines (traces, rotation method, auxiliary planes, true inclinations).</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit III:</span> Projection of regular planes (parallel, inclined, oblique planes, auxiliary planes).</div>
+            <div class="syl-unit-item"><span class="syl-unit-name">Unit IV:</span> Projection of solids (prisms, pyramids, cylinders, cones), and lateral surface development (parallel, radial line methods).</div>
+          </div>
+          <div class="syl-book-line">Textbook: N.D. Bhatt, Engineering Drawing (53rd Ed., Charotar Publishing).</div>
+        </div>
+
+        <!-- PD -->
+        <div class="syl-subject-card">
+          <div class="syl-subject-top">
+            <h4 class="syl-subject-title">Personality Development (PD)</h4>
+            <span class="syl-pill-tag leather">PD</span>
+          </div>
+          <div class="syl-meta-chips">
+            <strong>Code:</strong> PD &nbsp;|&nbsp; <strong>Credits:</strong> Non-Credit Mentorship<br>
+            <strong>Faculty:</strong> Dr. Samikshya &nbsp;|&nbsp; <strong>Weekly Slot:</strong> Fri 2:15–3:10 (Room No. 2310)
+          </div>
+          <div class="syl-co-box">
+            <strong>Module Focus:</strong> Soft-skill mastery, group discussions (GD), impromptu speaking, corporate email etiquette, mock interview confidence, technical resume building, and leadership dynamics tailored for IT campus recruitment.
+          </div>
+        </div>
+
+        <div class="syl-section-header">4. STUDYFORGE ACADEMIC ACTION PLAYBOOK</div>
+        <div class="syl-box" style="border-left: 6px solid var(--accent); background: rgba(255, 107, 61, 0.06);">
+          <div class="syl-box-title">Strategic High-Yield Directives for Sec-E</div>
+          <ul>
+            <li><strong>C Pointer Mastery (PPS):</strong> Dynamic memory (<code>malloc</code>, <code>free</code>) and ADTs in PPS are direct prerequisites for 2nd-year Data Structures & Algorithms (DSA). Ensure clean code submissions in PPS Lab under Mr. Ankit Jain.</li>
+            <li><strong>Internal Score Defense:</strong> 40 marks across theory/labs are internal. Consistent lab file sign-offs and strong mid-terms lock in an easy 'A' grade before the 60-mark end-term external exam.</li>
+            <li><strong>Lab Records:</strong> PPS Lab requires 16 experiments minimum, BEE Lab requires 10, and Physics Lab requires 10. Complete write-ups weekly to prevent end-term backlog.</li>
+          </ul>
+        </div>
+
+        <div class="syl-card-footer">
+          <span>STUDYFORGE // ADGIPS IT SEC-E</span>
+          <span>PAGE 4 / 4</span>
+        </div>
+      </article>
+    </section>
+    <div class="sf-base-sign" aria-hidden="true"><span class="sf-base-dots"></span><span class="sf-base-box">By SK ❤️</span></div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="click-fx" id="clickFx" aria-hidden="true"></div>
+
+  <dialog id="goalDialog" class="dialog">
+    <form class="dialog-card" id="goalForm" novalidate>
+      <h3 id="goalDialogTitle">Add Goal</h3>
+      <label>
+        Goal Title
+        <input id="goalTitle" type="text" required placeholder="Master Differential Equations" />
+      </label>
+      <label>
+        Tag / Duration
+        <input id="goalTag" type="text" placeholder="6-week sprint" />
+      </label>
+      <label>
+        Progress
+        <div class="range-row">
+          <input id="goalProgress" type="range" min="0" max="100" value="50" />
+          <span class="range-value" id="goalProgressValue">50%</span>
+        </div>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="ghost" data-close>Cancel</button>
+        <button type="submit" class="primary" id="goalSubmitBtn">Save Goal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="taskDialog" class="dialog">
+    <form class="dialog-card" id="taskForm" novalidate>
+      <h3 id="taskDialogTitle">Add Task</h3>
+      <label>
+        Task Title
+        <input id="taskTitle" type="text" required placeholder="Practice integration drills" />
+      </label>
+      <label>
+        Duration / Due
+        <input id="taskDuration" type="text" placeholder="45 mins / Due Fri" />
+      </label>
+      <label>
+        Goal Link
+        <select id="taskGoal">
+          <option value="">No goal</option>
+        </select>
+      </label>
+      <label>
+        Status
+        <select id="taskStatus">
+          <option value="plan">Plan</option>
+          <option value="progress">In Progress</option>
+          <option value="done">Done</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="ghost" data-close>Cancel</button>
+        <button type="submit" class="primary" id="taskSubmitBtn">Add Task</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="sprintDialog" class="dialog">
+    <form class="dialog-card" id="sprintForm" novalidate>
+      <h3>Start New Sprint</h3>
+      <label>
+        Sprint Name
+        <input id="sprintName" type="text" placeholder="Week of Feb 6" />
+      </label>
+      <div class="field-grid">
+        <label>
+          Start Date
+          <input id="sprintStart" type="date" />
+        </label>
+        <label>
+          End Date
+          <input id="sprintEnd" type="date" />
+        </label>
+      </div>
+      <div class="check-grid">
+        <label class="check"><input id="resetGoals" type="checkbox" />Reset goal progress</label>
+        <label class="check"><input id="resetTasks" type="checkbox" />Move all tasks to Plan</label>
+        <label class="check"><input id="clearNotes" type="checkbox" />Clear notes</label>
+        <label class="check"><input id="resetGauges" type="checkbox" />Reset snapshot gauges</label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="ghost" data-close>Cancel</button>
+        <button type="submit" class="primary">Create Sprint</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" class="dialog">
+    <div class="dialog-card">
+      <h3>Confirm Delete</h3>
+      <p id="confirmMessage" class="confirm-message"></p>
+      <div class="dialog-actions">
+        <button type="button" class="ghost" id="confirmCancel">Cancel</button>
+        <button type="button" class="primary" id="confirmOk">Delete</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="tokenharborKeyDialog" class="dialog">
+    <form class="dialog-card" id="tokenharborKeyForm" novalidate>
+      <h3>AI Settings</h3>
+      <p style="font-size: 13px; opacity: 0.8; margin: 4px 0 12px;">Unified multi-model API configuration &amp; credentials.</p>
+      
+      <label>
+        AI Model ID
+        <input id="tokenharborModelInput" list="tokenharborModelList" placeholder="glm-5.3-flash" autocomplete="off" />
+        <datalist id="tokenharborModelList">
+          <option value="glm-5.3-flash">GLM 5.3 Flash (Active Pass — Vision &amp; Fast — Default)</option>
+          <option value="glm-5.3">GLM 5.3 (Frontier Reasoning)</option>
+          <option value="deepseek-v4-flash:free">DeepSeek V4 Flash (Free Tier)</option>
+          <option value="mimo-v2.5:free">MiMo V2.5 (Free Tier)</option>
+          <option value="claude-opus-5">Claude Opus 5 (Frontier)</option>
+          <option value="claude-fable-5.1">Claude Fable 5.1 (Frontier)</option>
+          <option value="gpt-6-astra">GPT-6 Astra (Frontier)</option>
+          <option value="gemini-3.8-flash">Gemini 3.8 Flash (Multimodal)</option>
+          <option value="qwen3.8-flash">Qwen 3.8 Flash (Value Vision)</option>
+          <option value="th-orchestra">TH Orchestra (Smart Auto-Router)</option>
+        </datalist>
+      </label>
+      
+      <label style="margin-top: 10px;">
+        API Key
+        <input id="tokenharborKeyInput" type="password" placeholder="thk_live_..." autocomplete="off" />
+      </label>
+      <p style="font-size: 11.5px; opacity: 0.75; margin: 4px 0 14px; line-height: 1.4;">
+        Get your Universal Key at <a href="https://tokenharbor.ai/dashboard/api-keys" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">tokenharbor.ai/dashboard/api-keys</a>. Keys &amp; model choices are stored locally in <code>localStorage</code>.
+      </p>
+      <div class="dialog-actions">
+        <button type="button" class="ghost" data-close>Cancel</button>
+        <button type="submit" class="primary" id="tokenharborKeySaveBtn">Save Settings</button>
+      </div>
+    </form>
+  </dialog>
+
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-tab" data-target="goals">
+      <span class="nav-icon">🎯</span>
+      <span class="nav-label">Goals</span>
+    </button>
+    <button class="nav-tab" data-target="tasks">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Tasks</span>
+    </button>
+    <button class="nav-tab active" data-target="timetable">
+      <span class="nav-icon">🗓</span>
+      <span class="nav-label">TT</span>
+    </button>
+    <button class="nav-tab" data-target="notes">
+      <span class="nav-icon">📝</span>
+      <span class="nav-label">Notes</span>
+    </button>
+    <button class="nav-tab" data-target="snapshot">
+      <span class="nav-icon">📜</span>
+      <span class="nav-label">Syllabus</span>
+    </button>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="syllabus.js"></script>
+  <script src="script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('ServiceWorker registration successful');
+        }).catch(err => {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+      });
+    }
+  </script>
+</body>
+
+</html>
