@@ -2,8 +2,8 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/th-api/:path*",
-      "destination": "https://tokenharbor.ai/:path*"
+      "source": "/th-api/(.*)",
+      "destination": "https://tokenharbor.ai/$1"
     },
     {
       "source": "/((?!api|icons|.*\\..*).*)",
