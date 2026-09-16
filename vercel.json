@@ -1,4 +1,4 @@
-﻿{
+{
   "cleanUrls": true,
   "rewrites": [
     {
@@ -29,5 +29,6 @@
         }
       ]
     }
-  ]
+  ],
+  "": "https://openapi.vercel.sh/vercel.json"
 }
