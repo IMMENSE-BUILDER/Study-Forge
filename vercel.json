@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/th-api/:path*",
-      "destination": "https://tokenharbor.ai/:path*"
+      "destination": "/api/th-api/:path*"
     },
     {
       "source": "/((?!api|icons|.*\\..*).*)",

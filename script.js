@@ -4589,7 +4589,9 @@ CRITICAL JSON RULES:
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+            'Authorization': `Bearer ${apiKey}`,
+            'Accept': 'text/event-stream',
+            'Cache-Control': 'no-cache'
           },
           body: JSON.stringify(payload)
         });
@@ -4601,7 +4603,9 @@ CRITICAL JSON RULES:
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+            'Authorization': `Bearer ${apiKey}`,
+            'Accept': 'text/event-stream',
+            'Cache-Control': 'no-cache'
           },
           body: JSON.stringify(payload)
         });
