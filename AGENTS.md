@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.netlify.app` (currently **v45**). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v48**). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -34,7 +34,7 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 | CDN (progressive enhancement only) | Tailwind (login page), KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
 | Phone link | `adb reverse tcp:3000 tcp:3000` + `http://localhost:3000` on device | Campus/home Wi-Fi blocks phone↔PC; USB is the reliable pipe |
-| Hosting | Netlify Drop (`studyforged.netlify.app`) | Drag-drop `study-forge-deploy`; old `studyfrg` site is 404, no archive |
+| Hosting | Vercel (`https://studyforged.vercel.app`) via GitHub (`IMMENSE-BUILDER/Study-Forge`) + Netlify Drop backup | 100 free deploys/day on Vercel; git push triggers automatic instant deploy |
 | Future APK route | Capacitor re-wrap of this exact folder | Same codebase ships native; needs same signing key forever once released |
 
 ## 3. Project Structure
