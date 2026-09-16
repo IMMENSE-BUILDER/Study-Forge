@@ -282,6 +282,10 @@ Recent major changes (Sep 2026, now v45):
   - Model & Provider Brand Sanitization: Removed third-party provider and raw model badges (`GLM 5.3 FLASH`) from Ask AI (`#aiModelBadge`) and Notes AI Study Cards (`.fc-model-badge`) headers.
   - Neutral UI & System Labels: Replaced "Token Harbor Settings" with "AI Settings" in tooltips, aria labels, and dialog titles; streamlined loading prompts ("Crafting Card 1 for...") and status tickers ("Synthesizing response...").
   - Triple bump `v48` / `versionCode: 48` / `CACHE_NAME: study-forge-v48`. Deploy dir rebuilt and synchronized.
+- v49:
+  - Default Model Upgrade to `deepseek-v4.1-flash`: Set `deepseek-v4.1-flash` as primary default model across `script.js` and `index.html` settings dialog.
+  - Auto-Migration of Stored Models: Automatically migrates previous users from legacy `glm-5.3-flash` to `deepseek-v4.1-flash` in `getTokenHarborModel()`.
+  - Triple bump `v49` / `versionCode: 49` / `CACHE_NAME: study-forge-v49`. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the

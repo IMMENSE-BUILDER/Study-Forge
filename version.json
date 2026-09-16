@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForge","versionCode":48,"latest":"v48","notes":"UI Cleanliness: Removed third-party provider and model name badges from Ask AI and AI Study Cards headers for a clean, branded native tutor experience."}
+{"apkUrl":"","app":"StudyForge","versionCode":49,"latest":"v49","notes":"Engine Upgrade: Set deepseek-v4.1-flash as default AI model for instant reasoning and streaming throughput."}

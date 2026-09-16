@@ -2302,7 +2302,7 @@ function getTokenHarborApiUrl() {
   return 'https://tokenharbor.ai/v1/chat/completions';
 }
 const TOKENHARBOR_API_URL = getTokenHarborApiUrl();
-const DEFAULT_TOKENHARBOR_MODEL = 'glm-5.3-flash';
+const DEFAULT_TOKENHARBOR_MODEL = 'deepseek-v4.1-flash';
 const DEFAULT_TOKENHARBOR_KEY = '';
 
 function getTokenHarborApiKey() {
@@ -2313,7 +2313,11 @@ function getTokenHarborApiKey() {
 }
 
 function getTokenHarborModel() {
-  return localStorage.getItem('sf_tokenharbor_model') || DEFAULT_TOKENHARBOR_MODEL;
+  const stored = localStorage.getItem('sf_tokenharbor_model');
+  if (!stored || stored === 'glm-5.3-flash' || stored === 'glm-5.3') {
+    return DEFAULT_TOKENHARBOR_MODEL;
+  }
+  return stored;
 }
 
 // Backward-compatibility aliases
