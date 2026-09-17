@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v50**). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v51**). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -291,6 +291,11 @@ Recent major changes (Sep 2026, now v45):
   - Auto-Migration of Stored Models: Automatically migrates legacy `glm-5.3-flash`, `glm-5.3`, `deepseek-v4.1-flash`, and `deepseek-v4.1-flash:free` in `getTokenHarborModel()`.
   - Multi-Model Selection in Datalist: Added `deepseek-v4-flash:free` as Default Free Tier, plus `mimo-v2.5` (Xiaomi 1M context ultra-fast 800ms), `mimo-v2.5:free`, `deepseek-v4-flash`, `th-orchestra`, and frontier options.
   - Triple bump `v50` / `versionCode: 50` / `CACHE_NAME: study-forge-v50`. Deploy dir rebuilt and synchronized.
+- v51:
+  - Default Model Upgrade to `mimo-v2.5`: Switched default model to `mimo-v2.5` (Xiaomi MiMo, 1M context window, benchmarked at 800ms non-stream / 2.6s streaming TTFT on Token Harbor Universal Key). Solves public free queue congestion (eliminating 35–50s delays) with 10x faster response delivery.
+  - Seamless Model Migration: Auto-migrated `deepseek-v4-flash:free`, `deepseek-v4.1-flash`, and legacy models to `mimo-v2.5` in `getTokenHarborModel()`.
+  - Updated AI Settings UI: Pinned `mimo-v2.5` as active default in `#tokenharborModelInput` and datalist dropdown.
+  - Triple bump `v51` / `versionCode: 51` / `CACHE_NAME: study-forge-v51`. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the

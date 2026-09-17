@@ -2302,7 +2302,7 @@ function getTokenHarborApiUrl() {
   return 'https://tokenharbor.ai/v1/chat/completions';
 }
 const TOKENHARBOR_API_URL = getTokenHarborApiUrl();
-const DEFAULT_TOKENHARBOR_MODEL = 'deepseek-v4-flash:free';
+const DEFAULT_TOKENHARBOR_MODEL = 'mimo-v2.5';
 const DEFAULT_TOKENHARBOR_KEY = '';
 
 function getTokenHarborApiKey() {
@@ -2314,7 +2314,7 @@ function getTokenHarborApiKey() {
 
 function getTokenHarborModel() {
   const stored = localStorage.getItem('sf_tokenharbor_model');
-  if (!stored || stored === 'glm-5.3-flash' || stored === 'glm-5.3' || stored === 'deepseek-v4.1-flash' || stored === 'deepseek-v4.1-flash:free') {
+  if (!stored || stored === 'glm-5.3-flash' || stored === 'glm-5.3' || stored === 'deepseek-v4.1-flash' || stored === 'deepseek-v4.1-flash:free' || stored === 'deepseek-v4-flash:free') {
     return DEFAULT_TOKENHARBOR_MODEL;
   }
   return stored;
