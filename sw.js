@@ -1,4 +1,4 @@
-const CACHE_NAME = 'study-forge-v49';
+const CACHE_NAME = 'study-forge-v50';
 const ASSETS = [
     './',
     './index.html',

@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v48**). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v50**). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -286,6 +286,11 @@ Recent major changes (Sep 2026, now v45):
   - Default Model Upgrade to `deepseek-v4.1-flash`: Set `deepseek-v4.1-flash` as primary default model across `script.js` and `index.html` settings dialog.
   - Auto-Migration of Stored Models: Automatically migrates previous users from legacy `glm-5.3-flash` to `deepseek-v4.1-flash` in `getTokenHarborModel()`.
   - Triple bump `v49` / `versionCode: 49` / `CACHE_NAME: study-forge-v49`. Deploy dir rebuilt and synchronized.
+- v50:
+  - Default Model Switch to `deepseek-v4-flash:free`: Set `deepseek-v4-flash:free` as primary default model across `script.js` and `index.html` AI settings modal.
+  - Auto-Migration of Stored Models: Automatically migrates legacy `glm-5.3-flash`, `glm-5.3`, `deepseek-v4.1-flash`, and `deepseek-v4.1-flash:free` in `getTokenHarborModel()`.
+  - Multi-Model Selection in Datalist: Added `deepseek-v4-flash:free` as Default Free Tier, plus `mimo-v2.5` (Xiaomi 1M context ultra-fast 800ms), `mimo-v2.5:free`, `deepseek-v4-flash`, `th-orchestra`, and frontier options.
+  - Triple bump `v50` / `versionCode: 50` / `CACHE_NAME: study-forge-v50`. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the
