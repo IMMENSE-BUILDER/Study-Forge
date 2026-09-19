@@ -2306,7 +2306,7 @@ function getTokenHarborApiUrl() {
   return 'https://tokenharbor.ai/v1/chat/completions';
 }
 const TOKENHARBOR_API_URL = getTokenHarborApiUrl();
-const DEFAULT_TOKENHARBOR_MODEL = 'deepseek-v4.1-flash';
+const DEFAULT_TOKENHARBOR_MODEL = 'glm-5.3-flash';
 const DEFAULT_TOKENHARBOR_KEY = 'thk_live_0MzAXxjcM_nhh5XgNbkbP12LnBJoSGjhtDgT381vd4KTTo43Sl1nB-0IqWfRwidS';
 
 function getTokenHarborApiKey() {
@@ -2318,7 +2318,7 @@ function getTokenHarborApiKey() {
 
 function getTokenHarborModel() {
   const stored = localStorage.getItem('sf_tokenharbor_model');
-  if (!stored || stored === 'glm-5.3-flash' || stored === 'glm-5.3' || stored === 'deepseek-v4.1-flash:free' || stored === 'deepseek-v4-flash:free' || stored === 'mimo-v2.5') {
+  if (!stored || stored === 'deepseek-v4.1-flash' || stored === 'deepseek-v4-flash' || stored === 'deepseek-v4.1-flash:free' || stored === 'deepseek-v4-flash:free' || stored === 'mimo-v2.5' || stored === 'mimo-v2.5:free' || stored === 'glm-5.3') {
     return DEFAULT_TOKENHARBOR_MODEL;
   }
   return stored;
@@ -4824,7 +4824,7 @@ ${getJsonSchemaInstructions(1)}`;
         ],
         stream: true,
         temperature: 0.6,
-        max_tokens: 1400 // Generous budget ensuring zero truncation of SVG diagrams
+        max_tokens: 1800 // Generous budget ensuring complete SVG diagrams and derivations
       };
 
       await streamLlmCards(phase1Payload, (card) => {
@@ -4882,7 +4882,7 @@ ${getJsonSchemaInstructions(remainingCount)}`;
         ],
         stream: true,
         temperature: 0.6,
-        max_tokens: Math.min(3000, remainingCount * 650)
+        max_tokens: Math.min(3800, remainingCount * 850)
       };
 
       try {

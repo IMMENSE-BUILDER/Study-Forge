@@ -319,6 +319,12 @@ Recent major changes (Sep 2026, now v45):
   - Enhanced Syllabus Panel: Updated Card 2 (Core Tech: PPS, SMT-1, BEE), Card 3 (Applied Sciences: EM), and Card 4 (Labs & Skills: EVS) in `index.html` with Course Outcomes, marking schemes (including EVS 100-mark NUES), and reference textbooks.
   - Grounded AI Tutor: Updated `AI_SYSTEM_PROMPT` and subject topic aliases in `script.js` with official 2026 curricula for precise question-setting and flashcard generation.
   - Triple bump `v55` / `versionCode: 55` / `CACHE_NAME: study-forge-v55`. Deploy dir rebuilt and synchronized.
+- v56:
+  - Unified GLM 5.3 Flash Everywhere: Activated `glm-5.3-flash` as primary default model across both Ask AI chat and AI Flashcards generator per user command.
+  - Resolved Reasoning Token Latency: Fixed the 35–45s delay where `deepseek-v4.1-flash` emitted thousands of invisible chain-of-thought tokens (`reasoning_content`) before starting card JSON. GLM 5.3 Flash generates direct structured JSON with rich SVG diagrams, KaTeX formulas, and 2026 exam traps.
+  - Auto-Migration: Updated `getTokenHarborModel()` to auto-migrate stored keys from `deepseek-v4.1-flash` to `glm-5.3-flash` seamlessly.
+  - Increased Token Budget: Raised Phase 1 max tokens to 1,800 and Phase 2 max tokens to 3,800 to prevent SVG truncation.
+  - Triple bump `v56` / `versionCode: 56` / `CACHE_NAME: study-forge-v56`. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the
