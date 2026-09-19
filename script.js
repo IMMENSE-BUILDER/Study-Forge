@@ -4094,7 +4094,7 @@ function initFlashcards() {
     container.innerHTML = mdToHtml(str);
   }
 
-  function renderCard(index) {
+  function renderCard(index, slideDirection = null) {
     if (!currentCards.length) return;
     currentIndex = index;
     const card = currentCards[index];
@@ -4102,6 +4102,11 @@ function initFlashcards() {
 
     const cardEl = document.createElement("div");
     cardEl.className = "fc-card";
+    if (slideDirection === 'next') {
+      cardEl.classList.add('fc-slide-in-right');
+    } else if (slideDirection === 'prev') {
+      cardEl.classList.add('fc-slide-in-left');
+    }
     cardEl.id = "fcCard";
 
     const inner = document.createElement("div");
@@ -4248,13 +4253,138 @@ function initFlashcards() {
 
     const hint = document.createElement("span");
     hint.className = "fc-tap-hint";
-    hint.textContent = "Tap card or click Flip 🔄";
+    hint.innerHTML = '<span>↔ Swipe left / right</span> • <span>Tap to flip 🔄</span>';
     cardEl.append(inner, hint);
 
     deckArea.appendChild(cardEl);
 
-    // Tap to flip (unless selecting text)
-    cardEl.addEventListener('click', () => {
+    // ── Interactive Touch / Pointer Swipe Physics Engine ──
+    let startX = 0;
+    let startY = 0;
+    let currentDeltaX = 0;
+    let startTime = 0;
+    let isTracking = false;
+    let isDragging = false;
+    let isVerticalScroll = false;
+    let wasSwipeGesture = false;
+
+    cardEl.addEventListener('pointerdown', (e) => {
+      // Ignore interactive clicks inside card (links, buttons, inputs)
+      if (e.target.closest('button, a, input, select, textarea')) return;
+      if (window.getSelection && window.getSelection().toString().length > 0) return;
+
+      isTracking = true;
+      isDragging = false;
+      isVerticalScroll = false;
+      wasSwipeGesture = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      currentDeltaX = 0;
+      startTime = Date.now();
+      cardEl.classList.remove('fc-swipe-snap-back', 'fc-slide-in-right', 'fc-slide-in-left');
+    });
+
+    cardEl.addEventListener('pointermove', (e) => {
+      if (!isTracking || isVerticalScroll) return;
+
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      if (!isDragging) {
+        // Vertical scroll detection (e.g. reading long steps or diagrams)
+        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 8) {
+          isVerticalScroll = true;
+          return;
+        }
+        // Horizontal swipe activation
+        if (Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
+          isDragging = true;
+          wasSwipeGesture = true;
+          cardEl.classList.add('fc-swiping');
+          try { cardEl.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+      }
+
+      if (isDragging) {
+        currentDeltaX = deltaX;
+        const tilt = deltaX * 0.035; // Subtle natural tilt (1-3 degrees)
+        const opacity = Math.max(0.72, 1 - Math.abs(deltaX) / 800);
+        cardEl.style.transform = `translate3d(${deltaX}px, 0, 0) rotate(${tilt}deg)`;
+        cardEl.style.opacity = String(opacity);
+      }
+    });
+
+    const finishSwipe = (e) => {
+      if (!isTracking) return;
+      isTracking = false;
+
+      if (e && e.pointerId) {
+        try { cardEl.releasePointerCapture(e.pointerId); } catch (err) {}
+      }
+      cardEl.classList.remove('fc-swiping');
+
+      if (!isDragging) {
+        cardEl.style.transform = '';
+        cardEl.style.opacity = '';
+        return;
+      }
+
+      isDragging = false;
+      const timeElapsed = Math.max(Date.now() - startTime, 1);
+      const velocity = currentDeltaX / timeElapsed; // px/ms
+      const isFlick = Math.abs(velocity) > 0.42 && Math.abs(currentDeltaX) > 25;
+      const isPastDistance = Math.abs(currentDeltaX) > 52;
+      const isSwipeLeft = currentDeltaX < 0 && (isFlick || isPastDistance);
+      const isSwipeRight = currentDeltaX > 0 && (isFlick || isPastDistance);
+
+      // Swipe Left -> Next Card
+      if (isSwipeLeft) {
+        if (currentIndex < currentCards.length - 1) {
+          cardEl.classList.add('fc-swipe-out-left');
+          setTimeout(() => {
+            renderCard(currentIndex + 1, 'next');
+          }, 200);
+        } else {
+          cardEl.classList.add('fc-swipe-snap-back');
+          cardEl.style.transform = '';
+          cardEl.style.opacity = '';
+          showToast('You are on the last card! 🔥');
+        }
+        return;
+      }
+
+      // Swipe Right -> Previous Card
+      if (isSwipeRight) {
+        if (currentIndex > 0) {
+          cardEl.classList.add('fc-swipe-out-right');
+          setTimeout(() => {
+            renderCard(currentIndex - 1, 'prev');
+          }, 200);
+        } else {
+          cardEl.classList.add('fc-swipe-snap-back');
+          cardEl.style.transform = '';
+          cardEl.style.opacity = '';
+          showToast('You are on the first card!');
+        }
+        return;
+      }
+
+      // Sub-threshold drag: spring snap-back to center
+      cardEl.classList.add('fc-swipe-snap-back');
+      cardEl.style.transform = '';
+      cardEl.style.opacity = '';
+    };
+
+    cardEl.addEventListener('pointerup', finishSwipe);
+    cardEl.addEventListener('pointercancel', finishSwipe);
+
+    // Tap to flip (unless swiping or selecting text)
+    cardEl.addEventListener('click', (e) => {
+      if (wasSwipeGesture) {
+        wasSwipeGesture = false;
+        e.stopPropagation();
+        return;
+      }
       if (window.getSelection && window.getSelection().toString().length > 0) return;
       cardEl.classList.toggle('flipped');
     });
@@ -4275,10 +4405,10 @@ function initFlashcards() {
 
   // Navigation & Flip buttons
   prevBtn.addEventListener('click', () => {
-    if (currentIndex > 0) renderCard(currentIndex - 1);
+    if (currentIndex > 0) renderCard(currentIndex - 1, 'prev');
   });
   nextBtn.addEventListener('click', () => {
-    if (currentIndex < currentCards.length - 1) renderCard(currentIndex + 1);
+    if (currentIndex < currentCards.length - 1) renderCard(currentIndex + 1, 'next');
   });
   if (flipBtn) {
     flipBtn.addEventListener('click', () => {
@@ -4297,6 +4427,27 @@ function initFlashcards() {
       showToast('Deck shuffled! 🔀');
     });
   }
+
+  // Keyboard Arrow Left/Right Navigation & Spacebar Flip
+  document.addEventListener('keydown', (e) => {
+    if (!currentCards.length) return;
+    const cardEl = document.getElementById('fcCard');
+    if (!cardEl || !cardEl.offsetParent) return;
+    if (e.target.closest('input, textarea, select')) return;
+
+    if (e.key === 'ArrowRight') {
+      if (currentIndex < currentCards.length - 1) {
+        renderCard(currentIndex + 1, 'next');
+      }
+    } else if (e.key === 'ArrowLeft') {
+      if (currentIndex > 0) {
+        renderCard(currentIndex - 1, 'prev');
+      }
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      cardEl.classList.toggle('flipped');
+      e.preventDefault();
+    }
+  });
 
   // Quick subject chips — select subject, set prefix, and focus input without auto-generating
   if (quickChips) {

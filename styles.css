@@ -3126,6 +3126,65 @@ label {
   cursor: pointer;
   position: relative;
   box-sizing: border-box;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform, opacity;
+}
+
+.fc-card.fc-swiping {
+  cursor: grabbing !important;
+  transition: none !important;
+}
+
+.fc-card.fc-swipe-out-left {
+  transition: transform 0.22s cubic-bezier(0.4, 0, 1, 1), opacity 0.22s ease-out !important;
+  transform: translate3d(-125%, 0, 0) rotate(-9deg) !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.fc-card.fc-swipe-out-right {
+  transition: transform 0.22s cubic-bezier(0.4, 0, 1, 1), opacity 0.22s ease-out !important;
+  transform: translate3d(125%, 0, 0) rotate(9deg) !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.fc-card.fc-swipe-snap-back {
+  transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.22s ease !important;
+  transform: translate3d(0, 0, 0) rotate(0deg) !important;
+  opacity: 1 !important;
+}
+
+.fc-card.fc-slide-in-right {
+  animation: fcSlideInRight 0.26s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.fc-card.fc-slide-in-left {
+  animation: fcSlideInLeft 0.26s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes fcSlideInRight {
+  from {
+    opacity: 0.3;
+    transform: translate3d(65px, 0, 0) rotate(3deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+@keyframes fcSlideInLeft {
+  from {
+    opacity: 0.3;
+    transform: translate3d(-65px, 0, 0) rotate(-3deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
 }
 
 .fc-card-inner {
