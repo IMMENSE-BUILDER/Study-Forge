@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v59**). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v60**). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -341,6 +341,12 @@ Recent major changes (Sep 2026, now v45):
   - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
   - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
   - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
+- v60:
+  - Rebranded app name from **Study Forge** to **Study Forged** everywhere across the UI.
+  - Updated: `<title>`, `<h1>` brand header, all 4 syllabus card footers and section header, `login.html` title and hero heading, `manifest.json` name/short_name, `version.json` app field, `script.js` all share titles/AI identity prompts/card labels/init log/download filename, `syllabus.js` file comment.
+  - Storage keys (`studyForgeState-v1`, `studyForge_flashcards`, etc.) intentionally preserved — renaming them would wipe user data.
+  - SW cache key pattern preserved as `study-forge-vN` (internal identifier, only N incremented).
+  - Triple bump `v60` / `versionCode: 60` / `CACHE_NAME: study-forge-v60`.
 - v59:
   - Interactive Touch & Pointer Swipe Gestures: Added native swipe gesture navigation to flashcards. Swiping left slides to the next study card; swiping right slides to the previous study card.
   - Real-Time Drag Physics & Tilt: Card tracks touch/mouse drag in real-time with translate3d tilt rotation and opacity feedback. Features elastic spring snap-back when released below threshold or at deck boundaries with helpful toast notifications.
