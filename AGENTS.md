@@ -325,6 +325,13 @@ Recent major changes (Sep 2026, now v45):
   - Auto-Migration: Updated `getTokenHarborModel()` to auto-migrate stored keys from `deepseek-v4.1-flash` to `glm-5.3-flash` seamlessly.
   - Increased Token Budget: Raised Phase 1 max tokens to 1,800 and Phase 2 max tokens to 3,800 to prevent SVG truncation.
   - Triple bump `v56` / `versionCode: 56` / `CACHE_NAME: study-forge-v56`. Deploy dir rebuilt and synchronized.
+- v57:
+  - Luminous Breathing Mock Flashcard Animation: Replaced static loading spinner during flashcard generation with a full-size mock flashcard skeleton (`.fc-mock-card`).
+  - Subtle Brightness & Ambient Glow Pulse: Features a 2.4s ease-in-out breathing animation (`@keyframes fc-mock-breathe` and `fc-mock-breathe-dark`) oscillating `filter: brightness()` between 0.96 and 1.22 with a golden amber aura (`rgba(245, 158, 11, 0.45)`).
+  - Sweeping Light Sheen: Added diagonal 2.6s light wave sheen (`::after` pseudo-element) gliding across the card face to simulate active concept synthesis.
+  - Interactive Skeleton Structure: Shimmering concept title, gradient skeleton lines for essence/takeaways, glowing schematic preview box (`.fc-mock-visual`) with floating spark (`⚡`), and an amber pulse indicator beacon dot.
+  - Zero Layout Shift: Matches exact dimensions (`min-height: 350px`, `max-width: 520px`) of live cards for a seamless morph when Card 1 arrives.
+  - Triple bump `v57` / `versionCode: 57` / `CACHE_NAME: study-forge-v57`. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the

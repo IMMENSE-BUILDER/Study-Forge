@@ -4534,14 +4534,40 @@ function initFlashcards() {
     }
     if (!cleanTopic) cleanTopic = (rawTopic || '').trim();
 
-    const loading = document.createElement("div");
-    loading.className = "fc-loading";
-    const spinner = document.createElement("div");
-    spinner.className = "fc-spinner";
-    const msg = document.createElement("p");
-    msg.textContent = `Crafting Card 1 for ${subjData.alias}: "${cleanTopic}"...`;
-    loading.append(spinner, msg);
-    deckArea.appendChild(loading);
+    // Render high-end animated mock flashcard with breathing luminous pulse
+    deckArea.innerHTML = `
+      <div class="fc-card fc-mock-card" id="fcMockCard">
+        <div>
+          <div class="fc-mock-meta">
+            <span class="fc-mock-tag">⚡ ${escapeHtml(subjData.alias)} · Synthesizing</span>
+            <span class="fc-mock-diff">High-Yield</span>
+          </div>
+          <div class="fc-mock-title">
+            <span class="fc-mock-title-shimmer">${escapeHtml(cleanTopic)}</span>
+          </div>
+          <div class="fc-mock-essence">
+            <span class="fc-skeleton-line" style="width: 88%;"></span>
+            <span class="fc-skeleton-line" style="width: 62%;"></span>
+          </div>
+          <div class="fc-mock-visual">
+            <div class="fc-mock-spark">⚡</div>
+            <div class="fc-mock-visual-text">Forging Visual Blueprint &amp; Derivations...</div>
+          </div>
+          <div class="fc-mock-takeaways">
+            <div class="fc-mock-takeaway-item"><span class="fc-takeaway-chevron">▸</span><span class="fc-skeleton-line" style="width: 82%;"></span></div>
+            <div class="fc-mock-takeaway-item"><span class="fc-takeaway-chevron">▸</span><span class="fc-skeleton-line" style="width: 74%;"></span></div>
+            <div class="fc-mock-takeaway-item"><span class="fc-takeaway-chevron">▸</span><span class="fc-skeleton-line" style="width: 58%;"></span></div>
+          </div>
+        </div>
+        <div class="fc-mock-bottom">
+          <div class="fc-mock-status-chip">
+            <span class="fc-mock-pulse-dot"></span>
+            <span>Crafting Card 1 with GLM 5.3 Flash...</span>
+          </div>
+          <span style="opacity: 0.6; font-size: 10.5px;">ADGIPS 2026</span>
+        </div>
+      </div>
+    `;
     controls.style.display = 'none';
     if (streamStatus) streamStatus.style.display = 'none';
 

@@ -3711,7 +3711,8 @@ label {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 40px 20px;
+  padding: 20px 10px;
+  width: 100%;
 }
 
 .fc-spinner {
@@ -3727,6 +3728,274 @@ label {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ─── Mock Flashcard Loading Animation (Breathing Luminous Glow) ─── */
+.fc-mock-card {
+  width: 100%;
+  max-width: 520px;
+  min-height: 350px;
+  border-radius: 14px;
+  position: relative;
+  box-sizing: border-box;
+  background: var(--card, #ffffff);
+  border: 2px solid var(--ink);
+  box-shadow: 3.5px 3.5px 0 var(--shadow);
+  padding: 16px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  user-select: none;
+  animation: fc-mock-breathe 2.4s ease-in-out infinite;
+}
+
+@media (min-width: 540px) {
+  .fc-mock-card {
+    border-radius: 16px;
+    padding: 18px 20px 24px;
+    box-shadow: 4px 4px 0 var(--shadow);
+  }
+}
+
+/* Brightens up and down smoothly like it's forging the concept */
+@keyframes fc-mock-breathe {
+  0%, 100% {
+    filter: brightness(0.96) saturate(0.95);
+    box-shadow: 3.5px 3.5px 0 var(--shadow), 0 0 0 rgba(245, 158, 11, 0);
+    border-color: var(--ink);
+  }
+  50% {
+    filter: brightness(1.22) saturate(1.15);
+    box-shadow: 3.5px 3.5px 0 var(--shadow), 0 0 24px rgba(245, 158, 11, 0.45);
+    border-color: #f59e0b;
+  }
+}
+
+/* Diagonal sweeping light sheen */
+.fc-mock-card::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -120%;
+  width: 240%;
+  height: 240%;
+  background: linear-gradient(
+    75deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(245, 158, 11, 0.22) 50%,
+    rgba(255, 255, 255, 0.12) 60%,
+    transparent 75%
+  );
+  transform: rotate(20deg);
+  animation: fc-mock-sheen 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes fc-mock-sheen {
+  0% { transform: translateX(-60%) rotate(20deg); opacity: 0; }
+  20% { opacity: 0.85; }
+  60% { opacity: 0.85; }
+  100% { transform: translateX(60%) rotate(20deg); opacity: 0; }
+}
+
+.fc-mock-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.fc-mock-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fc-mock-diff {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--card);
+  opacity: 0.85;
+}
+
+.fc-mock-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.fc-mock-title-shimmer {
+  background: linear-gradient(90deg, var(--ink) 0%, #f59e0b 50%, var(--ink) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: fc-text-shimmer 2.2s infinite ease-in-out;
+}
+
+@keyframes fc-text-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.fc-mock-essence {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.fc-skeleton-line {
+  height: 9px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0%, rgba(245, 158, 11, 0.18) 50%, rgba(0, 0, 0, 0.06) 100%);
+  background-size: 200% 100%;
+  animation: fc-skeleton-wave 1.8s infinite ease-in-out;
+}
+
+@keyframes fc-skeleton-wave {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.fc-mock-visual {
+  min-height: 96px;
+  background: rgba(245, 158, 11, 0.04);
+  border: 1.5px dashed rgba(245, 158, 11, 0.45);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 12px;
+  gap: 8px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+  animation: fc-visual-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes fc-visual-glow {
+  0%, 100% {
+    background: rgba(245, 158, 11, 0.03);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.65);
+  }
+}
+
+.fc-mock-spark {
+  font-size: 1.45rem;
+  animation: fc-spark-float 1.8s ease-in-out infinite;
+}
+
+@keyframes fc-spark-float {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); }
+  50% { transform: translateY(-3px) scale(1.15); filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.85)); }
+}
+
+.fc-mock-visual-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+  opacity: 0.8;
+  text-align: center;
+  letter-spacing: 0.2px;
+}
+
+.fc-mock-takeaways {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.fc-mock-takeaway-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fc-mock-takeaway-item .fc-takeaway-chevron {
+  color: #f59e0b;
+  font-size: 11px;
+}
+
+.fc-mock-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  font-size: 11.5px;
+  color: var(--ink);
+  opacity: 0.85;
+}
+
+.fc-mock-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.fc-mock-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  animation: fc-dot-pulse 1.2s infinite;
+}
+
+@keyframes fc-dot-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.35); opacity: 1; box-shadow: 0 0 8px #f59e0b; }
+}
+
+[data-theme="dark"] .fc-mock-card {
+  background: linear-gradient(135deg, #242424, #181818);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .fc-mock-card {
+  animation-name: fc-mock-breathe-dark;
+}
+
+@keyframes fc-mock-breathe-dark {
+  0%, 100% {
+    filter: brightness(0.92) saturate(0.9);
+    box-shadow: 3.5px 3.5px 0 var(--shadow), 0 0 8px rgba(245, 158, 11, 0.1);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+  50% {
+    filter: brightness(1.25) saturate(1.25);
+    box-shadow: 3.5px 3.5px 0 var(--shadow), 0 0 30px rgba(245, 158, 11, 0.5);
+    border-color: rgba(245, 158, 11, 0.8);
+  }
+}
+
+[data-theme="dark"] .fc-skeleton-line {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(245, 158, 11, 0.25) 50%, rgba(255, 255, 255, 0.05) 100%);
+  background-size: 200% 100%;
+}
+
+[data-theme="dark"] .fc-mock-bottom {
+  border-top-color: rgba(255, 255, 255, 0.08);
 }
 
 /* ─── Dark Mode ─── */
