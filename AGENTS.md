@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v52**). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v53**). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -28,8 +28,7 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 | Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
 | Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme`, `isLoggedIn`, `userEmail` |
 | Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
-| PWA install | `manifest.json` + `icons/` (192/512/maskable-512/apple-180) | Icon `sizes` must match real pixels exactly or Chrome rejects them |
-| AI | Token Harbor unified API gateway (`https://tokenharbor.ai/v1`) with Zhipu AI `glm-5.3-flash` (multimodal vision + reasoning) + Deepgram nova-2 STT + aura TTS | Key in `localStorage` (`sf_tokenharbor_api_key`), model in `sf_tokenharbor_model` via in-app 🔑 dialog; Deepgram key in `script.js` |
+| AI & Voice | Token Harbor unified API gateway (`https://tokenharbor.ai/v1`) + Deepgram nova-2 STT + aura TTS | All API credentials live exclusively in client `localStorage` (`sf_tokenharbor_api_key`, `sf_deepgram_api_key`) via in-app 🔑 Settings dialog. Zero hardcoded keys in repo. |
 | Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
 | CDN (progressive enhancement only) | Tailwind (login page), KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
@@ -78,7 +77,7 @@ Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state 
   Timetable aliases resolve via `ttResolve`/`ttInfo`; labs never show Room 2310 (lab halls differ).
 - **Today engine is the hub.** `getTodayAgenda(state, now)` (pure, injectable date — always unit-test it)
   feeds greeting, today's subjects, focus-task matching (goal title prefix `ALIAS · …`), sprint-staleness.
-- **AI layer (Token Harbor Unified Gateway):** Powered by Token Harbor with default model `glm-5.3-flash` (Zhipu AI / Z-AI GLM 5.3 Flash, multimodal vision + text reasoning). Uses same-origin reverse proxy `/th-api/v1/chat/completions` (routed via `serve-pwa.js` locally and Netlify `_redirects` in production) to bypass upstream browser CORS blocks. Multimodal vision inputs supported (camera capture, file upload, `Ctrl+V` clipboard paste) with image thumbnail preview tray and client-side 1200px compression. Key in `DEFAULT_TOKENHARBOR_KEY` and configurable in `localStorage.sf_tokenharbor_api_key` via in-app 🔑 settings modal. Notes AI flashcard generator also powered by Token Harbor. `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Never claim to be anything but "Study Forge" tutor.
+- **AI layer (Token Harbor Unified Gateway):** Powered by Token Harbor with default model `deepseek-v4.1-flash` (or `mimo-v2.5`, `deepseek-v4-flash:free`). Uses same-origin reverse proxy `/th-api/v1/chat/completions` (routed via `serve-pwa.js` locally and Netlify `_redirects` in production) to bypass upstream browser CORS blocks. Multimodal vision inputs supported (camera capture, file upload, `Ctrl+V` clipboard paste) with image thumbnail preview tray and client-side 1200px compression. All credentials (`sf_tokenharbor_api_key`, `sf_deepgram_api_key`) are managed client-side in `localStorage` via the in-app 🔑 settings modal, keeping the repository 100% free of hardcoded secrets. Notes AI flashcard generator also powered by Token Harbor. `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Never claim to be anything but "Study Forge" tutor.
 - **Hold-to-select, not native selection.** Global `user-select:none`; 2s press-and-hold (`HOLD_SELECT_MS`)
   unlocks + auto-selects; inputs stay native. A post-hold click is consumed so holds never trigger tap actions.
 - **Triple version discipline (load-bearing).** Every release bumps together:
@@ -116,7 +115,7 @@ Things to NEVER do:
 Project constraints:
 - Timetable = Sec E, Room 2310, AY 2026–27, Mon–Fri (Sat/Sun = weekend mode). E1/E2 are lab batches.
 - EGL (Engineering Graphics) + PD (Personality Development) are college-run papers — not in USS scheme docs; EGL units follow the ETME-159 pattern.
-- Hardcoded keys (`DEEPGRAM_API_KEY`, `TOKENFORGE_API_KEY`) are live — rotate before college-scale use.
+- Zero hardcoded API keys in source code — all credentials are provided via in-app 🔑 Settings modal and kept in client `localStorage`.
 - Keep total cached assets small; SW ASSETS must list every new static file (icons!) or offline breaks.
 
 ## 6. Common Commands & Workflows
@@ -301,6 +300,11 @@ Recent major changes (Sep 2026, now v45):
   - Auto-Migration of Stored Models: Automatically migrates previous defaults (`mimo-v2.5`, `deepseek-v4-flash:free`, `deepseek-v4.1-flash:free`, `glm-5.3-flash`) to `deepseek-v4.1-flash` in `getTokenHarborModel()`.
   - Updated AI Settings UI: Pinned `deepseek-v4.1-flash` as active default in `#tokenharborModelInput` and datalist dropdown.
   - Triple bump `v52` / `versionCode: 52` / `CACHE_NAME: study-forge-v52`. Deploy dir rebuilt and synchronized.
+- v53:
+  - Complete Credential Sanitization: Completely eliminated all hardcoded API keys (`DEEPGRAM_API_KEY`, `DEFAULT_TOKENHARBOR_KEY`) from `script.js` and codebase.
+  - Unified Local Credential Management: Added Deepgram Voice Key input (`#deepgramKeyInput`) alongside Token Harbor Universal Key in the in-app 🔑 AI & Voice Settings modal (`#tokenharborKeyDialog`).
+  - Zero-Leak Local Storage Architecture: All AI and Voice credentials are saved exclusively in client browser `localStorage` (`sf_tokenharbor_api_key`, `sf_deepgram_api_key`) and are never committed or pushed to GitHub.
+  - Triple bump `v53` / `versionCode: 53` / `CACHE_NAME: study-forge-v53`. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the

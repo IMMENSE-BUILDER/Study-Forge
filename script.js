@@ -1,17 +1,20 @@
 const STORAGE_KEY = "studyForgeState-v1";
-// 🔑 DEEPGRAM API KEY - Get one at console.deepgram.com
-const DEEPGRAM_API_KEY = '';
+
+function getDeepgramApiKey() {
+  return localStorage.getItem('sf_deepgram_api_key') || '';
+}
 
 async function deepgramTranscribe(audioBlob) {
-  if (DEEPGRAM_API_KEY === 'YOUR_DEEPGRAM_API_KEY') {
-    alert('Please set your DEEPGRAM_API_KEY in script.js to use Voice features.');
+  const deepgramKey = getDeepgramApiKey();
+  if (!deepgramKey) {
+    showToast('Voice Key required. Please set your Deepgram key in 🔑 AI Settings.');
     return null;
   }
   try {
     const response = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true', {
       method: 'POST',
       headers: {
-        'Authorization': `Token ${DEEPGRAM_API_KEY}`,
+        'Authorization': `Token ${deepgramKey}`,
         'Content-Type': audioBlob.type || 'audio/webm'
       },
       body: audioBlob
@@ -2497,10 +2500,11 @@ function initAskAI() {
   const thinkToggle = document.getElementById('aiThinkToggle');
   if (thinkToggle) thinkToggle.style.display = 'none';
 
-  // ── Token Harbor Settings Dialog ──
+  // ── AI & Voice Settings Dialog ──
   const keyBtn = document.getElementById('aiKeyBtn');
   const keyDialog = document.getElementById('tokenharborKeyDialog') || document.getElementById('openrouterKeyDialog');
   const keyInput = document.getElementById('tokenharborKeyInput') || document.getElementById('openrouterKeyInput');
+  const dgKeyInput = document.getElementById('deepgramKeyInput');
   const modelInput = document.getElementById('tokenharborModelInput') || document.getElementById('openrouterModelInput');
   const keyForm = document.getElementById('tokenharborKeyForm') || document.getElementById('openrouterKeyForm');
 
@@ -2510,6 +2514,9 @@ function initAskAI() {
     keyBtn.addEventListener('click', () => {
       if (keyInput) {
         keyInput.value = getTokenHarborApiKey();
+      }
+      if (dgKeyInput) {
+        dgKeyInput.value = getDeepgramApiKey();
       }
       if (modelInput) {
         modelInput.value = getTokenHarborModel();
@@ -2531,6 +2538,14 @@ function initAskAI() {
           localStorage.removeItem('sf_ai_api_key');
         }
       }
+      if (dgKeyInput) {
+        const dgVal = dgKeyInput.value.trim();
+        if (dgVal) {
+          localStorage.setItem('sf_deepgram_api_key', dgVal);
+        } else {
+          localStorage.removeItem('sf_deepgram_api_key');
+        }
+      }
       if (modelInput) {
         const mVal = modelInput.value.trim();
         if (mVal) {
@@ -2545,7 +2560,7 @@ function initAskAI() {
       localStorage.removeItem('sf_deepseek_api_key');
 
       updateAIModelBadge();
-      showToast('AI settings saved');
+      showToast('AI & Voice credentials saved');
       closeDialog(keyDialog);
     });
   }
@@ -2826,8 +2841,9 @@ function initAskAI() {
         return;
       }
 
-      if (DEEPGRAM_API_KEY === 'YOUR_DEEPGRAM_API_KEY') {
-        alert('Set DEEPGRAM_API_KEY in script.js for Voice.');
+      const dgKey = getDeepgramApiKey();
+      if (!dgKey) {
+        showToast('Voice Key required. Please set your Deepgram key in 🔑 AI Settings.');
         return;
       }
 
@@ -2836,7 +2852,7 @@ function initAskAI() {
         const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en', {
           method: 'POST',
           headers: {
-            'Authorization': `Token ${DEEPGRAM_API_KEY}`,
+            'Authorization': `Token ${dgKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ text: plainText })

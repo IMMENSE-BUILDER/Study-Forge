@@ -893,11 +893,16 @@
       </label>
       
       <label style="margin-top: 10px;">
-        API Key
+        AI Gateway Key (Token Harbor)
         <input id="tokenharborKeyInput" type="password" placeholder="thk_live_..." autocomplete="off" />
       </label>
+
+      <label style="margin-top: 10px;">
+        Voice Key (Deepgram — Optional)
+        <input id="deepgramKeyInput" type="password" placeholder="Deepgram key for Voice STT/TTS..." autocomplete="off" />
+      </label>
       <p style="font-size: 11.5px; opacity: 0.75; margin: 4px 0 14px; line-height: 1.4;">
-        Get your Universal Key at <a href="https://tokenharbor.ai/dashboard/api-keys" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">tokenharbor.ai/dashboard/api-keys</a>. Keys &amp; model choices are stored locally in <code>localStorage</code>.
+        Get keys at <a href="https://tokenharbor.ai/dashboard/api-keys" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">tokenharbor.ai</a> and <a href="https://console.deepgram.com" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">deepgram.com</a>. All credentials are saved strictly in your local device storage (<code>localStorage</code>) and are never committed or uploaded.
       </p>
       <div class="dialog-actions">
         <button type="button" class="ghost" data-close>Cancel</button>

@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForge","versionCode":52,"latest":"v52","notes":"Model Switch: Set deepseek-v4.1-flash as default AI model for testing with seamless auto-migration."}
+{"apkUrl":"","app":"StudyForge","versionCode":53,"latest":"v53","notes":"Security Hardening: Completely removed all hardcoded API keys from codebase. All AI & Voice credentials managed exclusively in local browser storage."}
