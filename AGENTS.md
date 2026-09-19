@@ -120,9 +120,13 @@ Project constraints:
 
 ## 6. Common Commands & Workflows
 
+> **USER DIRECTIVE (Mandatory):** Do NOT run local dev server (`node serve-pwa.js`). All changes must be committed and pushed directly to GitHub (`origin main`), triggering automatic Vercel deployments. The user inspects and verifies all changes directly on the live website (`https://studyforged.vercel.app`).
+
 ```powershell
-# Dev server (from study-forge-pwa; serves live, no restart needed)
-node serve-pwa.js   # → http://localhost:3000 (PC) — background it
+# Deploy loop: commit and push to GitHub (auto-deploys to Vercel)
+git add .
+git commit -m "feat/fix: description (vN)"
+git push origin main
 
 # Verify after any JS edit
 node --check C:\Users\Administrator\Desktop\study-forge-pwa\script.js
