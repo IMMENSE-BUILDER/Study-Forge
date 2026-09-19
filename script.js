@@ -389,7 +389,7 @@ function buildSprintLabel() {
 
 function buildSummary() {
   const lines = [];
-  lines.push("Study Forge Summary");
+  lines.push("Study Forged Summary");
   lines.push(buildSprintLabel());
   lines.push("");
   lines.push("Goals:");
@@ -1328,7 +1328,7 @@ function shareGoal(goalId) {  const goal = state.goals.find((item) => item.id ==
     return;
   }
   const text = `Goal: ${goal.title}\nTag: ${goal.tag}\nProgress: ${goal.progress}%`;
-  shareText("Study Forge Goal", text);
+  shareText("Study Forged Goal", text);
 }
 
 function shareTask(taskId) {
@@ -1339,7 +1339,7 @@ function shareTask(taskId) {
   }
   const statusLabel = task.status === "progress" ? "In Progress" : task.status;
   const text = `Task: ${task.title}\nStatus: ${statusLabel}\nTiming: ${task.duration}`;
-  shareText("Study Forge Task", text);
+  shareText("Study Forged Task", text);
 }
 
 function startNoteEdit(noteId) {
@@ -1446,7 +1446,7 @@ async function handleMenuAction(action, id) {
       shareTask(id);
       break;
     case "share-sprint":
-      shareText("Study Forge Sprint", buildSummary());
+      shareText("Study Forged Sprint", buildSummary());
       break;
     case "add-goal":
       startGoalAdd();
@@ -1510,7 +1510,7 @@ async function archiveSprint() {
 
 function handleShare() {
   const summary = buildSummary();
-  shareText("Study Forge", summary);
+  shareText("Study Forged", summary);
 }
 
 function handleDownload() {
@@ -1519,7 +1519,7 @@ function handleDownload() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `study-forge-summary-${toISODate(new Date()) || "summary"}.txt`;
+  link.download = `study-forged-summary-${toISODate(new Date()) || "summary"}.txt`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -2340,12 +2340,12 @@ function updateAIModelBadge() {
   badge.title = `Token Harbor Model: ${model}`;
 }
 
-const AI_SYSTEM_PROMPT = `You are StudyForge, the dedicated AI academic tutor & exam coach for Satyam Kumar, 1st-year B.Tech IT at ADGIPS (GGSIPU, Delhi), Sec E, Room 2310 (AY 2026–27).
+const AI_SYSTEM_PROMPT = `You are StudyForged, the dedicated AI academic tutor & exam coach for Satyam Kumar, 1st-year B.Tech IT at ADGIPS (GGSIPU, Delhi), Sec E, Room 2310 (AY 2026–27).
 ACADEMIC BLUEPRINT:
 1. GGSIPU 2026 Exam Pattern: 40 Continuous Internal Evaluation + 60 Term-End Exam (Q1 compulsory 12m full-syllabus; 4 Units × 12m, attempt 1 of 2 questions per unit). EVS (ICT-117T) is 100-mark NUES (Non-University Exam System, Qualifying).
 2. Grounding: All answers MUST strictly follow the official ADGIPS/GGSIPU 2026 curriculum and prescribed textbooks (Kreyszig for SMT, Tayal for EM, Alexander & Sadiku for BEE, Kernighan & Ritchie/Jens Gustedt for PPS, Erach Bharucha for EVS).
 DIRECTIVES:
-1. Identity: You are StudyForge tutor. Never break character.
+1. Identity: You are StudyForged tutor. Never break character.
 2. Math & Formulas: Use standard KaTeX notation (inline \\( ... \\), display \\[ ... \\]).
 3. Code: When writing PPS code, use clean, standards-compliant C (C99/C11/C23 with type safety).
 4. Structure: Core Concept -> Step-by-Step Breakdown/Derivation/Code -> Exam Trap & Viva Pointer.
@@ -2786,7 +2786,7 @@ function initAskAI() {
         </svg>
       </div>
       <h3>${greeting}, ${escapeHtml(name)} 👋</h3>
-      <p class="ai-welcome-subtitle">Your StudyForge tutor for ADGIPS IT Sec-E. Ask questions, send diagrams, or explore syllabus topics.</p>
+      <p class="ai-welcome-subtitle">Your StudyForged tutor for ADGIPS IT Sec-E. Ask questions, send diagrams, or explore syllabus topics.</p>
       <div class="ai-welcome-pill">${escapeHtml(pillText)}</div>
 
       <div class="ai-suggestions-grid">
@@ -4023,10 +4023,10 @@ function initFlashcards() {
     localStorage.setItem(FC_STORAGE, JSON.stringify(decks));
   }
 
-  function normalizeCard(c, topic, defaultSubjAlias = 'StudyForge') {
+  function normalizeCard(c, topic, defaultSubjAlias = 'StudyForged') {
     let tag = c.tag;
     if (!tag) {
-      tag = defaultSubjAlias ? `${defaultSubjAlias} · Core Concept` : (topic.split(':')[0] || 'StudyForge');
+      tag = defaultSubjAlias ? `${defaultSubjAlias} · Core Concept` : (topic.split(':')[0] || 'StudyForged');
     }
     return {
       title: c.title || c.q || 'Key Concept',
@@ -4121,7 +4121,7 @@ function initFlashcards() {
 
     const tagSpan = document.createElement("span");
     tagSpan.className = "fc-card-tag";
-    tagSpan.textContent = card.tag || 'StudyForge Concept';
+    tagSpan.textContent = card.tag || 'StudyForged Concept';
     frontMeta.appendChild(tagSpan);
 
     const diffSpan = document.createElement("span");
@@ -4811,7 +4811,7 @@ function initFlashcards() {
       modePrompt = 'Focus on rapid active recall, crisp definitions, mnemonics, key distinctions (e.g. call by value vs reference, series vs parallel resonance), and core axioms.';
     }
 
-    const baseSubjectPrompt = `You are StudyForge Visual Cards Engine, the elite engineering exam tutor for Satyam Kumar (B.Tech IT Sem-1, Section-E, Room 2310, ADGIPS).
+    const baseSubjectPrompt = `You are StudyForged Visual Cards Engine, the elite engineering exam tutor for Satyam Kumar (B.Tech IT Sem-1, Section-E, Room 2310, ADGIPS).
 
 TARGET ACADEMIC SUBJECT:
 - Subject: ${subjData.name} (${subjData.alias}, Course Code: ${subjData.code})
@@ -5371,7 +5371,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (typeof renderTimetable === "function") {
     setInterval(renderTimetable, 60000);
   }
-  console.log("Study Forge Initialized");
+  console.log("Study Forged Initialized");
 });
 
 function initTheme() {

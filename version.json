@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForge","versionCode":59,"latest":"v59","notes":"Added touch/pointer swipe gestures to flashcards: swipe left for next card, swipe right for previous card, interactive drag physics with rotation tilt, elastic boundary snap-backs, and arrow key navigation."}
+{"apkUrl":"","app":"StudyForged","versionCode":60,"latest":"v60","notes":"Rebranded app name from Study Forge to Study Forged across all UI strings, titles, AI identity prompts, share messages, manifest, and login page."}

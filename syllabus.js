@@ -1,12 +1,12 @@
 /* ============================================================
-   Study Forge — IPU Pack (Satyam · ADGIPS · B.Tech IT · Sem 1)
+   Study Forged — IPU Pack (Satyam · ADGIPS · B.Tech IT · Sem 1)
    Profile, Semester-1 syllabus (GGSIPU 2025-26 scheme + Sec F
    timetable, AY 2026-27) and seed/migration helpers.
    Loaded BEFORE script.js. All consumers guard with typeof.
    ============================================================ */
 
 const SF_STATE_VERSION = 5;
-const SF_APP_VERSION = "v59";
+const SF_APP_VERSION = "v60";
 
 function defaultProfile() {
   return {
