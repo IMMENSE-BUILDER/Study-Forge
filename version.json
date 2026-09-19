@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForge","versionCode":57,"latest":"v57","notes":"Added luminous breathing mock flashcard loading animation with subtle brightness pulse and diagonal light sweep."}
+{"apkUrl":"","app":"StudyForge","versionCode":58,"latest":"v58","notes":"Overhauled AI visual flashcard generation: 4-tier resilient parser, 2-attempt network retry, generous 4500/8000 token budget for GLM 5.3 Flash CoT reasoning, and elevated card aesthetics."}

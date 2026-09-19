@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v53**). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v58**). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -332,6 +332,15 @@ Recent major changes (Sep 2026, now v45):
   - Interactive Skeleton Structure: Shimmering concept title, gradient skeleton lines for essence/takeaways, glowing schematic preview box (`.fc-mock-visual`) with floating spark (`⚡`), and an amber pulse indicator beacon dot.
   - Zero Layout Shift: Matches exact dimensions (`min-height: 350px`, `max-width: 520px`) of live cards for a seamless morph when Card 1 arrives.
   - Triple bump `v57` / `versionCode: 57` / `CACHE_NAME: study-forge-v57`. Deploy dir rebuilt and synchronized.
+- v58:
+  - Resilient AI Visual Flashcards Architecture & Quality Overhaul: Completely addressed intermittent generation errors and elevated visual aesthetic of study cards.
+  - Generous Token Allocation for GLM 5.3 Flash CoT: Raised Phase 1 max tokens to 4,500 and Phase 2 max tokens to 8,000 (resolving issues where GLM 5.3 Flash internal reasoning tokens previously starved the completion budget and truncated cards mid-JSON).
+  - 4-Tier Resilient Parser: Integrated extractCardFields() regex field extractor as an ultimate fallback alongside JSON.parse, parseLlmCards, and repairTruncatedJsonCard, gracefully recovering cards even if unescaped quotes or formatting quirks occur.
+  - Network Resilience: Added automatic 2-attempt fetch retry with 1.2s backoff on 5xx/network errors, plus safe try-catch wrapping around reader.read() so stream drops cleanly degrade to accumulated card recovery rather than hard failures.
+  - Card Aesthetics & Layout Overhaul: Upgraded .fc-card & .fc-card-inner min-height to 380px and max-width to 530px; larger bold title (1.18rem); styled executive essence definition box with amber border; elevated visual box (min-height 85px, max-height 230px, dark-mode SVG contrast inversion); micro-card takeaways with golden chevrons; numbered step circular badges with step cards on back side; high-contrast red Professor Trap alert callouts; and amber Memory Hook cards.
+  - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
+  - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
+  - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the

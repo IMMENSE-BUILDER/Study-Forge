@@ -4053,9 +4053,14 @@ function initFlashcards() {
       if (svgMatch) {
         try {
           const parser = new DOMParser();
-          const doc = parser.parseFromString(svgMatch[0], 'image/svg+xml');
-          const svgEl = doc.querySelector('svg');
-          if (svgEl && !doc.querySelector('parsererror')) {
+          let svgDoc = parser.parseFromString(svgMatch[0], 'image/svg+xml');
+          let svgEl = svgDoc.querySelector('svg');
+          // Forgiving HTML parser fallback for unescaped & or < entities in SVG text
+          if (!svgEl || svgDoc.querySelector('parsererror')) {
+            const htmlDoc = parser.parseFromString(svgMatch[0], 'text/html');
+            svgEl = htmlDoc.querySelector('svg');
+          }
+          if (svgEl) {
             // Sanitize: strip script tags and any on* attributes
             svgEl.querySelectorAll('script').forEach(s => s.remove());
             const allEls = [svgEl, ...svgEl.querySelectorAll('*')];
@@ -4079,6 +4084,11 @@ function initFlashcards() {
           console.warn('SVG parse fallback:', e);
         }
       }
+    }
+    // If content was supposed to be SVG but failed, never dump raw code string
+    if (str.startsWith('<svg') || str.includes('</svg>')) {
+      container.innerHTML = '<div style="font-size:12px;opacity:0.8;font-weight:600;padding:8px 0;">⚡ Visual Schematic Blueprint</div>';
+      return;
     }
     // Otherwise render via mdToHtml (handles KaTeX math display blocks, code blocks, etc.)
     container.innerHTML = mdToHtml(str);
@@ -4199,6 +4209,7 @@ function initFlashcards() {
           numSpan.className = "fc-step-num";
           numSpan.textContent = String(idx + 1);
           const stepText = document.createElement("span");
+          stepText.className = "fc-step-text";
           stepText.innerHTML = mdToHtml(String(step));
           stepRow.append(numSpan, stepText);
           stepsList.appendChild(stepRow);
@@ -4515,6 +4526,61 @@ function initFlashcards() {
     }
   }
 
+  // Resilient 3rd-tier field extractor using regex when JSON parsers fail on unescaped quotes or malformed syntax
+  function extractCardFields(str) {
+    if (!str || typeof str !== 'string') return null;
+    const card = {};
+
+    const titleMatch = str.match(/"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (titleMatch) card.title = titleMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+    const tagMatch = str.match(/"tag"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (tagMatch) card.tag = tagMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+    const diffMatch = str.match(/"difficulty"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (diffMatch) card.difficulty = diffMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+    const essenceMatch = str.match(/"essence"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (essenceMatch) card.essence = essenceMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+    const visualMatch = str.match(/"visual"\s*:\s*"([\s\S]*?)(?="\s*,\s*"[a-zA-Z]+")/i) ||
+                        str.match(/"visual"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (visualMatch) card.visual = visualMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+    const takeawaysMatch = str.match(/"takeaways"\s*:\s*\[([\s\S]*?)\]/i);
+    if (takeawaysMatch) {
+      const items = [];
+      const itemRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+      let im;
+      while ((im = itemRegex.exec(takeawaysMatch[1])) !== null) {
+        items.push(im[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
+      }
+      card.takeaways = items;
+    }
+
+    const stepsMatch = str.match(/"steps"\s*:\s*\[([\s\S]*?)\]/i);
+    if (stepsMatch) {
+      const items = [];
+      const itemRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+      let im;
+      while ((im = itemRegex.exec(stepsMatch[1])) !== null) {
+        items.push(im[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
+      }
+      card.steps = items;
+    }
+
+    const trapMatch = str.match(/"examTrap"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (trapMatch) card.examTrap = trapMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+    const mnemMatch = str.match(/"mnemonic"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (mnemMatch) card.mnemonic = mnemMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+    if (card.title || card.essence || (card.takeaways && card.takeaways.length)) {
+      return card;
+    }
+    return null;
+  }
+
   async function generateFlashcards(rawTopic) {
     const thisGenId = ++currentGenerationId;
     generateBtn.disabled = true;
@@ -4614,18 +4680,18 @@ You MUST generate cards STRICTLY within the context, scope, and syllabus convent
 - The "examTrap" field MUST cite realistic exam/viva pitfalls and mistakes that professors in ${subjData.alias} penalize.`;
 
     const getJsonSchemaInstructions = (numCards) => `CRITICAL: Return ONLY a valid JSON array of ${numCards} objects with these exact keys:
-- "title": Short, punchy concept title (e.g. "${subjData.alias}: Recursion & Base Condition", "Stack Frame Anatomy").
-- "tag": Short subject or unit tag (MUST begin with "${subjData.alias} · ", e.g. "${subjData.alias} · Unit 2").
+- "title": Short, punchy concept title (e.g. "${subjData.alias}: Recursion & Base Condition", "Stack Frame Anatomy", "Norton's Equivalent Circuit").
+- "tag": Short subject or unit tag (MUST begin with "${subjData.alias} · ", e.g. "${subjData.alias} · Unit 2", "${subjData.alias} · High-Yield").
 - "difficulty": Exactly one of "High-Yield", "Medium", or "Easy".
 - "essence": Exactly 1 crisp sentence explaining the core principle or rule.
 - "visual": A visual element for the card. Choose the best option for the concept:
-    * An inline SVG diagram: Use single quotes for all attributes (e.g. <svg viewBox='0 0 380 90' xmlns='http://www.w3.org/2000/svg'>...). Use simple shapes (<rect>, <circle>, <line>, <text font-size='11' fill='#111'>) with accent colors (#f59e0b, #3b82f6, #ef4444).
+    * An inline SVG diagram: Use single quotes for all attributes (e.g. <svg viewBox='0 0 380 95' xmlns='http://www.w3.org/2000/svg'>...). Use simple clean shapes (<rect>, <circle>, <line>, <path>, <text font-size='11' fill='#111'>) with high-contrast accent colors (#f59e0b, #3b82f6, #10b981, #ef4444).
     * OR a centered KaTeX display equation: e.g. \\[ T(n) = T(n-1) + O(1) \\] or \\[ V_{th} = V_{oc} \\]
     * OR a short formatted code snippet (ANSI C for PPS): \`\`\`c ... \`\`\`
-- "takeaways": Array of exactly 3 bullet points (concise high-impact facts, rules, or formulas).
-- "steps": Array of 3 to 4 sequential steps detailing the exact step-by-step procedure, derivation flow, or memory execution.
-- "examTrap": Exactly 1 common exam pitfall, calculation trap, or professor viva question to watch out for.
-- "mnemonic": A short, memorable hook or memory aid.
+- "takeaways": Array of exactly 3 bullet points. Start each takeaway with a bold phrase (e.g. "**Base Condition Rule:** Must precede recursive call to avoid stack overflow", "**Time Complexity:** \\(O(1)\\) constant time access").
+- "steps": Array of 3 to 4 sequential steps detailing the exact step-by-step procedure, derivation flow, or memory execution. Start each step with a bold action (e.g. "**Step 1: Compute Open-Circuit Voltage \\(V_{oc}\\)** by removing the load resistor...").
+- "examTrap": Exactly 1 common exam pitfall, calculation trap, or professor viva question to watch out for. Mention what professors specifically penalize.
+- "mnemonic": A short, memorable hook or memory aid (e.g. "**Mnemonic: BASE** - Before Any Step Executes").
 
 CRITICAL JSON RULES:
 - Return ONLY the raw JSON array. No conversational text, no markdown wrapping fences.
@@ -4634,32 +4700,51 @@ CRITICAL JSON RULES:
 
     async function streamLlmCards(payload, onNewCard) {
       let resp;
-      try {
-        resp = await fetch(TOKENHARBOR_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'text/event-stream',
-            'Cache-Control': 'no-cache'
-          },
-          body: JSON.stringify(payload)
-        });
-      } catch (firstErr) {
-        const fallbackUrl = TOKENHARBOR_API_URL.startsWith('/th-api')
-          ? 'https://tokenharbor.ai/v1/chat/completions'
-          : '/th-api/v1/chat/completions';
-        resp = await fetch(fallbackUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'text/event-stream',
-            'Cache-Control': 'no-cache'
-          },
-          body: JSON.stringify(payload)
-        });
+      let lastFetchErr = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          resp = await fetch(TOKENHARBOR_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'Accept': 'text/event-stream',
+              'Cache-Control': 'no-cache'
+            },
+            body: JSON.stringify(payload)
+          });
+          if (resp.ok) break;
+          if (attempt === 1 && resp.status >= 500) {
+            await new Promise(r => setTimeout(r, 1200));
+            continue;
+          }
+        } catch (firstErr) {
+          lastFetchErr = firstErr;
+          if (attempt === 1) {
+            const fallbackUrl = TOKENHARBOR_API_URL.startsWith('/th-api')
+              ? 'https://tokenharbor.ai/v1/chat/completions'
+              : '/th-api/v1/chat/completions';
+            try {
+              resp = await fetch(fallbackUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${apiKey}`,
+                  'Accept': 'text/event-stream',
+                  'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify(payload)
+              });
+              if (resp.ok) break;
+            } catch (fallbackErr) {
+              lastFetchErr = fallbackErr;
+            }
+            await new Promise(r => setTimeout(r, 1200));
+          }
+        }
       }
+
+      if (!resp && lastFetchErr) throw lastFetchErr;
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
@@ -4683,7 +4768,14 @@ CRITICAL JSON RULES:
             try { reader.cancel(); } catch (e) {}
             return;
           }
-          const { done, value } = await reader.read();
+          let readResult;
+          try {
+            readResult = await reader.read();
+          } catch (readErr) {
+            console.warn('Stream reader interrupted or dropped:', readErr);
+            break;
+          }
+          const { done, value } = readResult;
           if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
@@ -4710,16 +4802,26 @@ CRITICAL JSON RULES:
                       try {
                         cardObj = parseLlmCards(nextRaw);
                       } catch (e2) {
-                        cardObj = null;
+                        try {
+                          cardObj = repairTruncatedJsonCard(nextRaw);
+                        } catch (e3) {
+                          cardObj = null;
+                        }
                       }
+                    }
+                    if (!cardObj) {
+                      cardObj = extractCardFields(nextRaw);
                     }
                     if (cardObj && typeof cardObj === 'object') {
                       parsedCount++;
                       const norm = normalizeCard(cardObj, cleanTopic, subjData.alias);
                       onNewCard(norm);
                     } else {
-                      // Object not yet complete or parseable, wait for further stream chunks
-                      break;
+                      if (rawObjs.length > parsedCount + 1) {
+                        parsedCount++;
+                      } else {
+                        break;
+                      }
                     }
                   }
                 }
@@ -4728,7 +4830,7 @@ CRITICAL JSON RULES:
           }
         }
 
-        // Post-stream fallback: if real-time object extractor missed it (e.g. trailing markdown or unbracketed object), recover it now
+        // Post-stream fallback: if real-time object extractor missed cards, recover them now
         if (parsedCount === 0 && accumulatedContent.trim()) {
           let cleaned = accumulatedContent.trim()
             .replace(/^```(?:json)?\s*/i, '')
@@ -4756,6 +4858,9 @@ CRITICAL JSON RULES:
             if (!singleObj) {
               singleObj = repairTruncatedJsonCard(cleaned);
             }
+            if (!singleObj) {
+              singleObj = extractCardFields(cleaned);
+            }
             if (singleObj && typeof singleObj === 'object') {
               onNewCard(normalizeCard(singleObj, cleanTopic, subjData.alias));
             }
@@ -4779,7 +4884,8 @@ CRITICAL JSON RULES:
         } else if (cards && typeof cards === 'object') {
           onNewCard(normalizeCard(cards, cleanTopic, subjData.alias));
         } else {
-          const repaired = repairTruncatedJsonCard(raw);
+          let repaired = repairTruncatedJsonCard(raw);
+          if (!repaired) repaired = extractCardFields(raw);
           if (repaired && typeof repaired === 'object') {
             onNewCard(normalizeCard(repaired, cleanTopic, subjData.alias));
           }
@@ -4850,7 +4956,7 @@ ${getJsonSchemaInstructions(1)}`;
         ],
         stream: true,
         temperature: 0.6,
-        max_tokens: 1800 // Generous budget ensuring complete SVG diagrams and derivations
+        max_tokens: 4500 // Generous budget ensuring GLM 5.3 Flash CoT reasoning + complete SVG diagrams + JSON
       };
 
       await streamLlmCards(phase1Payload, (card) => {
@@ -4908,7 +5014,7 @@ ${getJsonSchemaInstructions(remainingCount)}`;
         ],
         stream: true,
         temperature: 0.6,
-        max_tokens: Math.min(3800, remainingCount * 850)
+        max_tokens: Math.min(8000, remainingCount * 2000)
       };
 
       try {
