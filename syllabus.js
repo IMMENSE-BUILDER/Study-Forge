@@ -6,7 +6,7 @@
    ============================================================ */
 
 const SF_STATE_VERSION = 5;
-const SF_APP_VERSION = "v54";
+const SF_APP_VERSION = "v55";
 
 function defaultProfile() {
   return {
@@ -27,19 +27,19 @@ function defaultProfile() {
 /* Faculty + timetable codes from the official Sec-E timetable (Room 2310).
    E1/E2 = lab batches (section splits in two for practicals). */
 const SF_FACULTY = {
-  "PPS": { code: "ICT-101 T", name: "Programming for Problem Solving", faculty: "Ms. Alka" },
-  "BEE": { code: "ICT-103 T", name: "Basics of Electrical Engineering", faculty: "Ms. Pooja" },
-  "SMT": { code: "ICT-107", name: "System Modeling Techniques", faculty: "Dr. Suryya Farhat" },
+  "PPS": { code: "ICT-101", name: "Programming for Problem Solving", faculty: "Ms. Alka" },
+  "BEE": { code: "ICT-103T/ICT-106T", name: "Basics of Electrical Engineering", faculty: "Ms. Pooja" },
+  "SMT": { code: "ICT-107", name: "System Modeling Techniques - I", faculty: "Dr. Suryya Farhat" },
   "PHL": { code: "ICT-111 T", name: "Engineering Physics–I", faculty: "Dr. Mamta Gupta" },
   "CSL": { code: "ICT-113", name: "Communication Skill", faculty: "Dr. Samikshya" },
-  "EVSL": { code: "—", name: "Environment Studies", faculty: "Dr. Kavita Gupta" },
+  "EVSL": { code: "ICT-117T", name: "Environmental Studies", faculty: "Dr. Kavita Gupta" },
   "EM": { code: "ICT-119", name: "Engineering Mechanics", faculty: "Mr. Naman Bajpai" },
   "EGL": { code: "—", name: "Engineering Graphics + Lab", faculty: "Mr. Naman Bajpai" },
   "PD": { code: "—", name: "Personality Development", faculty: "Dr. Samikshya" },
-  "PPS LAB": { code: "ICT-123", name: "PPS Lab", faculty: "Mr. Ankit Jain" },
+  "PPS LAB": { code: "ICT-151 / 101P", name: "PPS Lab", faculty: "Mr. Ankit Jain" },
   "PHP": { code: "ICT-111 P", name: "Engineering Physics Lab–1", faculty: "Dr. Mamta Gupta" },
-  "EVSP": { code: "ICT-121 P", name: "Environment Studies Lab", faculty: "Dr. Kavita Gupta" },
-  "BEE LAB": { code: "ICT-103 P", name: "Basics of Electrical Engineering Lab", faculty: "Ms. Pooja" },
+  "EVSP": { code: "ICT-117P", name: "Environment Studies Lab", faculty: "Dr. Kavita Gupta" },
+  "BEE LAB": { code: "ICT-103P/ICT-106P", name: "Basics of Electrical Engineering Lab", faculty: "Ms. Pooja" },
 };
 
 const SF_TT_SLOTS = ["8:15-9:10", "9:10-10:05", "10:05-11:00", "11:00-11:30",
@@ -93,57 +93,57 @@ function ttShort(cell) {
   return cell;
 }
 
-/* Condensed from the official GGSIPU B.Tech 2025-26 scheme + Appendix A
-   (40 internal + 60 external theory; Q1 compulsory 12 marks full-syllabus;
-   4 units × 12 marks, attempt 1 of 2 per unit). Aliases = ADGIPS timetable. */
+/* Authoritative Affiliated B.Tech (AY 2026-27) Syllabus & Scheme
+   Theory: 40 Continuous Evaluation + 60 Term-End Exam (Q1 compulsory 12 marks full-syllabus;
+   4 units × 12 marks, attempt 1 of 2 per unit = 60 total). Aliases = ADGIPS timetable. */
 const SF_SEM1_SUBJECTS = [
   {
     alias: "PPS", code: "ICT-101", name: "Programming for Problem Solving",
-    group: "ES", credits: 3, marking: "40 internal + 60 external", lab: "ICT-151 PPS Lab",
-    book: "Kernighan & Ritchie — The C Programming Language",
+    group: "ES", credits: 3, marking: "40 internal + 60 external (Q1 compulsory 12m + 4 units × 12m)", lab: "ICT-151 / 101P PPS Lab",
+    book: "B.W. Kernighan & D.M. Ritchie — The C Programming Language / Jens Gustedt — Modern C (2025)",
     units: [
-      "U1: C basics, datatypes, operators, printf/scanf, if-switch-loops, flowcharts, dry runs",
-      "U2: Functions, recursion, storage classes, 1D/2D arrays, bubble/selection/insertion sort, linear/binary search, strings",
-      "U3: Structures/unions/enums, pointers & arithmetic, malloc/calloc/free, matrices, file I/O",
-      "U4: Linked lists, stacks & queues, infix→postfix, trees & traversals, function pointers",
+      "U1: C program structure, basic types (fixed-width ints, bool), operators & expressions, type conversions, printf/scanf, compound blocks, if-else, switch, loops, break/continue/goto, flowcharts, dry runs, C89/C99/C11/C23 standards",
+      "U2: Functions, recursion, inline/macros, storage classes (auto/static/extern/register/thread_local), scope & lifetime, 1D/2D arrays, bubble/selection/insertion sort, linear/binary search, string I/O & manipulation, command-line arguments, floating point root finding",
+      "U3: Structures, nested structs, unions, enums, bit-fields, pointers & arithmetic, dynamic memory (malloc/calloc/realloc/free, leak prevention), compound literals, polynomial arithmetic, matrices, File I/O (text/binary), errno handling",
+      "U4: ADTs (singly/doubly linked lists, stack infix-postfix & parenthesis balancing, linear/circular/priority queues, binary tree traversals), function pointers, _Generic macros, _Static_assert, safer macros, header hygiene",
     ],
   },
   {
-    alias: "SMT", code: "ICT-105", name: "System Modeling Techniques–I",
-    group: "ES", credits: 3, marking: "40 internal + 60 external", lab: null,
-    book: "Engineering Mathematics reference (Kreyszig-style)",
+    alias: "SMT", code: "ICT-107", name: "System Modeling Techniques–I",
+    group: "ES", credits: 3, marking: "40 internal + 60 external (Q1 compulsory 12m + 4 units × 12m)", lab: null,
+    book: "Erwin Kreyszig — Advanced Engineering Mathematics (10th Ed., Wiley, 2011)",
     units: [
-      "U1: Partial derivatives, maxima/minima, Lagrange multipliers, Jacobians, Taylor series, 1st-order ODEs",
-      "U2: Power series, Bessel/Legendre/Hermite equations, Gamma & Beta functions",
-      "U3: Matrices, rank, linear systems, eigenvalues/eigenvectors, diagonalization, SVD",
-      "U4: Gradient/divergence/curl, line–surface–volume integrals, Green/Stokes/Gauss theorems",
+      "U1: Functions of several variables, partial derivatives, chain rule, implicit differentiation, exact differentials, Jacobians, Taylor/Maclaurin series, maxima/minima, Lagrange multipliers, Leibniz rule (differentiation under integral sign); 1st-order ODEs: direction fields, Euler's method, separable, exact, integrating factors, Bernoulli, orthogonal trajectories",
+      "U2: Higher-order linear ODEs with constant coeffs, differential operator method, Euler-Cauchy equations, Wronskian, variation of parameters, free oscillations of mass-spring systems; Power series solutions: Bessel equation & functions, Legendre polynomials, recurrence relations, Gamma & Beta functions",
+      "U3: Matrices & determinants, Gauss & Gauss-Jordan elimination, rank, vector spaces, linear independence, Cramer's rule, eigenvalues/eigenvectors, symmetric/orthogonal matrices, eigenbases, diagonalization, quadratic forms, Gram-Schmidt orthogonalization, Cayley-Hamilton, LU & Cholesky decomposition",
+      "U4: Vector & scalar point functions, space curves, arc length, curvature, gradient, directional derivative, divergence, curl, line integrals, path independence, double & triple integrals, surface integrals, Green's theorem, Gauss divergence theorem, Stokes' theorem",
     ],
   },
   {
-    alias: "EM", code: "ICT-107/120", name: "Engineering Mechanics",
-    group: "ES", credits: 3, marking: "40 internal + 60 external", lab: null,
-    book: "A.K. Tayal — Engineering Mechanics",
+    alias: "EM", code: "ICT-119", name: "Engineering Mechanics",
+    group: "ES", credits: 3, marking: "40 internal + 60 external (Q1 compulsory 12m + 4 units × 12m)", lab: null,
+    book: "A.K. Tayal — Engineering Mechanics (Umesh Publications); Timoshenko, Young & Rao (McGraw Hill)",
     units: [
-      "U1: Force systems, transmissibility, Varignon's theorem, FBD, equilibrium equations",
-      "U2: Plane trusses (joints/sections), friction laws, angle of repose, belt friction",
-      "U3: Particle kinematics (rectilinear/curvilinear); kinetics — work-energy, impulse-momentum, impact & restitution",
-      "U4: Rigid-body kinematics (relative velocity/acceleration, instantaneous center); kinetics — translation, fixed-axis rotation, work-energy",
+      "U1: Force System: introduction, transmissibility, resultant, resolution, moment of force about a line, Varignon's theorem, couples & properties; Equilibrium: free body diagrams, equilibrium equations, equilibrium of two-force and three-force members",
+      "U2: Structures: plane trusses (perfect/imperfect, assumptions, method of joints, method of sections, graphical method); Friction: static/kinetic, dry friction laws, coefficient, angle of repose, cone of friction, frictional lock, flat pivot & collar bearing, flat belts",
+      "U3: Kinematics of Particles: rectilinear & plane curvilinear motion, rectangular/normal-tangential coords; Kinetics of Particles: equations of motion, work-energy, impulse-momentum, impact of bodies, coefficient of restitution, loss of energy during impact",
+      "U4: Kinematics of Rigid Bodies: rigid body types of motion, absolute motion, relative velocity & acceleration (Corioli's excluded), instantaneous center of zero velocity; Kinetics of Rigid Bodies: equations of motion, translation & fixed-axis rotation, work-energy & conservation",
     ],
   },
   {
-    alias: "BEE", code: "ICT-103/118", name: "Basics of Electrical Engineering",
-    group: "ES", credits: 3, marking: "40 internal + 60 external", lab: "BEE Lab",
-    book: "Alexander & Sadiku — Fundamentals of Electric Circuits",
+    alias: "BEE", code: "ICT-103T / ICT-106T", name: "Basics of Electrical Engineering",
+    group: "ES", credits: 3, marking: "40 internal + 60 external (Q1 compulsory 12m + 4 units × 12m)", lab: "ICT-103P / ICT-106P BEE Lab",
+    book: "Charles K. Alexander & Matthew N.O. Sadiku — Fundamentals of Electric Circuits (7th Ed., 2022); D.P. Kothari & I.J. Nagrath",
     units: [
-      "U1: Charge/current/voltage/power, Ohm's law, series–parallel, source transformation, KCL/KVL",
-      "U2: Nodal/mesh analysis, superposition, Thevenin/Norton, max power transfer, RL/RC transients",
-      "U3: Phasors, impedance, AC power & power factor, resonance, balanced 3-phase circuits",
-      "U4: Magnetic circuits, transformers, DC machines, induction motors, safety & grounding",
+      "U1: Electric charge, current, voltage, energy, power, independent & dependent sources, Ohm's law, series/parallel, voltage/current division, source transformations, KCL, KVL, basic circuit modeling, practical resistor behavior, power calculations",
+      "U2: Nodal & mesh analysis, linearity & superposition theorem, Thevenin's, Norton's, maximum power transfer theorem, circuit simplification, controlled sources, transient analysis of first-order circuits, natural & step response of RL and RC circuits",
+      "U3: Sinusoidal signals & phasors, impedance & admittance in frequency domain, node & mesh analysis in phasor domain, AC power (average, reactive, complex, power factor correction), resonance in series & parallel RLC, balanced 3-phase circuits, phase sequence, 3-phase loads",
+      "U4: Magnetic circuits, Faraday's & Lenz's laws, inductance & mutual inductance, ideal & real transformers, DC machines operating principles, DC motors & generators types/characteristics, 3-phase induction motors (torque-slip), circuit protection & grounding, digital infrastructure power systems, energy auditing",
     ],
   },
   {
-    alias: "PHL", code: "ICT-110/117", name: "Semiconductor Engineering & Applications",
-    group: "ES", credits: 3, marking: "40 internal + 60 external", lab: "ICT-157/160 Semi Lab (PHP)",
+    alias: "PHL", code: "ICT-111 T", name: "Engineering Physics–I",
+    group: "ES", credits: 3, marking: "40 internal + 60 external", lab: "ICT-111 P Semi Lab (PHP)",
     book: "Donald Neamen — Semiconductor Physics and Devices",
     units: [
       "U1: Crystal lattices, Miller indices, energy bands, intrinsic/extrinsic semiconductors, drift/diffusion",
@@ -153,7 +153,7 @@ const SF_SEM1_SUBJECTS = [
     ],
   },
   {
-    alias: "CSL", code: "ICT-109", name: "Communication Skills",
+    alias: "CSL", code: "ICT-113", name: "Communication Skills",
     group: "AEC", credits: 3, marking: "40 internal + 60 external", lab: null,
     book: "Wren & Martin — High School English Grammar",
     units: [
@@ -164,14 +164,14 @@ const SF_SEM1_SUBJECTS = [
     ],
   },
   {
-    alias: "EVSL", code: "ICT-112", name: "Environmental Studies",
-    group: "VAC", credits: 2, marking: "100 internal, NUES qualifying (no end-sem)", lab: "EVSP practical",
-    book: "Erach Bharucha — Environmental Studies",
+    alias: "EVSL", code: "ICT-117T", name: "Environmental Studies",
+    group: "VAC", credits: 2, marking: "100 Teachers Continuous Evaluation (NUES qualifying, non-credit)", lab: "ICT-117P EVSP practical",
+    book: "Erach Bharucha — Environmental Studies (3rd Ed., Orient Blackswan, 2020); Daniel B. Botkin — Environmental Science",
     units: [
-      "U1: Ecology, ecosystems, biodiversity & conservation",
-      "U2: Natural resources — water, land, minerals, energy, forests",
-      "U3: Pollution types, e-waste, climate change, disasters",
-      "U4: Environmental laws, EIA, ethics, SDGs",
+      "U1: Scope & importance of environmental studies, historical perspectives, ecological principles, levels of organization, ecosystem components (biotic/abiotic), energy flow, biogeochemical cycles, biodiversity conservation, threats & ecosystem services value",
+      "U2: Renewable & non-renewable resources, sustainable use principles, water resources & management, global distribution, challenges & water pollution, land degradation & soil types, mining environmental consequences, energy resources, deforestation & wildlife conservation",
+      "U3: Air, water, soil, noise, marine, thermal pollution, hazardous waste management (sources, effects, mitigation), Electronic Waste (E-Waste) Management, environmental toxicology, public health, climate change, ozone depletion, acid rain, smog, environmental disasters",
+      "U4: Environmental legislation & policies, government agencies role, Environmental Impact Assessment (EIA) concept & purpose, sustainable development, environmental ethics (anthropocentrism, biocentrism, ecocentrism, deep ecology), population & urbanization, NGOs & public participation, case studies",
     ],
   },
   {

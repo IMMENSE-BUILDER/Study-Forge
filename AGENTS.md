@@ -313,6 +313,12 @@ Recent major changes (Sep 2026, now v45):
   - Active Default Key Integration: Pinned older working credentials as defaults (`DEFAULT_TOKENHARBOR_KEY`, `DEFAULT_DEEPGRAM_KEY`) for immediate out-of-the-box AI and voice execution without requiring user rotation.
   - Private Repository Security Model: Ensured seamless functionality while repository remains protected under private GitHub access and strict `.gitignore` patterns.
   - Triple bump `v54` / `versionCode: 54` / `CACHE_NAME: study-forge-v54`. Deploy dir rebuilt and synchronized.
+- v55:
+  - Official 2026 Syllabus Integration (5 Subjects): Decoded and integrated official Affiliated B.Tech 2026 scheme blueprints for EM (`ICT-119`), BEE (`ICT-103T/ICT-106T`), PPS (`ICT-101`), SMT-1 (`ICT-107`), and EVS (`ICT-117T`).
+  - Authoritative Data Synchronization: Updated `SF_SEM1_SUBJECTS` and `SF_FACULTY` in `syllabus.js` with exact codes, textbook citations, and verbatim 4-unit topics.
+  - Enhanced Syllabus Panel: Updated Card 2 (Core Tech: PPS, SMT-1, BEE), Card 3 (Applied Sciences: EM), and Card 4 (Labs & Skills: EVS) in `index.html` with Course Outcomes, marking schemes (including EVS 100-mark NUES), and reference textbooks.
+  - Grounded AI Tutor: Updated `AI_SYSTEM_PROMPT` and subject topic aliases in `script.js` with official 2026 curricula for precise question-setting and flashcard generation.
+  - Triple bump `v55` / `versionCode: 55` / `CACHE_NAME: study-forge-v55`. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the
