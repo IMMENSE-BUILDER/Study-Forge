@@ -1,7 +1,8 @@
 const STORAGE_KEY = "studyForgeState-v1";
+const DEFAULT_DEEPGRAM_KEY = 'b836a67d381f08fec71c60b8a32c84b9d2154017';
 
 function getDeepgramApiKey() {
-  return localStorage.getItem('sf_deepgram_api_key') || '';
+  return localStorage.getItem('sf_deepgram_api_key') || DEFAULT_DEEPGRAM_KEY || '';
 }
 
 async function deepgramTranscribe(audioBlob) {
@@ -2306,7 +2307,7 @@ function getTokenHarborApiUrl() {
 }
 const TOKENHARBOR_API_URL = getTokenHarborApiUrl();
 const DEFAULT_TOKENHARBOR_MODEL = 'deepseek-v4.1-flash';
-const DEFAULT_TOKENHARBOR_KEY = '';
+const DEFAULT_TOKENHARBOR_KEY = 'thk_live_0MzAXxjcM_nhh5XgNbkbP12LnBJoSGjhtDgT381vd4KTTo43Sl1nB-0IqWfRwidS';
 
 function getTokenHarborApiKey() {
   return localStorage.getItem('sf_tokenharbor_api_key') ||

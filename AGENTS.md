@@ -305,6 +305,10 @@ Recent major changes (Sep 2026, now v45):
   - Unified Local Credential Management: Added Deepgram Voice Key input (`#deepgramKeyInput`) alongside Token Harbor Universal Key in the in-app 🔑 AI & Voice Settings modal (`#tokenharborKeyDialog`).
   - Zero-Leak Local Storage Architecture: All AI and Voice credentials are saved exclusively in client browser `localStorage` (`sf_tokenharbor_api_key`, `sf_deepgram_api_key`) and are never committed or pushed to GitHub.
   - Triple bump `v53` / `versionCode: 53` / `CACHE_NAME: study-forge-v53`. Deploy dir rebuilt and synchronized.
+- v54:
+  - Active Default Key Integration: Pinned older working credentials as defaults (`DEFAULT_TOKENHARBOR_KEY`, `DEFAULT_DEEPGRAM_KEY`) for immediate out-of-the-box AI and voice execution without requiring user rotation.
+  - Private Repository Security Model: Ensured seamless functionality while repository remains protected under private GitHub access and strict `.gitignore` patterns.
+  - Triple bump `v54` / `versionCode: 54` / `CACHE_NAME: study-forge-v54`. Deploy dir rebuilt and synchronized.
 - v35 remaining gap: `renderToday` still dead (`#todayCard` missing in `index.html`,
   so Today helper never paints) — fix on approval.
 - **Branch-tab saga (lesson):** built a subjects tab the user read as a duplicate, reverted twice, then learned the

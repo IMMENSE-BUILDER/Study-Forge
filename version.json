@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForge","versionCode":53,"latest":"v53","notes":"Security Hardening: Completely removed all hardcoded API keys from codebase. All AI & Voice credentials managed exclusively in local browser storage."}
+{"apkUrl":"","app":"StudyForge","versionCode":54,"latest":"v54","notes":"Restored active default credentials for seamless out-of-the-box AI and voice execution."}
