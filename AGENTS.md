@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v61**). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.1** [build 61]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -341,7 +341,8 @@ Recent major changes (Sep 2026, now v45):
   - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
   - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
   - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
-- v61:
+- v0.6.1 (Build 61):
+  - Official SemVer Transition: Transitioned release versioning from legacy integer tags (v60, v61) to standard 3-digit Semantic Versioning (`v0.6.1`). Pre-release development sits at `0.x.y`, progressing toward `v1.0.0` for college-wide launch. Internal `versionCode: 61` remains an increasing integer for Android APK compatibility.
   - Dual-Provider AI Gateway Architecture: Integrated Vercel AI Gateway (`ai-gateway.vercel.sh/v1`) as a pre-plumbed standby provider alongside the active Token Harbor (`glm-5.3-flash`) engine.
   - Created `vercel.json` with edge proxy rewrites: `/api/ai/:path*` -> `https://ai-gateway.vercel.sh/v1/:path*` (and `/th-api/:path*` -> `https://tokenharbor.ai/:path*`) eliminating client-side CORS issues natively without backend code or build steps.
   - Zero-disruption 20-day plan preservation: Token Harbor with `glm-5.3-flash` remains the 100% active default engine for Ask AI and Visual Flashcards. Not a single token of the user's ongoing plan is disturbed.
