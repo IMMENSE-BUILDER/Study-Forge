@@ -2,32 +2,12 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/th-api/(.*)",
-      "destination": "https://tokenharbor.ai/$1"
+      "source": "/api/ai/:path*",
+      "destination": "https://ai-gateway.vercel.sh/v1/:path*"
     },
     {
-      "source": "/((?!api|icons|.*\\..*).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/version.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
+      "source": "/th-api/:path*",
+      "destination": "https://tokenharbor.ai/:path*"
     }
   ]
 }

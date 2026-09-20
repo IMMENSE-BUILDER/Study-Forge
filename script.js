@@ -2297,8 +2297,23 @@ function initBottomNav() {
   localStorage.setItem('activeTab', 'timetable');
 }
 
-// ─── Ask AI Page (Token Harbor Unified Gateway · GLM 5.3 Flash) ───
-// Uses same-origin proxy /th-api/ to eliminate browser CORS restrictions on Token Harbor
+// ─── Dual-Provider AI Gateway Architecture ───
+// Providers: 'tokenharbor' (ACTIVE DEFAULT - 20-Day Plan) | 'vercel' (STANDBY - Next-Gen Gateway)
+const DEFAULT_AI_PROVIDER = 'tokenharbor';
+
+function getActiveAiProvider() {
+  return localStorage.getItem('sf_ai_provider') || DEFAULT_AI_PROVIDER;
+}
+
+function setActiveAiProvider(provider) {
+  if (provider === 'vercel' || provider === 'tokenharbor') {
+    localStorage.setItem('sf_ai_provider', provider);
+  } else {
+    localStorage.removeItem('sf_ai_provider');
+  }
+}
+
+// ── 1. Token Harbor Unified Gateway (Active Engine · GLM 5.3 Flash) ──
 function getTokenHarborApiUrl() {
   if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
     return '/th-api/v1/chat/completions';
@@ -2324,20 +2339,67 @@ function getTokenHarborModel() {
   return stored;
 }
 
+// ── 2. Vercel AI Gateway (Standby Engine · Day 20 Migration) ──
+function getVercelApiUrl() {
+  if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+    return '/api/ai/chat/completions';
+  }
+  return 'https://ai-gateway.vercel.sh/v1/chat/completions';
+}
+const VERCEL_API_URL = getVercelApiUrl();
+const DEFAULT_VERCEL_MODEL = 'google/gemini-2.0-flash';
+
+function getVercelApiKey() {
+  return localStorage.getItem('sf_vercel_ai_key') || '';
+}
+
+function getVercelModel() {
+  return localStorage.getItem('sf_vercel_ai_model') || DEFAULT_VERCEL_MODEL;
+}
+
+// ── Unified Active Provider Resolvers ──
+function getActiveAiApiUrl() {
+  return getActiveAiProvider() === 'vercel' ? VERCEL_API_URL : TOKENHARBOR_API_URL;
+}
+
+function getActiveAiApiKey() {
+  return getActiveAiProvider() === 'vercel' ? getVercelApiKey() : getTokenHarborApiKey();
+}
+
+function getActiveAiModel() {
+  return getActiveAiProvider() === 'vercel' ? getVercelModel() : getTokenHarborModel();
+}
+
+function getActiveAiApiFallbackUrl() {
+  if (getActiveAiProvider() === 'vercel') {
+    return VERCEL_API_URL.startsWith('/api/ai')
+      ? 'https://ai-gateway.vercel.sh/v1/chat/completions'
+      : '/api/ai/chat/completions';
+  }
+  return TOKENHARBOR_API_URL.startsWith('/th-api')
+    ? 'https://tokenharbor.ai/v1/chat/completions'
+    : '/th-api/v1/chat/completions';
+}
+
 // Backward-compatibility aliases
-const getOpenRouterApiKey = getTokenHarborApiKey;
-const getOpenRouterModel = getTokenHarborModel;
+const getOpenRouterApiKey = getActiveAiApiKey;
+const getOpenRouterModel = getActiveAiModel;
 const OPENROUTER_API_URL = TOKENHARBOR_API_URL;
 
 function updateAIModelBadge() {
   const badge = document.getElementById('aiModelBadge');
   if (!badge) return;
-  const model = getTokenHarborModel();
+  const provider = getActiveAiProvider();
+  const model = getActiveAiModel();
   let label = model;
   if (label.startsWith('tokenharbor/')) label = label.replace('tokenharbor/', '');
+  if (label.startsWith('google/')) label = label.replace('google/', '');
+  if (label.startsWith('openai/')) label = label.replace('openai/', '');
+  if (label.startsWith('anthropic/')) label = label.replace('anthropic/', '');
   label = label.replace(':free', ' (FREE)');
   badge.textContent = label.toUpperCase();
-  badge.title = `Token Harbor Model: ${model}`;
+  const providerLabel = provider === 'vercel' ? 'Vercel AI' : 'Token Harbor';
+  badge.title = `${providerLabel} Model: ${model}`;
 }
 
 const AI_SYSTEM_PROMPT = `You are StudyForged, the dedicated AI academic tutor & exam coach for Satyam Kumar, 1st-year B.Tech IT at ADGIPS (GGSIPU, Delhi), Sec E, Room 2310 (AY 2026–27).
@@ -2504,26 +2566,52 @@ function initAskAI() {
   const thinkToggle = document.getElementById('aiThinkToggle');
   if (thinkToggle) thinkToggle.style.display = 'none';
 
-  // ── AI & Voice Settings Dialog ──
+  // ── AI & Voice Settings Dialog (Dual-Provider: Token Harbor & Vercel AI) ──
   const keyBtn = document.getElementById('aiKeyBtn');
   const keyDialog = document.getElementById('tokenharborKeyDialog') || document.getElementById('openrouterKeyDialog');
+  const providerSelect = document.getElementById('aiProviderSelect');
+  const thBlock = document.getElementById('tokenharborSettingsBlock');
+  const vcBlock = document.getElementById('vercelSettingsBlock');
   const keyInput = document.getElementById('tokenharborKeyInput') || document.getElementById('openrouterKeyInput');
   const dgKeyInput = document.getElementById('deepgramKeyInput');
   const modelInput = document.getElementById('tokenharborModelInput') || document.getElementById('openrouterModelInput');
+  const vcKeyInput = document.getElementById('vercelKeyInput');
+  const vcModelInput = document.getElementById('vercelModelInput');
   const keyForm = document.getElementById('tokenharborKeyForm') || document.getElementById('openrouterKeyForm');
+
+  function syncProviderBlockVisibility() {
+    const selectedProvider = providerSelect ? providerSelect.value : getActiveAiProvider();
+    if (thBlock) thBlock.style.display = selectedProvider === 'tokenharbor' ? 'grid' : 'none';
+    if (vcBlock) vcBlock.style.display = selectedProvider === 'vercel' ? 'grid' : 'none';
+  }
+
+  if (providerSelect) {
+    providerSelect.addEventListener('change', syncProviderBlockVisibility);
+  }
 
   updateAIModelBadge();
 
   if (keyBtn && keyDialog) {
     keyBtn.addEventListener('click', () => {
+      if (providerSelect) {
+        providerSelect.value = getActiveAiProvider();
+      }
+      syncProviderBlockVisibility();
+
       if (keyInput) {
         keyInput.value = getTokenHarborApiKey();
       }
-      if (dgKeyInput) {
-        dgKeyInput.value = getDeepgramApiKey();
-      }
       if (modelInput) {
         modelInput.value = getTokenHarborModel();
+      }
+      if (vcKeyInput) {
+        vcKeyInput.value = getVercelApiKey();
+      }
+      if (vcModelInput) {
+        vcModelInput.value = getVercelModel();
+      }
+      if (dgKeyInput) {
+        dgKeyInput.value = getDeepgramApiKey();
       }
       openDialog(keyDialog);
     });
@@ -2532,6 +2620,12 @@ function initAskAI() {
   if (keyForm && keyDialog) {
     keyForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      // 1. Save Active Provider
+      if (providerSelect) {
+        const prov = providerSelect.value;
+        setActiveAiProvider(prov);
+      }
+      // 2. Save Token Harbor Credentials
       if (keyInput) {
         const val = keyInput.value.trim();
         if (val) {
@@ -2542,14 +2636,6 @@ function initAskAI() {
           localStorage.removeItem('sf_ai_api_key');
         }
       }
-      if (dgKeyInput) {
-        const dgVal = dgKeyInput.value.trim();
-        if (dgVal) {
-          localStorage.setItem('sf_deepgram_api_key', dgVal);
-        } else {
-          localStorage.removeItem('sf_deepgram_api_key');
-        }
-      }
       if (modelInput) {
         const mVal = modelInput.value.trim();
         if (mVal) {
@@ -2558,13 +2644,41 @@ function initAskAI() {
           localStorage.removeItem('sf_tokenharbor_model');
         }
       }
+      // 3. Save Vercel AI Gateway Credentials (Standby)
+      if (vcKeyInput) {
+        const vcVal = vcKeyInput.value.trim();
+        if (vcVal) {
+          localStorage.setItem('sf_vercel_ai_key', vcVal);
+        } else {
+          localStorage.removeItem('sf_vercel_ai_key');
+        }
+      }
+      if (vcModelInput) {
+        const vcMVal = vcModelInput.value.trim();
+        if (vcMVal) {
+          localStorage.setItem('sf_vercel_ai_model', vcMVal);
+        } else {
+          localStorage.removeItem('sf_vercel_ai_model');
+        }
+      }
+      // 4. Save Voice Key (Deepgram)
+      if (dgKeyInput) {
+        const dgVal = dgKeyInput.value.trim();
+        if (dgVal) {
+          localStorage.setItem('sf_deepgram_api_key', dgVal);
+        } else {
+          localStorage.removeItem('sf_deepgram_api_key');
+        }
+      }
       // Purge legacy provider keys if present
       localStorage.removeItem('sf_openrouter_api_key');
       localStorage.removeItem('sf_openrouter_model');
       localStorage.removeItem('sf_deepseek_api_key');
 
       updateAIModelBadge();
-      showToast('AI & Voice credentials saved');
+      const currentProv = getActiveAiProvider();
+      const provName = currentProv === 'vercel' ? 'Vercel AI Gateway' : 'Token Harbor';
+      showToast(`Saved! Active Engine: ${provName}`);
       closeDialog(keyDialog);
     });
   }
@@ -3398,10 +3512,11 @@ function initAskAI() {
       ...recentHistory
     ];
 
-    const apiKey = getTokenHarborApiKey();
-    const model = getTokenHarborModel();
+    const apiKey = getActiveAiApiKey();
+    const model = getActiveAiModel();
+    const activeApiUrl = getActiveAiApiUrl();
 
-    if (!apiKey) {
+    if (!apiKey && getActiveAiProvider() !== 'vercel') {
       const hintMsg = "API Key required. Please click the 🔑 key icon in the header to enter your API key.";
       chatHistory.push({ role: 'assistant', content: hintMsg });
       if (typeof onChunk === 'function') {
@@ -3414,8 +3529,10 @@ function initAskAI() {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Authorization': `Bearer ${apiKey}`
     };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
 
     let res;
     const reqPayload = JSON.stringify({
@@ -3428,7 +3545,7 @@ function initAskAI() {
 
     try {
       try {
-        res = await fetch(TOKENHARBOR_API_URL, {
+        res = await fetch(activeApiUrl, {
           method: 'POST',
           headers: headers,
           body: reqPayload,
@@ -3436,9 +3553,7 @@ function initAskAI() {
         });
       } catch (firstErr) {
         if (firstErr.name === 'AbortError') throw firstErr;
-        const fallbackUrl = TOKENHARBOR_API_URL.startsWith('/th-api')
-          ? 'https://tokenharbor.ai/v1/chat/completions'
-          : '/th-api/v1/chat/completions';
+        const fallbackUrl = getActiveAiApiFallbackUrl();
         res = await fetch(fallbackUrl, {
           method: 'POST',
           headers: headers,
@@ -4779,7 +4894,7 @@ function initFlashcards() {
         <div class="fc-mock-bottom">
           <div class="fc-mock-status-chip">
             <span class="fc-mock-pulse-dot"></span>
-            <span>Crafting Card 1 with GLM 5.3 Flash...</span>
+            <span>Crafting Card 1 with ${escapeHtml(getActiveAiModel())}...</span>
           </div>
           <span style="opacity: 0.6; font-size: 10.5px;">ADGIPS 2026</span>
         </div>
@@ -4788,10 +4903,10 @@ function initFlashcards() {
     controls.style.display = 'none';
     if (streamStatus) streamStatus.style.display = 'none';
 
-    const apiKey = getTokenHarborApiKey();
-    const model = getTokenHarborModel();
+    const apiKey = getActiveAiApiKey();
+    const model = getActiveAiModel();
 
-    if (!apiKey) {
+    if (!apiKey && getActiveAiProvider() !== 'vercel') {
       showToast('Please set your API key in 🔑 Ask AI settings first');
       deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">🔑</span><p>Please enter your API key in the Ask AI 🔑 settings to enable flashcards.</p></div>`;
       generateBtn.disabled = false;
@@ -4849,19 +4964,24 @@ CRITICAL JSON RULES:
 - In JSON string values, double-escape all LaTeX backslashes (e.g. \\\\( ... \\\\), \\\\[ ... \\\\]).
 - For SVG attributes, ALWAYS use single quotes (e.g. width='100%') so JSON double quotes remain valid.`;
 
+    const activeApiUrl = getActiveAiApiUrl();
     async function streamLlmCards(payload, onNewCard) {
       let resp;
       let lastFetchErr = null;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'Cache-Control': 'no-cache'
+      };
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          resp = await fetch(TOKENHARBOR_API_URL, {
+          resp = await fetch(activeApiUrl, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`,
-              'Accept': 'text/event-stream',
-              'Cache-Control': 'no-cache'
-            },
+            headers: headers,
             body: JSON.stringify(payload)
           });
           if (resp.ok) break;
@@ -4872,18 +4992,11 @@ CRITICAL JSON RULES:
         } catch (firstErr) {
           lastFetchErr = firstErr;
           if (attempt === 1) {
-            const fallbackUrl = TOKENHARBOR_API_URL.startsWith('/th-api')
-              ? 'https://tokenharbor.ai/v1/chat/completions'
-              : '/th-api/v1/chat/completions';
+            const fallbackUrl = getActiveAiApiFallbackUrl();
             try {
               resp = await fetch(fallbackUrl, {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${apiKey}`,
-                  'Accept': 'text/event-stream',
-                  'Cache-Control': 'no-cache'
-                },
+                headers: headers,
                 body: JSON.stringify(payload)
               });
               if (resp.ok) break;
