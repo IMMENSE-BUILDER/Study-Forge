@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.5** [build 65]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.6** [build 66]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -347,6 +347,11 @@ Recent major changes (Sep 2026, now v0.6.5):
   - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
   - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
   - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
+- v0.6.6 (Build 66):
+  - Interactive "By SK" Redirection Button: Upgraded the bottom signature strip badge (`.sf-base-box`) into an accessible, interactive neo-brutalist link button pointing directly to Satyam's GitHub profile (`https://github.com/IMMENSE-BUILDER`).
+  - Tactile Neo-Brutalist Micro-Interactions: Added responsive hover (`transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--shadow);` with amber accent fill) and active tap press-down states (`transform: translate(2px, 2px); box-shadow: 0 0 0;`) across both light and dark themes.
+  - Accessibility & Safety: Configured `target="_blank" rel="noopener noreferrer"` with informative title attribute; removed `aria-hidden="true"` on the wrapper; excluded links and buttons from global 2s hold-to-select timer in `holdTargetOk()`.
+  - Triple bump `v0.6.6` / `versionCode: 66` / `CACHE_NAME: study-forge-v0.6.6`.
 - v0.6.5 (Build 65):
   - 2026 Seed Goal Code Alignment: Fixed v55 gap where `SF_FACULTY` was updated to official 2026 course
     codes but `buildIPUSeed()` goal titles still carried stale codes/names. Corrected six seed titles to
