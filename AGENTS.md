@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.4** [build 64]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.5** [build 65]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -68,7 +68,7 @@ Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state 
   `normalizeGoal/normalizeTask/normalizeNote/normalizeGauges`; `saveState()` writes whole object.
   New state fields must extend the normalizers + seed, never assume stored shape.
 - **Seed + versioned migration, never wipe.** `buildIPUSeed()` builds the Sec-E starter pack;
-  `migrateStateVersion()` (current `SF_STATE_VERSION = 5`) merges new content by title/ID match.
+  `migrateStateVersion()` (current `SF_STATE_VERSION = 6`) merges new content by title/ID match.
   Migrations must be idempotent (re-runs add zero dupes) and preserve user progress/XP.
 - **Full re-render.** Every `render*()` rebuilds its panel from `state`; `renderAll()` refreshes all plus
   a 60s interval for the live timetable. No fine-grained reactivity — keep it that way.
@@ -166,7 +166,7 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v45):
+Recent major changes (Sep 2026, now v0.6.5):
 - Sec-E personalization pack: profile, timetable, faculty, exam intel, seed + migration (v1→v3).
 - Timetable tab: 5-day aligned grid, live liquid-fill + done states, tap-to-toast (labs omit room), Today card.
 - App hardening: responsive overhaul, hold-to-select, menu-over-AI-bar fix, no-wrap header, inner breathing room.
@@ -347,6 +347,21 @@ Recent major changes (Sep 2026, now v45):
   - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
   - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
   - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
+- v0.6.5 (Build 65):
+  - 2026 Seed Goal Code Alignment: Fixed v55 gap where `SF_FACULTY` was updated to official 2026 course
+    codes but `buildIPUSeed()` goal titles still carried stale codes/names. Corrected six seed titles to
+    match `SF_FACULTY`: SMT → ICT-107, EM → ICT-119, BEE → ICT-103T/ICT-106T, PHL → Engineering Physics–I
+    (ICT-111T, was "Semiconductor Engineering ICT-110/117"), CSL → ICT-113, EVSL → ICT-117T.
+  - Idempotent Stored-Goal Migration: `migrateStateVersion()` renames stored goals in place by stable
+    `ipu-goal-*` id with exact-title match only (`GOAL_TITLE_FIXES_2026`, runs before the title-match seed
+    merge — v33 SMT-1 precedent), so re-runs add zero dupes; user-renamed goals, progress, XP and
+    task `goalId` links fully preserved. `SF_STATE_VERSION` bumped 5 → 6.
+  - Fixed `syllabus.js` header comment typo ("Sec F" → "Sec E").
+  - ⚠️ Known security debt (needs user decision): v54 pinned default API credentials in source
+    (`DEFAULT_TOKENHARBOR_KEY`, `DEFAULT_DEEPGRAM_KEY`) which publicly deploys them — contradicts §4/§5
+    zero-hardcoded-keys rule. Rotate keys before any public share; sanitize once user confirms keys are
+    saved in their browser's 🔑 AI Settings modal (safe: getters fall back localStorage-first).
+  - Triple bump `v0.6.5` / `versionCode: 65` / `CACHE_NAME: study-forge-v0.6.5`.
 - v0.6.4 (Build 64):
   - Flashcard Fullscreen Focus Zoom Redesign & Alignment Fix: Completely addressed broken controls, downward text misalignment, and KaTeX rendering issues in the flashcard focus lightbox.
   - Streamlined Header: Replaced cluttered multi-color controls with a minimal top bar displaying dynamic academic tag (e.g. `PPS · Unit 1`), counter (`1 / 4`), and a clean circular `✕` close button.

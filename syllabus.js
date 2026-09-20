@@ -1,12 +1,12 @@
 /* ============================================================
    Study Forged — IPU Pack (Satyam · ADGIPS · B.Tech IT · Sem 1)
-   Profile, Semester-1 syllabus (GGSIPU 2025-26 scheme + Sec F
+   Profile, Semester-1 syllabus (GGSIPU 2025-26 scheme + Sec E
    timetable, AY 2026-27) and seed/migration helpers.
    Loaded BEFORE script.js. All consumers guard with typeof.
    ============================================================ */
 
-const SF_STATE_VERSION = 5;
-const SF_APP_VERSION = "v0.6.4";
+const SF_STATE_VERSION = 6;
+const SF_APP_VERSION = "v0.6.5";
 
 function defaultProfile() {
   return {
@@ -250,12 +250,12 @@ function buildIPUSeed() {
 
   const goalDefs = [
     ["PPS", "PPS · Programming for Problem Solving (ICT-101)", "Sem 1 · ES · 3 cr"],
-    ["SMT", "SMT · System Modeling Techniques–I (ICT-105)", "Sem 1 · ES · 3 cr"],
-    ["EM", "EM · Engineering Mechanics (ICT-107/120)", "Sem 1 · ES · 3 cr"],
-    ["BEE", "BEE · Basics of Electrical Engineering (ICT-103/118)", "Sem 1 · ES · 3 cr"],
-    ["PHL", "PHL · Semiconductor Engineering (ICT-110/117)", "Sem 1 · ES · 3 cr"],
-    ["CSL", "CSL · Communication Skills (ICT-109)", "Sem 1 · AEC · 3 cr"],
-    ["EVSL", "EVSL · Environmental Studies (ICT-112)", "Sem 1 · NUES qualifying"],
+    ["SMT", "SMT · System Modeling Techniques–I (ICT-107)", "Sem 1 · ES · 3 cr"],
+    ["EM", "EM · Engineering Mechanics (ICT-119)", "Sem 1 · ES · 3 cr"],
+    ["BEE", "BEE · Basics of Electrical Engineering (ICT-103T/ICT-106T)", "Sem 1 · ES · 3 cr"],
+    ["PHL", "PHL · Engineering Physics–I (ICT-111T)", "Sem 1 · ES · 3 cr"],
+    ["CSL", "CSL · Communication Skills (ICT-113)", "Sem 1 · AEC · 3 cr"],
+    ["EVSL", "EVSL · Environmental Studies (ICT-117T)", "Sem 1 · NUES qualifying"],
     ["EGL", "EGL · Engineering Graphics + Lab", "Sem 1 · Lab"],
     ["PD", "PD · Personality Development", "Sem 1 · PD hour"],
   ];

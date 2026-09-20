@@ -282,6 +282,21 @@ function migrateStateVersion(merged) {
     smtGoal.title = String(smtGoal.title).replace(/^SMT-1\s*·/, "SMT ·");
   }
   merged.tasks.forEach((t) => { t.title = String(t.title || "").replace(/^SMT-1(\s)/, "SMT$1"); });
+  // v65: align seeded goal titles with official 2026 course codes/names (matching
+  // SF_FACULTY). Rename in place by stable ipu-goal-* id, exact-title match only —
+  // idempotent; user-renamed goals, progress, XP and task links stay untouched.
+  const GOAL_TITLE_FIXES_2026 = {
+    "ipu-goal-smt": ["SMT · System Modeling Techniques–I (ICT-105)", "SMT · System Modeling Techniques–I (ICT-107)"],
+    "ipu-goal-em": ["EM · Engineering Mechanics (ICT-107/120)", "EM · Engineering Mechanics (ICT-119)"],
+    "ipu-goal-bee": ["BEE · Basics of Electrical Engineering (ICT-103/118)", "BEE · Basics of Electrical Engineering (ICT-103T/ICT-106T)"],
+    "ipu-goal-phl": ["PHL · Semiconductor Engineering (ICT-110/117)", "PHL · Engineering Physics–I (ICT-111T)"],
+    "ipu-goal-csl": ["CSL · Communication Skills (ICT-109)", "CSL · Communication Skills (ICT-113)"],
+    "ipu-goal-evsl": ["EVSL · Environmental Studies (ICT-112)", "EVSL · Environmental Studies (ICT-117T)"],
+  };
+  merged.goals.forEach((g) => {
+    const fix = GOAL_TITLE_FIXES_2026[g.id];
+    if (fix && g.title === fix[0]) g.title = fix[1];
+  });
   const smtNote = merged.notes.find((n) => n.id === "ipu-note-timetable");
   if (smtNote && typeof SF_TIMETABLE_NOTE === "string") smtNote.text = SF_TIMETABLE_NOTE;
   if (merged.stateVersion === 2) {
