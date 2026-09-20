@@ -28,7 +28,7 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 | Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
 | Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme`, `isLoggedIn`, `userEmail` |
 | Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
-| AI & Voice | Token Harbor unified API gateway (`https://tokenharbor.ai/v1`) + Deepgram nova-2 STT + aura TTS | All API credentials live exclusively in client `localStorage` (`sf_tokenharbor_api_key`, `sf_deepgram_api_key`) via in-app 🔑 Settings dialog. Zero hardcoded keys in repo. |
+| AI & Voice | Dual-Provider: Token Harbor (`https://tokenharbor.ai/v1`, ACTIVE for 20-day plan) + Vercel AI Gateway (`https://ai-gateway.vercel.sh/v1`, STANDBY for Day 20) + Deepgram nova-2 STT + aura TTS | All API credentials live exclusively in client `localStorage` (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) via in-app 🔑 Settings modal. Zero hardcoded keys in repo. |
 | Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
 | CDN (progressive enhancement only) | Tailwind (login page), KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
@@ -77,7 +77,12 @@ Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state 
   Timetable aliases resolve via `ttResolve`/`ttInfo`; labs never show Room 2310 (lab halls differ).
 - **Today engine is the hub.** `getTodayAgenda(state, now)` (pure, injectable date — always unit-test it)
   feeds greeting, today's subjects, focus-task matching (goal title prefix `ALIAS · …`), sprint-staleness.
-- **AI layer (Token Harbor Unified Gateway):** Powered by Token Harbor with default model `deepseek-v4.1-flash` (or `mimo-v2.5`, `deepseek-v4-flash:free`). Uses same-origin reverse proxy `/th-api/v1/chat/completions` (routed via `serve-pwa.js` locally and Netlify `_redirects` in production) to bypass upstream browser CORS blocks. Multimodal vision inputs supported (camera capture, file upload, `Ctrl+V` clipboard paste) with image thumbnail preview tray and client-side 1200px compression. All credentials (`sf_tokenharbor_api_key`, `sf_deepgram_api_key`) are managed client-side in `localStorage` via the in-app 🔑 settings modal, keeping the repository 100% free of hardcoded secrets. Notes AI flashcard generator also powered by Token Harbor. `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Never claim to be anything but "Study Forge" tutor.
+- **AI Layer (Dual-Provider Architecture — Token Harbor Active & Vercel AI Gateway Standby):**
+  - **Active Provider (MANDATORY for 20-Day Plan):** Token Harbor with default model `glm-5.3-flash`. Satyam has an active paid plan running for 20 more days (until ~Oct 10, 2026). All chat completions, vision OCR, and flashcard generations MUST default to Token Harbor to fully utilize this plan without wasting tokens.
+  - **Standby Provider (Vercel AI Gateway):** Fully plumbed and integrated via `vercel.json` edge rewrites (`/api/ai/:path*` ➔ `https://ai-gateway.vercel.sh/v1/:path*`). Zero-code activation on Day 20 via the in-app 🔑 Settings modal (`#aiProviderSelect`). Supports `google/gemini-2.0-flash`, `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet`, `deepseek/deepseek-chat`.
+  - **Same-Origin Reverse Proxy:** Routes `/th-api/v1/chat/completions` and `/api/ai/chat/completions` via `vercel.json` to bypass browser CORS blocks natively.
+  - **Zero Hardcoded Secrets:** Universal keys (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) live exclusively in client `localStorage`.
+  - **Academic Grounding:** `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Always maintains "StudyForged" tutor identity.
 - **Hold-to-select, not native selection.** Global `user-select:none`; 2s press-and-hold (`HOLD_SELECT_MS`)
   unlocks + auto-selects; inputs stay native. A post-hold click is consumed so holds never trigger tap actions.
 - **Triple version discipline (load-bearing).** Every release bumps together:
@@ -111,6 +116,7 @@ Things to NEVER do:
 - Never paste API keys into chat/outputs; never commit new secrets; flag key rotation before any public share.
 - Never present 2025-scheme syllabus content as current — user gathers official 2026 syllabi first (syllabus viewer was removed for exactly this; restore only on their data).
 - Never invent timetable/faculty/subject facts — Sec-E PDF + photo legend are ground truth; mark anything uncertain.
+- NEVER switch default AI provider away from Token Harbor (`glm-5.3-flash`) until the 20-day plan expires (~Oct 10, 2026). Vercel AI Gateway is in standby mode.
 
 Project constraints:
 - Timetable = Sec E, Room 2310, AY 2026–27, Mon–Fri (Sat/Sun = weekend mode). E1/E2 are lab batches.
@@ -348,7 +354,7 @@ Recent major changes (Sep 2026, now v45):
   - Zero-disruption 20-day plan preservation: Token Harbor with `glm-5.3-flash` remains the 100% active default engine for Ask AI and Visual Flashcards. Not a single token of the user's ongoing plan is disturbed.
   - Upgraded AI Settings Modal: Added AI Gateway Provider selector (`aiProviderSelect`) allowing seamless toggling between Token Harbor (active) and Vercel AI Gateway (standby) with model dropdowns (`google/gemini-2.0-flash`, `openai/gpt-4o-mini`, etc.) and separate key persistence (`sf_vercel_ai_key`, `sf_vercel_ai_model`).
   - Dynamic model status badges and mock card indicators: `#aiModelBadge` dynamically displays provider prefix and active model; mock flashcard displays active model in synthesis pulse.
-  - Triple bump `v61` / `versionCode: 61` / `CACHE_NAME: study-forge-v61`.
+  - Triple bump `v0.6.1` / `versionCode: 61` / `CACHE_NAME: study-forge-v0.6.1`.
 - v60:
   - Rebranded app name from **Study Forge** to **Study Forged** everywhere across the UI.
   - Updated: `<title>`, `<h1>` brand header, all 4 syllabus card footers and section header, `login.html` title and hero heading, `manifest.json` name/short_name, `version.json` app field, `script.js` all share titles/AI identity prompts/card labels/init log/download filename, `syllabus.js` file comment.
