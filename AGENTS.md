@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.1** [build 61]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.2** [build 62]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -347,6 +347,13 @@ Recent major changes (Sep 2026, now v45):
   - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
   - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
   - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
+- v0.6.2 (Build 62):
+  - Fixed Mobile Touch Swipe Gesture Engine: Resolved issue where swiping left/right on mobile phones only moved slightly without transitioning to the next card.
+  - Root Cause Fixed: Mobile Chrome/Safari passive event listeners previously prevented horizontal swipe capture, while a tight 8px vertical threshold locked out natural thumb arcs.
+  - Dedicated Touch Events Implementation: Added non-passive `{ passive: false }` touchmove listener calling `e.preventDefault()` during active horizontal drags, completely blocking browser back/forward history navigation and scroll hijacking.
+  - Universal `touch-action: pan-y !important`: Enforced across `.fc-card`, `.fc-card-inner`, `.fc-card-front`, `.fc-card-back`, and `.fc-card-body` to prevent child elements from dropping touch-action inheritance.
+  - Responsive Trigger Thresholds: Relaxed swipe trigger to 38px drag or 0.22 px/ms velocity flick with direct inline exit transform animations.
+  - Triple bump `v0.6.2` / `versionCode: 62` / `CACHE_NAME: study-forge-v0.6.2`.
 - v0.6.1 (Build 61):
   - Official SemVer Transition: Transitioned release versioning from legacy integer tags (v60, v61) to standard 3-digit Semantic Versioning (`v0.6.1`). Pre-release development sits at `0.x.y`, progressing toward `v1.0.0` for college-wide launch. Internal `versionCode: 61` remains an increasing integer for Android APK compatibility.
   - Dual-Provider AI Gateway Architecture: Integrated Vercel AI Gateway (`ai-gateway.vercel.sh/v1`) as a pre-plumbed standby provider alongside the active Token Harbor (`glm-5.3-flash`) engine.

@@ -4373,96 +4373,103 @@ function initFlashcards() {
 
     deckArea.appendChild(cardEl);
 
-    // ── Interactive Touch / Pointer Swipe Physics Engine ──
+    // ── Rock-Solid Touch & Pointer Mobile Swipe Engine ──
     let startX = 0;
     let startY = 0;
     let currentDeltaX = 0;
     let startTime = 0;
     let isTracking = false;
     let isDragging = false;
+    let isDirectionLocked = false;
     let isVerticalScroll = false;
     let wasSwipeGesture = false;
 
-    cardEl.addEventListener('pointerdown', (e) => {
-      // Ignore interactive clicks inside card (links, buttons, inputs)
-      if (e.target.closest('button, a, input, select, textarea')) return;
-      if (window.getSelection && window.getSelection().toString().length > 0) return;
-
+    function onGestureStart(clientX, clientY) {
       isTracking = true;
       isDragging = false;
+      isDirectionLocked = false;
       isVerticalScroll = false;
       wasSwipeGesture = false;
-      startX = e.clientX;
-      startY = e.clientY;
+      startX = clientX;
+      startY = clientY;
       currentDeltaX = 0;
       startTime = Date.now();
       cardEl.classList.remove('fc-swipe-snap-back', 'fc-slide-in-right', 'fc-slide-in-left');
-    });
+      cardEl.style.transition = 'none';
+    }
 
-    cardEl.addEventListener('pointermove', (e) => {
+    function onGestureMove(clientX, clientY, e) {
       if (!isTracking || isVerticalScroll) return;
 
-      const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
+      const deltaX = clientX - startX;
+      const deltaY = clientY - startY;
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
 
-      if (!isDragging) {
-        // Vertical scroll detection (e.g. reading long steps or diagrams)
-        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 8) {
+      // Determine intent once movement exceeds a tiny 8px threshold
+      if (!isDirectionLocked && (absX > 8 || absY > 8)) {
+        isDirectionLocked = true;
+        // If movement is predominantly vertical, let native card internal scrolling happen
+        if (absY > absX * 1.3) {
           isVerticalScroll = true;
           return;
-        }
-        // Horizontal swipe activation
-        if (Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        } else {
+          // It is a deliberate horizontal swipe gesture!
           isDragging = true;
           wasSwipeGesture = true;
           cardEl.classList.add('fc-swiping');
-          try { cardEl.setPointerCapture(e.pointerId); } catch (err) {}
         }
       }
 
       if (isDragging) {
+        // Prevent browser back/forward navigation and outer page scrolling
+        if (e && e.cancelable && typeof e.preventDefault === 'function') {
+          e.preventDefault();
+        }
         currentDeltaX = deltaX;
-        const tilt = deltaX * 0.035; // Subtle natural tilt (1-3 degrees)
-        const opacity = Math.max(0.72, 1 - Math.abs(deltaX) / 800);
+        const tilt = deltaX * 0.035; // Natural subtle 1-3deg tilt
+        const opacity = Math.max(0.68, 1 - absX / 750);
         cardEl.style.transform = `translate3d(${deltaX}px, 0, 0) rotate(${tilt}deg)`;
         cardEl.style.opacity = String(opacity);
       }
-    });
+    }
 
-    const finishSwipe = (e) => {
+    function onGestureEnd() {
       if (!isTracking) return;
       isTracking = false;
-
-      if (e && e.pointerId) {
-        try { cardEl.releasePointerCapture(e.pointerId); } catch (err) {}
-      }
       cardEl.classList.remove('fc-swiping');
 
       if (!isDragging) {
         cardEl.style.transform = '';
         cardEl.style.opacity = '';
+        cardEl.style.transition = '';
         return;
       }
 
       isDragging = false;
       const timeElapsed = Math.max(Date.now() - startTime, 1);
-      const velocity = currentDeltaX / timeElapsed; // px/ms
-      const isFlick = Math.abs(velocity) > 0.42 && Math.abs(currentDeltaX) > 25;
-      const isPastDistance = Math.abs(currentDeltaX) > 52;
-      const isSwipeLeft = currentDeltaX < 0 && (isFlick || isPastDistance);
-      const isSwipeRight = currentDeltaX > 0 && (isFlick || isPastDistance);
+      const velocity = Math.abs(currentDeltaX) / timeElapsed; // px/ms
+      // Responsive trigger: flick at >0.22 px/ms OR dragged >38px
+      const isTriggered = Math.abs(currentDeltaX) > 38 || (velocity > 0.22 && Math.abs(currentDeltaX) > 18);
+      const isSwipeLeft = currentDeltaX < 0 && isTriggered;
+      const isSwipeRight = currentDeltaX > 0 && isTriggered;
 
       // Swipe Left -> Next Card
       if (isSwipeLeft) {
         if (currentIndex < currentCards.length - 1) {
-          cardEl.classList.add('fc-swipe-out-left');
+          cardEl.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.2s ease-out';
+          cardEl.style.transform = 'translate3d(-125%, 0, 0) rotate(-9deg)';
+          cardEl.style.opacity = '0';
           setTimeout(() => {
             renderCard(currentIndex + 1, 'next');
-          }, 200);
+          }, 210);
         } else {
-          cardEl.classList.add('fc-swipe-snap-back');
-          cardEl.style.transform = '';
-          cardEl.style.opacity = '';
+          cardEl.style.transition = 'transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease';
+          cardEl.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+          cardEl.style.opacity = '1';
+          setTimeout(() => {
+            cardEl.style.transition = '';
+          }, 300);
           showToast('You are on the last card! 🔥');
         }
         return;
@@ -4471,27 +4478,79 @@ function initFlashcards() {
       // Swipe Right -> Previous Card
       if (isSwipeRight) {
         if (currentIndex > 0) {
-          cardEl.classList.add('fc-swipe-out-right');
+          cardEl.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.2s ease-out';
+          cardEl.style.transform = 'translate3d(125%, 0, 0) rotate(9deg)';
+          cardEl.style.opacity = '0';
           setTimeout(() => {
             renderCard(currentIndex - 1, 'prev');
-          }, 200);
+          }, 210);
         } else {
-          cardEl.classList.add('fc-swipe-snap-back');
-          cardEl.style.transform = '';
-          cardEl.style.opacity = '';
+          cardEl.style.transition = 'transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease';
+          cardEl.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+          cardEl.style.opacity = '1';
+          setTimeout(() => {
+            cardEl.style.transition = '';
+          }, 300);
           showToast('You are on the first card!');
         }
         return;
       }
 
       // Sub-threshold drag: spring snap-back to center
-      cardEl.classList.add('fc-swipe-snap-back');
-      cardEl.style.transform = '';
-      cardEl.style.opacity = '';
-    };
+      cardEl.style.transition = 'transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease';
+      cardEl.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+      cardEl.style.opacity = '1';
+      setTimeout(() => {
+        cardEl.style.transition = '';
+      }, 300);
+    }
 
-    cardEl.addEventListener('pointerup', finishSwipe);
-    cardEl.addEventListener('pointercancel', finishSwipe);
+    // 1. Native Mobile Touch Events (with non-passive touchmove for zero browser interference)
+    cardEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      if (e.target.closest('button, a, input, select, textarea')) return;
+      if (window.getSelection && window.getSelection().toString().length > 0) return;
+      onGestureStart(touch.clientX, touch.clientY);
+    }, { passive: true });
+
+    cardEl.addEventListener('touchmove', (e) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      onGestureMove(touch.clientX, touch.clientY, e);
+    }, { passive: false });
+
+    cardEl.addEventListener('touchend', () => {
+      onGestureEnd();
+    }, { passive: true });
+
+    cardEl.addEventListener('touchcancel', () => {
+      onGestureEnd();
+    }, { passive: true });
+
+    // 2. Pointer Events (Desktop Mouse & Pen Navigation)
+    cardEl.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') return; // Handled by Touch Events on mobile
+      if (e.target.closest('button, a, input, select, textarea')) return;
+      if (window.getSelection && window.getSelection().toString().length > 0) return;
+      onGestureStart(e.clientX, e.clientY);
+      try { cardEl.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+
+    cardEl.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      onGestureMove(e.clientX, e.clientY, e);
+    });
+
+    const finishPointer = (e) => {
+      if (e.pointerType === 'touch') return;
+      if (e && e.pointerId) {
+        try { cardEl.releasePointerCapture(e.pointerId); } catch (err) {}
+      }
+      onGestureEnd();
+    };
+    cardEl.addEventListener('pointerup', finishPointer);
+    cardEl.addEventListener('pointercancel', finishPointer);
 
     // Tap to flip (unless swiping or selecting text)
     cardEl.addEventListener('click', (e) => {

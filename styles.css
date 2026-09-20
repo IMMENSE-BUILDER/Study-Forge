@@ -3126,10 +3126,17 @@ label {
   cursor: pointer;
   position: relative;
   box-sizing: border-box;
-  touch-action: pan-y;
+  touch-action: pan-y !important;
   user-select: none;
   -webkit-user-select: none;
   will-change: transform, opacity;
+}
+
+.fc-card-inner,
+.fc-card-front,
+.fc-card-back,
+.fc-card-body {
+  touch-action: pan-y !important;
 }
 
 .fc-card.fc-swiping {
