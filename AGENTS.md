@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.2** [build 62]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.3** [build 63]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -347,6 +347,14 @@ Recent major changes (Sep 2026, now v45):
   - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
   - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
   - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
+- v0.6.3 (Build 63):
+  - Fullscreen Focus Zoom Lightbox for Flashcards: Added a dedicated, enlarged focus modal for visual study cards with clear diagram and label inspection.
+  - Click-and-Hold / Long-Press Activation: Holding a card steady for 480ms triggers haptic vibration feedback (`navigator.vibrate(40)`) and seamlessly opens the zoomed lightbox view.
+  - Gesture Disambiguation: Movement exceeding 8px immediately cancels the hold timer, preserving smooth horizontal swiping and vertical internal scrolling without false zoom triggers. Global 2s text selection timer is cleared on activation.
+  - Enlarged Visual Schematics: Zoom dialog expands up to 660px wide and 78vh high; visual container expands up to 48vh with 100% SVG width and auto-height, rendering complex circuit diagrams, truth tables, and math derivations at >2.5× original scale.
+  - Full Navigation & Flip Controls in Zoom: Includes dedicated `🔍 Zoom` button in toolbar, `✕` close button, backdrop tap to dismiss, `🔄 Flip` button, prev/next navigation, touch swipe support in zoom mode, synchronized state with main deck, and `Escape` / arrow keyboard shortcuts.
+  - Preserves 20-day Token Harbor (`glm-5.3-flash`) active plan; Vercel AI Gateway remains on standby.
+  - Triple bump `v0.6.3` / `versionCode: 63` / `CACHE_NAME: study-forge-v0.6.3`.
 - v0.6.2 (Build 62):
   - Fixed Mobile Touch Swipe Gesture Engine: Resolved issue where swiping left/right on mobile phones only moved slightly without transitioning to the next card.
   - Root Cause Fixed: Mobile Chrome/Safari passive event listeners previously prevented horizontal swipe capture, while a tight 8px vertical threshold locked out natural thumb arcs.

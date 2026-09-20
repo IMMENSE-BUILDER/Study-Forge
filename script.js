@@ -4030,6 +4030,15 @@ function initFlashcards() {
   const streamStatus = document.getElementById('fcStreamStatus');
   const deckList = document.getElementById('fcDeckList');
   const clearDecksBtn = document.getElementById('fcClearDecksBtn');
+  const zoomBtn = document.getElementById('fcZoomBtn');
+  const zoomModal = document.getElementById('fcZoomModal');
+  const zoomBackdrop = document.getElementById('fcZoomBackdrop');
+  const zoomViewport = document.getElementById('fcZoomCardViewport');
+  const zoomCloseBtn = document.getElementById('fcZoomCloseBtn');
+  const zoomFlipBtn = document.getElementById('fcZoomFlipBtn');
+  const zoomPrevBtn = document.getElementById('fcZoomPrevBtn');
+  const zoomNextBtn = document.getElementById('fcZoomNextBtn');
+  const zoomCounter = document.getElementById('fcZoomCounter');
 
   const fcSubjectContext = document.getElementById('fcSubjectContext');
   const fcSubjBadge = document.getElementById('fcSubjBadge');
@@ -4209,20 +4218,10 @@ function initFlashcards() {
     container.innerHTML = mdToHtml(str);
   }
 
-  function renderCard(index, slideDirection = null) {
-    if (!currentCards.length) return;
-    currentIndex = index;
-    const card = currentCards[index];
-    deckArea.innerHTML = "";
-
+  function createCardDOM(card, isZoom = false) {
     const cardEl = document.createElement("div");
     cardEl.className = "fc-card";
-    if (slideDirection === 'next') {
-      cardEl.classList.add('fc-slide-in-right');
-    } else if (slideDirection === 'prev') {
-      cardEl.classList.add('fc-slide-in-left');
-    }
-    cardEl.id = "fcCard";
+    if (isZoom) cardEl.classList.add("fc-card-zoomed");
 
     const inner = document.createElement("div");
     inner.className = "fc-card-inner";
@@ -4368,12 +4367,62 @@ function initFlashcards() {
 
     const hint = document.createElement("span");
     hint.className = "fc-tap-hint";
-    hint.innerHTML = '<span>↔ Swipe left / right</span> • <span>Tap to flip 🔄</span>';
+    hint.innerHTML = isZoom
+      ? '<span>↔ Swipe or buttons</span> • <span>Tap to flip 🔄</span> • <span>Esc or ✕ to close</span>'
+      : '<span>↔ Swipe left / right</span> • <span>Tap to flip 🔄</span> • <span>Hold to zoom 🔍</span>';
     cardEl.append(inner, hint);
 
-    deckArea.appendChild(cardEl);
+    return cardEl;
+  }
 
-    // ── Rock-Solid Touch & Pointer Mobile Swipe Engine ──
+  function openCardZoom(index) {
+    if (!currentCards.length) {
+      showToast('No cards to zoom yet.');
+      return;
+    }
+    const idx = (typeof index === 'number' && index >= 0 && index < currentCards.length) ? index : currentIndex;
+    const isCurrentlyFlipped = !!(document.getElementById('fcCard')?.classList.contains('flipped'));
+    if (zoomModal) {
+      zoomModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      renderZoomCard(idx);
+      if (isCurrentlyFlipped) {
+        const zCard = document.getElementById('fcZoomCard');
+        if (zCard) zCard.classList.add('flipped');
+      }
+    }
+  }
+
+  function closeCardZoom() {
+    if (zoomModal) {
+      const isZoomFlipped = !!(document.getElementById('fcZoomCard')?.classList.contains('flipped'));
+      zoomModal.style.display = 'none';
+      document.body.style.overflow = '';
+      renderCard(currentIndex);
+      if (isZoomFlipped) {
+        const normCard = document.getElementById('fcCard');
+        if (normCard) normCard.classList.add('flipped');
+      }
+    }
+  }
+
+  function renderZoomCard(index, slideDirection = null) {
+    if (!currentCards.length || !zoomViewport) return;
+    if (index < 0) index = 0;
+    if (index >= currentCards.length) index = currentCards.length - 1;
+    currentIndex = index;
+    const card = currentCards[index];
+
+    zoomViewport.innerHTML = "";
+    const cardEl = createCardDOM(card, true);
+    cardEl.id = "fcZoomCard";
+    if (slideDirection === 'next') {
+      cardEl.classList.add('fc-slide-in-right');
+    } else if (slideDirection === 'prev') {
+      cardEl.classList.add('fc-slide-in-left');
+    }
+
+    // Swipe navigation inside zoom view
     let startX = 0;
     let startY = 0;
     let currentDeltaX = 0;
@@ -4384,7 +4433,7 @@ function initFlashcards() {
     let isVerticalScroll = false;
     let wasSwipeGesture = false;
 
-    function onGestureStart(clientX, clientY) {
+    function onZoomStart(clientX, clientY) {
       isTracking = true;
       isDragging = false;
       isDirectionLocked = false;
@@ -4398,15 +4447,214 @@ function initFlashcards() {
       cardEl.style.transition = 'none';
     }
 
-    function onGestureMove(clientX, clientY, e) {
+    function onZoomMove(clientX, clientY, e) {
       if (!isTracking || isVerticalScroll) return;
+      const deltaX = clientX - startX;
+      const deltaY = clientY - startY;
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
+
+      if (!isDirectionLocked && (absX > 8 || absY > 8)) {
+        isDirectionLocked = true;
+        if (absY > absX * 1.3) {
+          isVerticalScroll = true;
+          return;
+        } else {
+          isDragging = true;
+          wasSwipeGesture = true;
+          cardEl.classList.add('fc-swiping');
+        }
+      }
+
+      if (isDragging) {
+        if (e && e.cancelable && typeof e.preventDefault === 'function') {
+          e.preventDefault();
+        }
+        currentDeltaX = deltaX;
+        const tilt = deltaX * 0.03;
+        const opacity = Math.max(0.7, 1 - absX / 750);
+        cardEl.style.transform = `translate3d(${deltaX}px, 0, 0) rotate(${tilt}deg)`;
+        cardEl.style.opacity = String(opacity);
+      }
+    }
+
+    function onZoomEnd() {
+      if (!isTracking) return;
+      isTracking = false;
+      cardEl.classList.remove('fc-swiping');
+
+      if (!isDragging) {
+        cardEl.style.transform = '';
+        cardEl.style.opacity = '';
+        cardEl.style.transition = '';
+        return;
+      }
+
+      isDragging = false;
+      const timeElapsed = Math.max(Date.now() - startTime, 1);
+      const velocity = Math.abs(currentDeltaX) / timeElapsed;
+      const isTriggered = Math.abs(currentDeltaX) > 38 || (velocity > 0.22 && Math.abs(currentDeltaX) > 18);
+      const isSwipeLeft = currentDeltaX < 0 && isTriggered;
+      const isSwipeRight = currentDeltaX > 0 && isTriggered;
+
+      if (isSwipeLeft) {
+        if (currentIndex < currentCards.length - 1) {
+          cardEl.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.2s ease-out';
+          cardEl.style.transform = 'translate3d(-125%, 0, 0) rotate(-9deg)';
+          cardEl.style.opacity = '0';
+          setTimeout(() => { renderZoomCard(currentIndex + 1, 'next'); }, 210);
+        } else {
+          cardEl.style.transition = 'transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease';
+          cardEl.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+          cardEl.style.opacity = '1';
+          setTimeout(() => { cardEl.style.transition = ''; }, 300);
+          showToast('You are on the last card! 🔥');
+        }
+        return;
+      }
+
+      if (isSwipeRight) {
+        if (currentIndex > 0) {
+          cardEl.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.2s ease-out';
+          cardEl.style.transform = 'translate3d(125%, 0, 0) rotate(9deg)';
+          cardEl.style.opacity = '0';
+          setTimeout(() => { renderZoomCard(currentIndex - 1, 'prev'); }, 210);
+        } else {
+          cardEl.style.transition = 'transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease';
+          cardEl.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+          cardEl.style.opacity = '1';
+          setTimeout(() => { cardEl.style.transition = ''; }, 300);
+          showToast('You are on the first card!');
+        }
+        return;
+      }
+
+      cardEl.style.transition = 'transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease';
+      cardEl.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+      cardEl.style.opacity = '1';
+      setTimeout(() => { cardEl.style.transition = ''; }, 300);
+    }
+
+    cardEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      if (e.target.closest('button, a, input, select, textarea')) return;
+      onZoomStart(touch.clientX, touch.clientY);
+    }, { passive: true });
+
+    cardEl.addEventListener('touchmove', (e) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      onZoomMove(touch.clientX, touch.clientY, e);
+    }, { passive: false });
+
+    cardEl.addEventListener('touchend', onZoomEnd, { passive: true });
+    cardEl.addEventListener('touchcancel', onZoomEnd, { passive: true });
+
+    cardEl.addEventListener('click', (e) => {
+      if (wasSwipeGesture) {
+        wasSwipeGesture = false;
+        e.stopPropagation();
+        return;
+      }
+      cardEl.classList.toggle('flipped');
+    });
+
+    zoomViewport.appendChild(cardEl);
+
+    if (zoomCounter) zoomCounter.textContent = `${index + 1} / ${currentCards.length}`;
+    if (zoomPrevBtn) zoomPrevBtn.disabled = index === 0;
+    if (zoomNextBtn) zoomNextBtn.disabled = index === currentCards.length - 1;
+
+    // Keep background deck controls synced
+    counter.textContent = `${index + 1} / ${currentCards.length}`;
+    prevBtn.disabled = index === 0;
+    nextBtn.disabled = index === currentCards.length - 1;
+  }
+
+  function renderCard(index, slideDirection = null) {
+    if (!currentCards.length) return;
+    currentIndex = index;
+    const card = currentCards[index];
+    deckArea.innerHTML = "";
+
+    const cardEl = createCardDOM(card, false);
+    if (slideDirection === 'next') {
+      cardEl.classList.add('fc-slide-in-right');
+    } else if (slideDirection === 'prev') {
+      cardEl.classList.add('fc-slide-in-left');
+    }
+    cardEl.id = "fcCard";
+
+    deckArea.appendChild(cardEl);
+
+    // ── Rock-Solid Touch & Pointer Mobile Swipe Engine with Hold-to-Zoom ──
+    let startX = 0;
+    let startY = 0;
+    let currentDeltaX = 0;
+    let startTime = 0;
+    let isTracking = false;
+    let isDragging = false;
+    let isDirectionLocked = false;
+    let isVerticalScroll = false;
+    let wasSwipeGesture = false;
+
+    // Long-press hold-to-zoom timer (480ms)
+    let holdZoomTimer = null;
+    let holdZoomTriggered = false;
+
+    function startHoldTimer() {
+      clearHoldTimer();
+      holdZoomTriggered = false;
+      holdZoomTimer = setTimeout(() => {
+        holdZoomTriggered = true;
+        setTimeout(() => { holdZoomTriggered = false; }, 400);
+        if (typeof holdClearTimer === 'function') holdClearTimer();
+        if (window.navigator && window.navigator.vibrate) {
+          try { window.navigator.vibrate(40); } catch (err) {}
+        }
+        openCardZoom(currentIndex);
+      }, 480);
+    }
+
+    function clearHoldTimer() {
+      if (holdZoomTimer) {
+        clearTimeout(holdZoomTimer);
+        holdZoomTimer = null;
+      }
+    }
+
+    function onGestureStart(clientX, clientY) {
+      isTracking = true;
+      isDragging = false;
+      isDirectionLocked = false;
+      isVerticalScroll = false;
+      wasSwipeGesture = false;
+      startX = clientX;
+      startY = clientY;
+      currentDeltaX = 0;
+      startTime = Date.now();
+      cardEl.classList.remove('fc-swipe-snap-back', 'fc-slide-in-right', 'fc-slide-in-left');
+      cardEl.style.transition = 'none';
+      startHoldTimer();
+    }
+
+    function onGestureMove(clientX, clientY, e) {
+      if (!isTracking) return;
 
       const deltaX = clientX - startX;
       const deltaY = clientY - startY;
       const absX = Math.abs(deltaX);
       const absY = Math.abs(deltaY);
 
-      // Determine intent once movement exceeds a tiny 8px threshold
+      // Cancel hold timer immediately if movement exceeds 8px in any direction
+      if (absX > 8 || absY > 8) {
+        clearHoldTimer();
+      }
+
+      if (isVerticalScroll) return;
+
+      // Determine intent once movement exceeds 8px threshold
       if (!isDirectionLocked && (absX > 8 || absY > 8)) {
         isDirectionLocked = true;
         // If movement is predominantly vertical, let native card internal scrolling happen
@@ -4435,6 +4683,7 @@ function initFlashcards() {
     }
 
     function onGestureEnd() {
+      clearHoldTimer();
       if (!isTracking) return;
       isTracking = false;
       cardEl.classList.remove('fc-swiping');
@@ -4505,7 +4754,7 @@ function initFlashcards() {
       }, 300);
     }
 
-    // 1. Native Mobile Touch Events (with non-passive touchmove for zero browser interference)
+    // 1. Native Mobile Touch Events
     cardEl.addEventListener('touchstart', (e) => {
       if (e.touches.length !== 1) return;
       const touch = e.touches[0];
@@ -4530,7 +4779,7 @@ function initFlashcards() {
 
     // 2. Pointer Events (Desktop Mouse & Pen Navigation)
     cardEl.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'touch') return; // Handled by Touch Events on mobile
+      if (e.pointerType === 'touch') return;
       if (e.target.closest('button, a, input, select, textarea')) return;
       if (window.getSelection && window.getSelection().toString().length > 0) return;
       onGestureStart(e.clientX, e.clientY);
@@ -4552,8 +4801,14 @@ function initFlashcards() {
     cardEl.addEventListener('pointerup', finishPointer);
     cardEl.addEventListener('pointercancel', finishPointer);
 
-    // Tap to flip (unless swiping or selecting text)
+    // Tap to flip (unless swiping, text selecting, or hold-to-zoom fired)
     cardEl.addEventListener('click', (e) => {
+      clearHoldTimer();
+      if (holdZoomTriggered) {
+        holdZoomTriggered = false;
+        e.stopPropagation();
+        return;
+      }
       if (wasSwipeGesture) {
         wasSwipeGesture = false;
         e.stopPropagation();
@@ -4602,8 +4857,59 @@ function initFlashcards() {
     });
   }
 
-  // Keyboard Arrow Left/Right Navigation & Spacebar Flip
+  // Dedicated Zoom button & Lightbox Controls
+  if (zoomBtn) {
+    zoomBtn.addEventListener('click', () => {
+      openCardZoom(currentIndex);
+    });
+  }
+  if (zoomCloseBtn) {
+    zoomCloseBtn.addEventListener('click', closeCardZoom);
+  }
+  if (zoomBackdrop) {
+    zoomBackdrop.addEventListener('click', closeCardZoom);
+  }
+  if (zoomFlipBtn) {
+    zoomFlipBtn.addEventListener('click', () => {
+      const zCard = document.getElementById('fcZoomCard');
+      if (zCard) zCard.classList.toggle('flipped');
+    });
+  }
+  if (zoomPrevBtn) {
+    zoomPrevBtn.addEventListener('click', () => {
+      if (currentIndex > 0) renderZoomCard(currentIndex - 1, 'prev');
+    });
+  }
+  if (zoomNextBtn) {
+    zoomNextBtn.addEventListener('click', () => {
+      if (currentIndex < currentCards.length - 1) renderZoomCard(currentIndex + 1, 'next');
+    });
+  }
+
+  // Keyboard Arrow Left/Right Navigation, Spacebar Flip, and Escape for Zoom
   document.addEventListener('keydown', (e) => {
+    if (zoomModal && zoomModal.style.display === 'flex') {
+      if (e.key === 'Escape') {
+        closeCardZoom();
+        e.preventDefault();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        if (currentIndex < currentCards.length - 1) renderZoomCard(currentIndex + 1, 'next');
+        e.preventDefault();
+        return;
+      } else if (e.key === 'ArrowLeft') {
+        if (currentIndex > 0) renderZoomCard(currentIndex - 1, 'prev');
+        e.preventDefault();
+        return;
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        const zCard = document.getElementById('fcZoomCard');
+        if (zCard) zCard.classList.toggle('flipped');
+        e.preventDefault();
+        return;
+      }
+    }
+
     if (!currentCards.length) return;
     const cardEl = document.getElementById('fcCard');
     if (!cardEl || !cardEl.offsetParent) return;
