@@ -2464,25 +2464,45 @@ function mdToHtml(text) {
   });
   text = escapeHtml(text);
 
+  function unescapeKatex(str) {
+    return String(str || '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+  }
+
   // 2. Render LaTeX math using KaTeX (if available)
   if (typeof katex !== 'undefined') {
     // Display math: \[ ... \] or $$ ... $$
     text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
-      try { return `<div class="math-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`; }
+      const clean = unescapeKatex(math.trim());
+      try { return `<div class="math-block">${katex.renderToString(clean, { displayMode: true, throwOnError: false })}</div>`; }
       catch { return `<div class="math-block math-error">${math}</div>`; }
     });
     text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
-      try { return `<div class="math-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`; }
+      const clean = unescapeKatex(math.trim());
+      try { return `<div class="math-block">${katex.renderToString(clean, { displayMode: true, throwOnError: false })}</div>`; }
       catch { return `<div class="math-block math-error">${math}</div>`; }
     });
     // Inline math: \( ... \) or $ ... $
     text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
-      try { return katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }); }
+      const clean = unescapeKatex(math.trim());
+      try { return katex.renderToString(clean, { displayMode: false, throwOnError: false }); }
       catch { return `<span class="math-error">${math}</span>`; }
     });
     text = text.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, (_, math) => {
-      try { return katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }); }
+      const clean = unescapeKatex(math.trim());
+      try { return katex.renderToString(clean, { displayMode: false, throwOnError: false }); }
       catch { return `<span class="math-error">${math}</span>`; }
+    });
+    // Auto-render naked LaTeX math commands if LLM omitted dollar wrappers
+    text = text.replace(/(\\texttt\{[^{}]*\}|\\rightarrow|\\leftarrow|\\Rightarrow|\\Leftarrow)/g, (cmd) => {
+      const clean = unescapeKatex(cmd.trim());
+      try { return katex.renderToString(clean, { displayMode: false, throwOnError: false }); }
+      catch { return cmd; }
     });
   }
 
@@ -4365,12 +4385,12 @@ function initFlashcards() {
 
     inner.append(front, back);
 
-    const hint = document.createElement("span");
-    hint.className = "fc-tap-hint";
-    hint.innerHTML = isZoom
-      ? '<span>↔ Swipe or buttons</span> • <span>Tap to flip 🔄</span> • <span>Esc or ✕ to close</span>'
-      : '<span>↔ Swipe left / right</span> • <span>Tap to flip 🔄</span> • <span>Hold to zoom 🔍</span>';
-    cardEl.append(inner, hint);
+    if (!isZoom) {
+      const hint = document.createElement("span");
+      hint.className = "fc-tap-hint";
+      hint.innerHTML = '<span>↔ Swipe left / right</span> • <span>Tap to flip 🔄</span> • <span>Hold to zoom 🔍</span>';
+      cardEl.append(hint);
+    }
 
     return cardEl;
   }
@@ -4563,6 +4583,10 @@ function initFlashcards() {
     zoomViewport.appendChild(cardEl);
 
     if (zoomCounter) zoomCounter.textContent = `${index + 1} / ${currentCards.length}`;
+    const zoomTag = document.getElementById('fcZoomTag');
+    if (zoomTag) {
+      zoomTag.textContent = card.tag || '⚡ STUDYFORGED FOCUS';
+    }
     if (zoomPrevBtn) zoomPrevBtn.disabled = index === 0;
     if (zoomNextBtn) zoomNextBtn.disabled = index === currentCards.length - 1;
 

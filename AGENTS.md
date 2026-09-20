@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.3** [build 63]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.4** [build 64]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -347,6 +347,14 @@ Recent major changes (Sep 2026, now v45):
   - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
   - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
   - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
+- v0.6.4 (Build 64):
+  - Flashcard Fullscreen Focus Zoom Redesign & Alignment Fix: Completely addressed broken controls, downward text misalignment, and KaTeX rendering issues in the flashcard focus lightbox.
+  - Streamlined Header: Replaced cluttered multi-color controls with a minimal top bar displaying dynamic academic tag (e.g. `PPS · Unit 1`), counter (`1 / 4`), and a clean circular `✕` close button.
+  - Balanced Symmetrical Navigation Dock: Replaced the squeezed footer with a unified 3-button floating dock (`[ ← Prev ] [ 🔄 Flip Card ] [ Next → ]`) with identical dark/light styling, accent focus, and zero text wrapping or button distortion.
+  - Natural Diagram Sizing & Downward Push Fix: Removed arbitrary forced 220px min-height on `.fc-visual-box`; SVGs scale proportionally without creating massive empty voids that previously pushed takeaways off the screen.
+  - Leaked Tap-Hint Overlap Eliminated: Suppressed `.fc-tap-hint` inside the zoomed card element, ending bottom edge text collision with navigation controls.
+  - KaTeX HTML Entity Unescape & Error Guard: Added `unescapeKatex` decoder in `mdToHtml` restoring `<` and `>` before KaTeX parsing, plus `.katex-error` CSS styling reset to eliminate glaring red parse errors.
+  - Triple bump `v0.6.4` / `versionCode: 64` / `CACHE_NAME: study-forge-v0.6.4`.
 - v0.6.3 (Build 63):
   - Fullscreen Focus Zoom Lightbox for Flashcards: Added a dedicated, enlarged focus modal for visual study cards with clear diagram and label inspection.
   - Click-and-Hold / Long-Press Activation: Holding a card steady for 480ms triggers haptic vibration feedback (`navigator.vibrate(40)`) and seamlessly opens the zoomed lightbox view.

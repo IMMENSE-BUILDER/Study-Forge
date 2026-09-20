@@ -954,19 +954,16 @@
     <div class="fc-zoom-dialog">
       <div class="fc-zoom-header">
         <div class="fc-zoom-header-left">
-          <span class="fc-zoom-tag">🔍 FULLSCREEN FOCUS</span>
+          <span class="fc-zoom-tag" id="fcZoomTag">⚡ STUDYFORGED FOCUS</span>
           <span class="fc-zoom-counter" id="fcZoomCounter">1 / 1</span>
         </div>
-        <div class="fc-zoom-header-right">
-          <button type="button" class="fc-zoom-flip-btn" id="fcZoomFlipBtn" title="Flip Card">🔄 Flip</button>
-          <button type="button" class="fc-zoom-close-btn" id="fcZoomCloseBtn" title="Close zoom mode (Esc)">✕</button>
-        </div>
+        <button type="button" class="fc-zoom-close-btn" id="fcZoomCloseBtn" title="Close zoom mode (Esc)" aria-label="Close">✕</button>
       </div>
       <div class="fc-zoom-card-viewport" id="fcZoomCardViewport"></div>
-      <div class="fc-zoom-footer">
-        <button type="button" class="fc-zoom-nav-btn" id="fcZoomPrevBtn" title="Previous card">← Prev</button>
-        <span class="fc-zoom-tip">Tap card to flip 🔄 • Swipe or buttons to navigate • Tap outside to exit</span>
-        <button type="button" class="fc-zoom-nav-btn" id="fcZoomNextBtn" title="Next card">Next →</button>
+      <div class="fc-zoom-dock">
+        <button type="button" class="fc-zoom-dock-btn" id="fcZoomPrevBtn" title="Previous card">← Prev</button>
+        <button type="button" class="fc-zoom-dock-btn fc-zoom-dock-flip" id="fcZoomFlipBtn" title="Flip card (or tap card)">🔄 Flip Card</button>
+        <button type="button" class="fc-zoom-dock-btn" id="fcZoomNextBtn" title="Next card">Next →</button>
       </div>
     </div>
   </div>
