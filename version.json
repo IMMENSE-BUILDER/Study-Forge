@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":71,"latest":"v0.6.11","notes":"Phase 2 now one card per request (1-by-1) so each card lands visibly for 6/8-count decks; single-card 4500 token budget."}
+{"apkUrl":"","app":"StudyForged","versionCode":72,"latest":"v0.6.12","notes":"Fix zoom lightbox close button: glyph bled outside its circle. Bulletproof centering (line-height 1, zero padding, clipped overflow)."}
