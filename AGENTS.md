@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.7** [build 67]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.8** [build 68]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,14 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.7):
+Recent major changes (Sep 2026, now v0.6.8):
+- v0.6.8 (Build 68):
+  - Blank-Card-1 fix (v0.6.7 regression): status said "Card 1 ready" with 1/8 counter but deck area empty (hint only).
+  - Root cause: Phase1 4500→3500 cut starved GLM 5.3 Flash CoT → truncated JSON → partial shell rendered as blank.
+  - Restored safe budgets Phase1 4500 + Phase2 `min(8000,n*2000)`; kept snappy wins (schema caps, cache, throttle, 700ms retry, preconnect, chat opts).
+  - Added `isValidCard` guard in both phase callbacks + cache-hit validation — shells with no title/content are skipped, never rendered/counted/saved; empty result now throws to error UI instead of blank.
+  - Triple bump `v0.6.8` / `versionCode: 68` / `CACHE_NAME: study-forge-v0.6.8`.
+- v0.6.7 (Build 67):
 - Sec-E personalization pack: profile, timetable, faculty, exam intel, seed + migration (v1→v3).
 - Timetable tab: 5-day aligned grid, live liquid-fill + done states, tap-to-toast (labs omit room), Today card.
 - App hardening: responsive overhaul, hold-to-select, menu-over-AI-bar fix, no-wrap header, inner breathing room.

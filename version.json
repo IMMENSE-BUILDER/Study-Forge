@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":67,"latest":"v0.6.7","notes":"Snappy AI overhaul: chat 850 tokens + 5-turn history + KaTeX-free streaming frames + near-bottom scroll; flashcards 3500/7000 budgets + concise schema caps + instant 5-min deck cache + throttled parser + 700ms retry; preconnect to AI gateways."}
+{"apkUrl":"","app":"StudyForged","versionCode":68,"latest":"v0.6.8","notes":"Fix blank Card 1: restored 4500/8000 token budgets (v0.6.7 cut truncated GLM CoT), added valid-card guard in both phases + cache validation so shells never render."}

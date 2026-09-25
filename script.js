@@ -5335,11 +5335,21 @@ function initFlashcards() {
     const cardCount = countSelect ? (parseInt(countSelect.value, 10) || 4) : 4;
 
     // v0.6.7 snappy: instant cache hit for identical repeat (same subject+topic+mode+count within 5min) — zero network.
+    // v0.6.8: validate cached cards (skip blank shells saved by truncated v0.6.7 runs).
     try {
       const topicKey = `${subjData.alias}: ${cleanTopic}`;
       const decks = loadDecks();
       const hit = decks.find(d => d.topic === topicKey && d.mode === mode && Array.isArray(d.cards) && d.cards.length === cardCount && d.date && (Date.now() - new Date(d.date).getTime() < 300000));
-      if (hit) {
+      const hitValid = hit && hit.cards.every(c => {
+        const t = (c.title || c.q || '').trim();
+        if (t.length <= 2) return false;
+        const e = String(c.essence || c.q || '').trim().length > 10;
+        const v = String(c.visual || '').trim().length > 10;
+        const tw = Array.isArray(c.takeaways) && c.takeaways.some(x => String(x || '').trim().length > 3);
+        const st = Array.isArray(c.steps) && c.steps.some(x => String(x || '').trim().length > 3);
+        return e || v || tw || st;
+      });
+      if (hitValid) {
         currentCards = hit.cards.map(c => normalizeCard(c, cleanTopic, subjData.alias));
         currentIndex = 0;
         if (emptyState) emptyState.style.display = 'none';
@@ -5667,12 +5677,25 @@ ${getJsonSchemaInstructions(1)}`;
         ],
         stream: true,
         temperature: 0.6,
-        // v0.6.7 snappy: 3500 still covers CoT + 1 concise card JSON, cuts tail vs 4500.
-        max_tokens: 3500
+        // v0.6.8 fix: restored 4500 (v0.6.7 3500 truncated GLM CoT → blank Card 1). Tail cost worth correctness.
+        max_tokens: 4500
+      };
+
+      // v0.6.8 blank-card guard: never render/count a shell with no readable content.
+      const isValidCard = (c) => {
+        if (!c || typeof c !== 'object') return false;
+        const titleOk = typeof c.title === 'string' && c.title.trim().length > 2;
+        if (!titleOk) return false;
+        const hasEssence = typeof c.essence === 'string' && c.essence.trim().length > 10;
+        const hasVisual = typeof c.visual === 'string' && c.visual.trim().length > 10;
+        const hasTakeaways = Array.isArray(c.takeaways) && c.takeaways.some(t => String(t || '').trim().length > 3);
+        const hasSteps = Array.isArray(c.steps) && c.steps.some(s => String(s || '').trim().length > 3);
+        return hasEssence || hasVisual || hasTakeaways || hasSteps;
       };
 
       await streamLlmCards(phase1Payload, (card) => {
         if (thisGenId !== currentGenerationId) return;
+        if (!isValidCard(card)) return;
         currentCards.push(card);
         // Render Card 1 immediately!
         if (emptyState) emptyState.style.display = 'none';
@@ -5726,13 +5749,14 @@ ${getJsonSchemaInstructions(remainingCount)}`;
         ],
         stream: true,
         temperature: 0.6,
-        // v0.6.7 snappy: ~1700/card cap (was 2000) + 7000 ceiling — concise cards render/parse faster, same quality.
-        max_tokens: Math.min(7000, remainingCount * 1700)
+        // v0.6.8 fix: restored min(8000, n*2000) ceiling — v0.6.7 cap starved multi-card JSON.
+        max_tokens: Math.min(8000, remainingCount * 2000)
       };
 
       try {
         await streamLlmCards(phase2Payload, (card) => {
           if (thisGenId !== currentGenerationId) return;
+          if (!isValidCard(card)) return;
           currentCards.push(card);
           syncCurrentDeckToStorage();
           // Dynamically update counter and enable next button as new cards arrive
