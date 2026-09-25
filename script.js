@@ -2470,7 +2470,9 @@ function trimmedBuddyBlock(userText) {
 // Markdown + LaTeX math to HTML
 // v32: escape raw <>& first so AI/user text can never inject HTML.
 // Code fences are extracted before escaping; KaTeX output is trusted.
-function mdToHtml(text) {
+// v0.6.7: skipMath fast-path for SSE streaming — skips KaTeX per-frame (CPU heavy on phones).
+// Final render always uses full math; streaming uses plain markdown for snappy 35ms frames.
+function mdToHtml(text, skipMath) {
   // 1. Protect code blocks from being processed
   const codeBlocks = [];
   text = String(text == null ? "" : text).replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
@@ -2490,7 +2492,8 @@ function mdToHtml(text) {
   }
 
   // 2. Render LaTeX math using KaTeX (if available)
-  if (typeof katex !== 'undefined') {
+  // skipMath=true: streaming fast-path — skip CPU-heavy KaTeX per frame, final render restores it.
+  if (!skipMath && typeof katex !== 'undefined') {
     // Display math: \[ ... \] or $$ ... $$
     text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
       const clean = unescapeKatex(math.trim());
@@ -3528,15 +3531,16 @@ function initAskAI() {
     const subjectContext = trimmedBuddyBlock(typeof userText === 'string' ? userText : '');
 
     const systemPrompt = `${AI_SYSTEM_PROMPT}${subjectContext ? `\n\n${subjectContext}` : ''}${userContext ? `\n\nStudent Live Context:\n${userContext}` : ''}`;
-    const maxTokens = 1000;
+    // v0.6.7 snappy: 850 cap still covers 250-350 words + math/code headroom, cuts tail ~15%.
+    const maxTokens = 850;
 
     // Balanced chat history: preserves full formulas, derivations, code, and details for recent turns
-    // Keeps the last 6 turns in full detail, with a generous 1500-char safety cap only for outlier essays
-    const recentHistory = chatHistory.slice(-6).map(msg => {
-      if (msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.length > 1500) {
+    // v0.6.7 snappy: last 5 turns + 1200-char cap (was 6/1500) — lighter prompt, faster TTFT in long chats.
+    const recentHistory = chatHistory.slice(-5).map(msg => {
+      if (msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.length > 1200) {
         return {
           role: 'assistant',
-          content: msg.content.slice(0, 1500) + '... [remaining section truncated]'
+          content: msg.content.slice(0, 1200) + '... [remaining section truncated]'
         };
       }
       return msg;
@@ -3800,8 +3804,13 @@ function initAskAI() {
 
       function renderStream() {
         if (contentEl) {
-          contentEl.innerHTML = mdToHtml(latestAccumulated) + '<span class="ai-block-cursor"></span>';
-          chatArea.scrollTop = chatArea.scrollHeight;
+          // v0.6.7 snappy: fast markdown during stream (no KaTeX), full math on final render.
+          contentEl.innerHTML = mdToHtml(latestAccumulated, true) + '<span class="ai-block-cursor"></span>';
+          // Only autoscroll when user is already near bottom — avoids yanking while reading + layout thrash.
+          try {
+            const nearBottom = (chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight) < 140;
+            if (nearBottom) chatArea.scrollTop = chatArea.scrollHeight;
+          } catch (e) {}
         }
         frameScheduled = false;
       }
@@ -3922,8 +3931,12 @@ function initAskAI() {
 
     function renderStream() {
       if (contentEl) {
-        contentEl.innerHTML = mdToHtml(latestAccumulated) + '<span class="ai-block-cursor"></span>';
-        chatArea.scrollTop = chatArea.scrollHeight;
+        // v0.6.7 snappy: fast markdown during stream (no KaTeX), full math on final render.
+        contentEl.innerHTML = mdToHtml(latestAccumulated, true) + '<span class="ai-block-cursor"></span>';
+        try {
+          const nearBottom = (chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight) < 140;
+          if (nearBottom) chatArea.scrollTop = chatArea.scrollHeight;
+        } catch (e) {}
       }
       frameScheduled = false;
     }
@@ -5321,6 +5334,29 @@ function initFlashcards() {
     const mode = modeSelect ? modeSelect.value : 'exam';
     const cardCount = countSelect ? (parseInt(countSelect.value, 10) || 4) : 4;
 
+    // v0.6.7 snappy: instant cache hit for identical repeat (same subject+topic+mode+count within 5min) — zero network.
+    try {
+      const topicKey = `${subjData.alias}: ${cleanTopic}`;
+      const decks = loadDecks();
+      const hit = decks.find(d => d.topic === topicKey && d.mode === mode && Array.isArray(d.cards) && d.cards.length === cardCount && d.date && (Date.now() - new Date(d.date).getTime() < 300000));
+      if (hit) {
+        currentCards = hit.cards.map(c => normalizeCard(c, cleanTopic, subjData.alias));
+        currentIndex = 0;
+        if (emptyState) emptyState.style.display = 'none';
+        controls.style.display = 'flex';
+        renderCard(0);
+        counter.textContent = `1 / ${currentCards.length}`;
+        prevBtn.disabled = true;
+        nextBtn.disabled = currentCards.length <= 1;
+        if (streamStatus) streamStatus.style.display = 'none';
+        showToast('Loaded instant revision deck ⚡');
+        renderDeckList();
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🔥 Generate Cards';
+        return;
+      }
+    } catch (e) {}
+
     let modePrompt = 'Focus on high-yield university end-sem exam topics (12-marker blueprints), core derivations, and essential theory from the ADGIPS/IPU curriculum.';
     if (mode === 'formulas') {
       modePrompt = 'Focus heavily on key mathematical formulas, step-by-step KaTeX equations (use \\( ... \\) and \\[ ... \\]), theorems (e.g. Thevenin, Cayley-Hamilton, Gauss Divergence), and step derivations.';
@@ -5353,13 +5389,13 @@ You MUST generate cards STRICTLY within the context, scope, and syllabus convent
 - "title": Short, punchy concept title (e.g. "${subjData.alias}: Recursion & Base Condition", "Stack Frame Anatomy", "Norton's Equivalent Circuit").
 - "tag": Short subject or unit tag (MUST begin with "${subjData.alias} · ", e.g. "${subjData.alias} · Unit 2", "${subjData.alias} · High-Yield").
 - "difficulty": Exactly one of "High-Yield", "Medium", or "Easy".
-- "essence": Exactly 1 crisp sentence explaining the core principle or rule.
-- "visual": A visual element for the card. Choose the best option for the concept:
-    * An inline SVG diagram: Use single quotes for all attributes (e.g. <svg viewBox='0 0 380 95' xmlns='http://www.w3.org/2000/svg'>...). Use simple clean shapes (<rect>, <circle>, <line>, <path>, <text font-size='11' fill='#111'>) with high-contrast accent colors (#f59e0b, #3b82f6, #10b981, #ef4444).
+- "essence": Exactly 1 crisp sentence (max ~25 words) explaining the core principle or rule.
+- "visual": A visual element for the card. Keep it lightweight and compact for fast rendering. Choose the best option:
+    * An inline SVG diagram: Use single quotes for all attributes (e.g. <svg viewBox='0 0 380 90' xmlns='http://www.w3.org/2000/svg'>...). Max ~12 shapes, simple clean shapes (<rect>, <circle>, <line>, <path>, <text font-size='11' fill='#111'>) with high-contrast accents (#f59e0b, #3b82f6, #10b981, #ef4444).
     * OR a centered KaTeX display equation: e.g. \\[ T(n) = T(n-1) + O(1) \\] or \\[ V_{th} = V_{oc} \\]
-    * OR a short formatted code snippet (ANSI C for PPS): \`\`\`c ... \`\`\`
-- "takeaways": Array of exactly 3 bullet points. Start each takeaway with a bold phrase (e.g. "**Base Condition Rule:** Must precede recursive call to avoid stack overflow", "**Time Complexity:** \\(O(1)\\) constant time access").
-- "steps": Array of 3 to 4 sequential steps detailing the exact step-by-step procedure, derivation flow, or memory execution. Start each step with a bold action (e.g. "**Step 1: Compute Open-Circuit Voltage \\(V_{oc}\\)** by removing the load resistor...").
+    * OR a short formatted code snippet (ANSI C for PPS, max ~10 lines): \`\`\`c ... \`\`\`
+- "takeaways": Array of exactly 3 crisp bullets, each max ~14 words. Start each with a bold phrase (e.g. "**Base Condition Rule:** Must precede recursive call to avoid stack overflow", "**Time Complexity:** \\(O(1)\\) constant time access").
+- "steps": Array of 3 to 4 sequential steps, each max ~22 words, detailing the exact procedure/derivation/memory execution. Start each with a bold action (e.g. "**Step 1: Compute Open-Circuit Voltage \\(V_{oc}\\)** by removing the load resistor...").
 - "examTrap": Exactly 1 common exam pitfall, calculation trap, or professor viva question to watch out for. Mention what professors specifically penalize.
 - "mnemonic": A short, memorable hook or memory aid (e.g. "**Mnemonic: BASE** - Before Any Step Executes").
 
@@ -5390,7 +5426,7 @@ CRITICAL JSON RULES:
           });
           if (resp.ok) break;
           if (attempt === 1 && resp.status >= 500) {
-            await new Promise(r => setTimeout(r, 1200));
+            await new Promise(r => setTimeout(r, 700));
             continue;
           }
         } catch (firstErr) {
@@ -5407,7 +5443,7 @@ CRITICAL JSON RULES:
             } catch (fallbackErr) {
               lastFetchErr = fallbackErr;
             }
-            await new Promise(r => setTimeout(r, 1200));
+            await new Promise(r => setTimeout(r, 700));
           }
         }
       }
@@ -5425,6 +5461,8 @@ CRITICAL JSON RULES:
       }
 
       let parsedCount = 0;
+      // v0.6.7 snappy: throttle O(n) object scan — only rescan after meaningful growth.
+      let lastExtractLen = 0;
       if (resp.body && typeof resp.body.getReader === 'function') {
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
@@ -5459,6 +5497,11 @@ CRITICAL JSON RULES:
                 const delta = json.choices?.[0]?.delta?.content || '';
                 if (delta) {
                   accumulatedContent += delta;
+                  // Throttle: skip rescan for tiny appends unless a closing brace arrived.
+                  const grew = accumulatedContent.length - lastExtractLen;
+                  const maybeClosed = delta.includes('}') || accumulatedContent.length - lastExtractLen > 250;
+                  if (!maybeClosed && grew <= 250) continue;
+                  lastExtractLen = accumulatedContent.length;
                   const rawObjs = extractCompleteObjects(accumulatedContent);
                   while (rawObjs.length > parsedCount) {
                     if (thisGenId !== currentGenerationId) return;
@@ -5624,7 +5667,8 @@ ${getJsonSchemaInstructions(1)}`;
         ],
         stream: true,
         temperature: 0.6,
-        max_tokens: 4500 // Generous budget ensuring GLM 5.3 Flash CoT reasoning + complete SVG diagrams + JSON
+        // v0.6.7 snappy: 3500 still covers CoT + 1 concise card JSON, cuts tail vs 4500.
+        max_tokens: 3500
       };
 
       await streamLlmCards(phase1Payload, (card) => {
@@ -5678,11 +5722,12 @@ ${getJsonSchemaInstructions(remainingCount)}`;
         model: model,
         messages: [
           { role: 'system', content: phase2System },
-          { role: 'user', content: `Generate the remaining ${remainingCount} complementary study cards for "${subjData.alias} — ${subjData.name}" on topic: "${cleanTopic}" in ${mode} mode.` }
+          { role: 'user', content: `Generate the remaining ${remainingCount} complementary study cards for "${subjData.alias} — ${subjData.name}" on topic: "${cleanTopic}" in ${mode} mode. Keep each visual lightweight (small SVG ~380x90, or 1 KaTeX block, or <=10-line C snippet).` }
         ],
         stream: true,
         temperature: 0.6,
-        max_tokens: Math.min(8000, remainingCount * 2000)
+        // v0.6.7 snappy: ~1700/card cap (was 2000) + 7000 ceiling — concise cards render/parse faster, same quality.
+        max_tokens: Math.min(7000, remainingCount * 1700)
       };
 
       try {

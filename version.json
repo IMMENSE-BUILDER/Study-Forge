@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":66,"latest":"v0.6.6","notes":"Turned By SK watermark strip into an interactive neo-brutalist redirection button linking directly to https://github.com/IMMENSE-BUILDER with hover and active states."}
+{"apkUrl":"","app":"StudyForged","versionCode":67,"latest":"v0.6.7","notes":"Snappy AI overhaul: chat 850 tokens + 5-turn history + KaTeX-free streaming frames + near-bottom scroll; flashcards 3500/7000 budgets + concise schema caps + instant 5-min deck cache + throttled parser + 700ms retry; preconnect to AI gateways."}

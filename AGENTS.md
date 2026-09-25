@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.6** [build 66]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.7** [build 67]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,7 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.6):
+Recent major changes (Sep 2026, now v0.6.7):
 - Sec-E personalization pack: profile, timetable, faculty, exam intel, seed + migration (v1→v3).
 - Timetable tab: 5-day aligned grid, live liquid-fill + done states, tap-to-toast (labs omit room), Today card.
 - App hardening: responsive overhaul, hold-to-select, menu-over-AI-bar fix, no-wrap header, inner breathing room.
@@ -348,6 +348,12 @@ Recent major changes (Sep 2026, now v0.6.6):
   - Forgiving SVG XML/HTML Dual Parser: Ensures SVG diagrams render cleanly without XML parser errors on unescaped entities and never dump raw code onto the card face.
   - Matched mock card dimensions (.fc-mock-card 380px min-height, 530px max-width) for seamless transitions.
   - Triple bump 58 / ersionCode: 58 / CACHE_NAME: study-forge-v58. Deploy dir rebuilt and synchronized.
+- v0.6.7 (Build 67):
+  - Snappy AI overhaul (quality preserved, Token Harbor `glm-5.3-flash` stays active):
+  - Chat: `max_tokens` 1000→850 (still covers 250–350 words + math), history 6→5 turns + 1500→1200 cap (lighter prompt, faster TTFT in long chats), `mdToHtml(text, skipMath)` fast-path (KaTeX skipped per 35ms stream frame, full math on final render), near-bottom autoscroll guard (<140px) to avoid yanking + layout thrash.
+  - Flashcards: Phase1 4500→3500 + Phase2 `min(8000,n*2000)`→`min(7000,n*1700)` (cuts tail ~20%), schema length caps (essence ≤25w, takeaways ≤14w, steps ≤22w, SVG ≤12 shapes / 380×90 / ≤10-line C) for crisper cards + smaller payloads, Phase2 concise-visual directive, `extractCompleteObjects` throttled (>250 chars or `}` close), retry backoff 1200→700ms, instant 5-min deck cache hit (same subject+topic+mode+count renders with zero network).
+  - Network: `index.html` preconnect + dns-prefetch to `tokenharbor.ai`, `ai-gateway.vercel.sh`, `api.deepgram.com` (saves 200–500ms TLS on first AI/voice call).
+  - Triple bump `v0.6.7` / `versionCode: 67` / `CACHE_NAME: study-forge-v0.6.7`.
 - v0.6.6 (Build 66):
   - Interactive "By SK" Redirection Button: Upgraded the bottom signature strip badge (`.sf-base-box`) into an accessible, interactive neo-brutalist link button pointing directly to Satyam's GitHub profile (`https://github.com/IMMENSE-BUILDER`).
   - Tactile Neo-Brutalist Micro-Interactions: Added responsive hover (`transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--shadow);` with amber accent fill) and active tap press-down states (`transform: translate(2px, 2px); box-shadow: 0 0 0;`) across both light and dark themes.
