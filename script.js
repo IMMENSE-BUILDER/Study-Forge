@@ -4412,6 +4412,7 @@ function initFlashcards() {
     back.appendChild(backBody);
 
     inner.append(front, back);
+    cardEl.append(inner);
 
     if (!isZoom) {
       const hint = document.createElement("span");

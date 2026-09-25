@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.8** [build 68]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.9** [build 69]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.8):
+Recent major changes (Sep 2026, now v0.6.9):
+- v0.6.9 (Build 69):
+  - Invisible-flashcard root-cause fix (NOT backend/model/banner): `createCardDOM()` in `script.js` built front+back into `inner` but never appended `inner` to `cardEl` — only the `.fc-tap-hint` rendered, matching the blank-deck + hint-only screenshots exactly. One-line `cardEl.append(inner)` restores main + zoom cards. 3s Card-1 timing is genuine (single-card fast-path benchmark 1–2.5s), banner was truthful — renderer dropped the body. Saved-deck data was always fine.
+  - Triple bump `v0.6.9` / `versionCode: 69` / `CACHE_NAME: study-forge-v0.6.9`.
+- v0.6.8 (Build 68):
 - v0.6.8 (Build 68):
   - Blank-Card-1 fix (v0.6.7 regression): status said "Card 1 ready" with 1/8 counter but deck area empty (hint only).
   - Root cause: Phase1 4500→3500 cut starved GLM 5.3 Flash CoT → truncated JSON → partial shell rendered as blank.

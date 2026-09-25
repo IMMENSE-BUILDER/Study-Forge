@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":68,"latest":"v0.6.8","notes":"Fix blank Card 1: restored 4500/8000 token budgets (v0.6.7 cut truncated GLM CoT), added valid-card guard in both phases + cache validation so shells never render."}
+{"apkUrl":"","app":"StudyForged","versionCode":69,"latest":"v0.6.9","notes":"Fix invisible flashcards: createCardDOM built front/back into inner but never appended it to cardEl — only the hint rendered. One-line append restores cards + zoom."}
