@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":70,"latest":"v0.6.10","notes":"Fix Phase 2 stall: batched background requests (max 3) with no-progress break + honest partial-deck status instead of stuck banner."}
+{"apkUrl":"","app":"StudyForged","versionCode":71,"latest":"v0.6.11","notes":"Phase 2 now one card per request (1-by-1) so each card lands visibly for 6/8-count decks; single-card 4500 token budget."}

@@ -5728,15 +5728,17 @@ ${getJsonSchemaInstructions(1)}`;
         return;
       }
 
-      // ── PHASE 2: Background batches for remaining cards (Cards 2..N) ──
+      // ── PHASE 2: Background singles for remaining cards (Cards 2..N, one per request) ──
+      // v0.6.11 user demand: 1-by-1 so each card lands visibly for 6/8-count decks.
       // v0.6.10 fix: one big 5-7-card request stalled/truncated → zero follow-ups + stuck banner.
-      // Small batches (max 3) isolate failures; honest partial status replaces silent "All ready".
+      // Small singles isolate failures; honest partial status replaces silent "All ready".
       let phase2Note = '';
       try {
         while (currentCards.length < cardCount) {
           if (thisGenId !== currentGenerationId) return;
           const remaining = cardCount - currentCards.length;
-          const batchSize = Math.min(3, remaining);
+          // v0.6.11 user demand: 1 card per request so each lands visibly (1,1,1…) for 6/8-count decks.
+          const batchSize = 1;
           const haveTitles = currentCards.map(c => `"${String(c.title || '').slice(0, 60)}"`).join(', ');
           const batchSystem = `${baseSubjectPrompt}
 
@@ -5755,7 +5757,8 @@ ${getJsonSchemaInstructions(batchSize)}`;
             ],
             stream: true,
             temperature: 0.6,
-            max_tokens: Math.min(6000, batchSize * 2000)
+            // Single-card budget matches proven Phase-1 4500 — CoT + full JSON without truncation.
+            max_tokens: 4500
           };
 
           const lenBefore = currentCards.length;
