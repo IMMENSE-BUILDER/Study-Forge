@@ -5728,55 +5728,87 @@ ${getJsonSchemaInstructions(1)}`;
         return;
       }
 
-      // ── PHASE 2: Background Stream for Remaining Cards (Cards 2..N) ──
-      const remainingCount = cardCount - 1;
-      const card1Title = currentCards[0]?.title || cleanTopic;
-      const card1Essence = currentCards[0]?.essence || '';
+      // ── PHASE 2: Background batches for remaining cards (Cards 2..N) ──
+      // v0.6.10 fix: one big 5-7-card request stalled/truncated → zero follow-ups + stuck banner.
+      // Small batches (max 3) isolate failures; honest partial status replaces silent "All ready".
+      let phase2Note = '';
+      try {
+        while (currentCards.length < cardCount) {
+          if (thisGenId !== currentGenerationId) return;
+          const remaining = cardCount - currentCards.length;
+          const batchSize = Math.min(3, remaining);
+          const haveTitles = currentCards.map(c => `"${String(c.title || '').slice(0, 60)}"`).join(', ');
+          const batchSystem = `${baseSubjectPrompt}
 
-      const phase2System = `${baseSubjectPrompt}
-
-The student is already studying Card 1: "${card1Title}" (${card1Essence}).
-Now generate exactly ${remainingCount} complementary advanced/applied study cards for the remaining sub-concepts, step derivations, applications, and traps on: "${cleanTopic}".
-Do NOT repeat the exact concept or visual already covered in Card 1.
+The student is already studying: ${haveTitles}.
+Now generate exactly ${batchSize} complementary advanced/applied study cards for the remaining sub-concepts, step derivations, applications, and traps on: "${cleanTopic}".
+Do NOT repeat concepts/visuals already covered above.
 ${modePrompt}
 
-${getJsonSchemaInstructions(remainingCount)}`;
+${getJsonSchemaInstructions(batchSize)}`;
 
-      const phase2Payload = {
-        model: model,
-        messages: [
-          { role: 'system', content: phase2System },
-          { role: 'user', content: `Generate the remaining ${remainingCount} complementary study cards for "${subjData.alias} — ${subjData.name}" on topic: "${cleanTopic}" in ${mode} mode. Keep each visual lightweight (small SVG ~380x90, or 1 KaTeX block, or <=10-line C snippet).` }
-        ],
-        stream: true,
-        temperature: 0.6,
-        // v0.6.8 fix: restored min(8000, n*2000) ceiling — v0.6.7 cap starved multi-card JSON.
-        max_tokens: Math.min(8000, remainingCount * 2000)
-      };
+          const batchPayload = {
+            model: model,
+            messages: [
+              { role: 'system', content: batchSystem },
+              { role: 'user', content: `Generate ${batchSize} complementary study cards for "${subjData.alias} — ${subjData.name}" on topic: "${cleanTopic}" in ${mode} mode. Keep each visual lightweight (small SVG ~380x90, or 1 KaTeX block, or <=10-line C snippet).` }
+            ],
+            stream: true,
+            temperature: 0.6,
+            max_tokens: Math.min(6000, batchSize * 2000)
+          };
 
-      try {
-        await streamLlmCards(phase2Payload, (card) => {
-          if (thisGenId !== currentGenerationId) return;
-          if (!isValidCard(card)) return;
-          currentCards.push(card);
-          syncCurrentDeckToStorage();
-          // Dynamically update counter and enable next button as new cards arrive
-          counter.textContent = `${currentIndex + 1} / ${currentCards.length}`;
-          nextBtn.disabled = currentIndex >= currentCards.length - 1;
-          if (streamStatus) {
-            streamStatus.className = 'fc-stream-status';
-            streamStatus.style.display = 'inline-flex';
-            const nextTarget = currentCards.length < cardCount ? `Generating card ${currentCards.length + 1} of ${cardCount}...` : 'Finalizing deck...';
-            streamStatus.innerHTML = `<span class="fc-stream-dot"></span><span>Card ${currentCards.length} ready • ${nextTarget}</span>`;
+          const lenBefore = currentCards.length;
+          try {
+            await streamLlmCards(batchPayload, (card) => {
+              if (thisGenId !== currentGenerationId) return;
+              if (!isValidCard(card)) return;
+              currentCards.push(card);
+              syncCurrentDeckToStorage();
+              // Dynamically update counter and enable next button as new cards arrive
+              counter.textContent = `${currentIndex + 1} / ${currentCards.length}`;
+              nextBtn.disabled = currentIndex >= currentCards.length - 1;
+              if (streamStatus) {
+                streamStatus.className = 'fc-stream-status';
+                streamStatus.style.display = 'inline-flex';
+                const nextTarget = currentCards.length < cardCount ? `Generating card ${currentCards.length + 1} of ${cardCount}...` : 'Finalizing deck...';
+                streamStatus.innerHTML = `<span class="fc-stream-dot"></span><span>Card ${currentCards.length} ready • ${nextTarget}</span>`;
+              }
+            });
+          } catch (batchErr) {
+            console.warn('Phase 2 batch notice:', batchErr);
+            phase2Note = (batchErr && batchErr.message) ? String(batchErr.message) : 'background request interrupted';
+            break;
           }
-        });
+          if (thisGenId !== currentGenerationId) return;
+          if (currentCards.length === lenBefore) {
+            // Batch returned zero new cards (stall/truncation) — stop hammering, report honestly.
+            phase2Note = phase2Note || 'background stream returned no new cards';
+            break;
+          }
+        }
       } catch (phase2Err) {
         console.warn('Phase 2 background stream notice:', phase2Err);
+        phase2Note = (phase2Err && phase2Err.message) ? String(phase2Err.message) : 'background request interrupted';
         // Do not fail the whole deck: Card 1 is already ready and interactive
       }
 
       if (thisGenId !== currentGenerationId) return;
-      finishDeck();
+      if (currentCards.length < cardCount) {
+        // Honest partial deck: keep ready cards usable, say exactly what happened (stays visible).
+        syncCurrentDeckToStorage();
+        counter.textContent = `${currentIndex + 1} / ${currentCards.length}`;
+        nextBtn.disabled = currentIndex >= currentCards.length - 1;
+        prevBtn.disabled = currentIndex === 0;
+        if (streamStatus) {
+          streamStatus.className = 'fc-stream-status';
+          streamStatus.style.display = 'inline-flex';
+          streamStatus.innerHTML = `<span class="fc-stream-dot"></span><span>⚠️ Only ${currentCards.length} of ${cardCount} cards arrived${phase2Note ? ` (${escapeHtml(phase2Note)})` : ''} — tap 🔥 Generate to retry.</span>`;
+        }
+        showToast(`Only ${currentCards.length} of ${cardCount} arrived — tap Generate to retry.`);
+      } else {
+        finishDeck();
+      }
 
     } catch (err) {
       if (thisGenId !== currentGenerationId) return;
