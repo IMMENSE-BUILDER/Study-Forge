@@ -24,11 +24,11 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 
 | Layer | Tech | Notes |
 |---|---|---|
-| Language | Vanilla JS + HTML5 + CSS3, no bundler | `script.js` ~3.2k lines, `styles.css` ~2.7k lines, single files |
+| Language | Vanilla JS + HTML5 + CSS3, no bundler | `script.js` ~5.9k lines, `styles.css` ~2.8k lines, single files |
 | Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
 | Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme`, `isLoggedIn`, `userEmail` |
 | Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
-| AI & Voice | Dual-Provider: Token Harbor (`https://tokenharbor.ai/v1`, ACTIVE for 20-day plan) + Vercel AI Gateway (`https://ai-gateway.vercel.sh/v1`, STANDBY for Day 20) + Deepgram nova-2 STT + aura TTS | All API credentials live exclusively in client `localStorage` (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) via in-app 🔑 Settings modal. Zero hardcoded keys in repo. |
+| AI & Voice | Dual-Provider: Token Harbor (`https://tokenharbor.ai/v1`, ACTIVE for 20-day plan) + Vercel AI Gateway (`https://ai-gateway.vercel.sh/v1`, STANDBY for Day 20) + Deepgram nova-2 STT + aura TTS | Universal keys (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal; default fallbacks remain in `script.js` for Satyam's private repo. |
 | Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
 | CDN (progressive enhancement only) | Tailwind (login page), KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
@@ -81,7 +81,7 @@ Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state 
   - **Active Provider (MANDATORY for 20-Day Plan):** Token Harbor with default model `glm-5.3-flash`. Satyam has an active paid plan running for 20 more days (until ~Oct 10, 2026). All chat completions, vision OCR, and flashcard generations MUST default to Token Harbor to fully utilize this plan without wasting tokens.
   - **Standby Provider (Vercel AI Gateway):** Fully plumbed and integrated via `vercel.json` edge rewrites (`/api/ai/:path*` ➔ `https://ai-gateway.vercel.sh/v1/:path*`). Zero-code activation on Day 20 via the in-app 🔑 Settings modal (`#aiProviderSelect`). Supports `google/gemini-2.0-flash`, `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet`, `deepseek/deepseek-chat`.
   - **Same-Origin Reverse Proxy:** Routes `/th-api/v1/chat/completions` and `/api/ai/chat/completions` via `vercel.json` to bypass browser CORS blocks natively.
-  - **Zero Hardcoded Secrets:** Universal keys (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) live exclusively in client `localStorage`.
+  - **API Credentials & Private Repo Policy:** Universal keys (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal (priority 1). Satyam confirmed the GitHub repository is kept strictly PRIVATE, so default keys in `script.js` remain intact as convenience fallbacks. Never sanitize or wipe keys without explicit user request.
   - **Academic Grounding:** `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Always maintains "StudyForged" tutor identity.
 - **Hold-to-select, not native selection.** Global `user-select:none`; 2s press-and-hold (`HOLD_SELECT_MS`)
   unlocks + auto-selects; inputs stay native. A post-hold click is consumed so holds never trigger tap actions.
@@ -117,11 +117,12 @@ Things to NEVER do:
 - Never present 2025-scheme syllabus content as current — user gathers official 2026 syllabi first (syllabus viewer was removed for exactly this; restore only on their data).
 - Never invent timetable/faculty/subject facts — Sec-E PDF + photo legend are ground truth; mark anything uncertain.
 - NEVER switch default AI provider away from Token Harbor (`glm-5.3-flash`) until the 20-day plan expires (~Oct 10, 2026). Vercel AI Gateway is in standby mode.
+- Never remove or wipe fallback API keys from `script.js` without explicit user instruction — the repository is strictly private and the user relies on default fallbacks alongside `localStorage`.
 
 Project constraints:
 - Timetable = Sec E, Room 2310, AY 2026–27, Mon–Fri (Sat/Sun = weekend mode). E1/E2 are lab batches.
 - EGL (Engineering Graphics) + PD (Personality Development) are college-run papers — not in USS scheme docs; EGL units follow the ETME-159 pattern.
-- Zero hardcoded API keys in source code — all credentials are provided via in-app 🔑 Settings modal and kept in client `localStorage`.
+- API credentials live in client `localStorage` via in-app 🔑 Settings modal; `script.js` defaults serve as convenience fallbacks for Satyam's private repo.
 - Keep total cached assets small; SW ASSETS must list every new static file (icons!) or offline breaks.
 
 ## 6. Common Commands & Workflows
@@ -166,7 +167,7 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.5):
+Recent major changes (Sep 2026, now v0.6.6):
 - Sec-E personalization pack: profile, timetable, faculty, exam intel, seed + migration (v1→v3).
 - Timetable tab: 5-day aligned grid, live liquid-fill + done states, tap-to-toast (labs omit room), Today card.
 - App hardening: responsive overhaul, hold-to-select, menu-over-AI-bar fix, no-wrap header, inner breathing room.
@@ -351,6 +352,7 @@ Recent major changes (Sep 2026, now v0.6.5):
   - Interactive "By SK" Redirection Button: Upgraded the bottom signature strip badge (`.sf-base-box`) into an accessible, interactive neo-brutalist link button pointing directly to Satyam's GitHub profile (`https://github.com/IMMENSE-BUILDER`).
   - Tactile Neo-Brutalist Micro-Interactions: Added responsive hover (`transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--shadow);` with amber accent fill) and active tap press-down states (`transform: translate(2px, 2px); box-shadow: 0 0 0;`) across both light and dark themes.
   - Accessibility & Safety: Configured `target="_blank" rel="noopener noreferrer"` with informative title attribute; removed `aria-hidden="true"` on the wrapper; excluded links and buttons from global 2s hold-to-select timer in `holdTargetOk()`.
+  - Repository Privacy & API Credentials Policy: Satyam confirmed the GitHub repository is kept strictly PRIVATE. The fallback keys in `script.js` remain intact as convenience fallbacks, with `localStorage` taking primary priority.
   - Triple bump `v0.6.6` / `versionCode: 66` / `CACHE_NAME: study-forge-v0.6.6`.
 - v0.6.5 (Build 65):
   - 2026 Seed Goal Code Alignment: Fixed v55 gap where `SF_FACULTY` was updated to official 2026 course
@@ -362,10 +364,8 @@ Recent major changes (Sep 2026, now v0.6.5):
     merge — v33 SMT-1 precedent), so re-runs add zero dupes; user-renamed goals, progress, XP and
     task `goalId` links fully preserved. `SF_STATE_VERSION` bumped 5 → 6.
   - Fixed `syllabus.js` header comment typo ("Sec F" → "Sec E").
-  - ⚠️ Known security debt (needs user decision): v54 pinned default API credentials in source
-    (`DEFAULT_TOKENHARBOR_KEY`, `DEFAULT_DEEPGRAM_KEY`) which publicly deploys them — contradicts §4/§5
-    zero-hardcoded-keys rule. Rotate keys before any public share; sanitize once user confirms keys are
-    saved in their browser's 🔑 AI Settings modal (safe: getters fall back localStorage-first).
+  - API Credentials Policy Resolution: User confirmed the GitHub repository is kept strictly private; default fallback keys in `script.js` remain active alongside `localStorage` (which holds top precedence).
+
   - Triple bump `v0.6.5` / `versionCode: 65` / `CACHE_NAME: study-forge-v0.6.5`.
 - v0.6.4 (Build 64):
   - Flashcard Fullscreen Focus Zoom Redesign & Alignment Fix: Completely addressed broken controls, downward text misalignment, and KaTeX rendering issues in the flashcard focus lightbox.
