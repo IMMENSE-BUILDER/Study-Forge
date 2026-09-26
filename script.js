@@ -3018,7 +3018,7 @@ function initAskAI() {
 
       ttsBtn.innerHTML = '⏳ Reading...';
       try {
-        const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en', {
+        const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-iris-en', {
           method: 'POST',
           headers: {
             'Authorization': `Token ${dgKey}`,

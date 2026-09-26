@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":78,"latest":"v0.6.18","notes":"Start-at-top fix: manual scroll restoration + pin to top on load, boot, and every tab switch (tall-panel scroll no longer clamps short panels to their bottom)."}
+{"apkUrl":"","app":"StudyForged","versionCode":79,"latest":"v0.6.19","notes":"Voice upgrade: AI read-aloud TTS switched from aura-asteria-en to aura-iris-en."}
