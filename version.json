@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":74,"latest":"v0.6.14","notes":"Living flashcard loader: mock card now cycles build-stage messages with fade plus an indeterminate progress bar while the AI generates."}
+{"apkUrl":"","app":"StudyForged","versionCode":75,"latest":"v0.6.15","notes":"Fix quiz Unexpected-token failure: 4-tier salvage recovery for truncated/garbled MCQ JSON, bigger 5-Q budget (6000), friendly error text instead of parser gibberish."}

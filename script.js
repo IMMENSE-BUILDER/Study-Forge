@@ -6010,6 +6010,50 @@ ${getJsonSchemaInstructions(batchSize)}`;
     catch (e) { return parseLlmCards(cleaned); }
   }
 
+  // Regex field extractor for a single quiz object when JSON parsers choke (mirrors extractCardFields).
+  function extractQuizQFields(str) {
+    if (!str || typeof str !== 'string') return null;
+    const card = {};
+    const qm = str.match(/"q"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i) || str.match(/"question"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (qm) card.q = qm[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    const om = str.match(/"options"\s*:\s*\[([\s\S]*?)\]/i);
+    if (om) {
+      const items = [];
+      const itemRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+      let im;
+      while ((im = itemRegex.exec(om[1])) !== null) {
+        items.push(im[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
+      }
+      card.options = items;
+    }
+    const am = str.match(/"answer"\s*:\s*([0-3])/i);
+    if (am) card.answer = parseInt(am[1], 10);
+    const em = str.match(/"explan"\w*\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (em) card.explain = em[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    const tm = str.match(/"trap"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    if (tm) card.trap = tm[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    if (card.q && Array.isArray(card.options) && card.options.length === 4) return card;
+    return null;
+  }
+
+  // Salvage path: pull each balanced {...} out of a truncated/garbled response and keep what parses.
+  function salvageQuizQuestions(raw) {
+    const out = [];
+    let objs = [];
+    try { objs = extractCompleteObjects(String(raw || '')); } catch (e) { return out; }
+    for (const o of objs) {
+      let obj = null;
+      try { obj = JSON.parse(o); }
+      catch (e1) {
+        try { obj = parseLlmCards(o); }
+        catch (e2) { obj = extractQuizQFields(o); }
+      }
+      const n = normalizeQuizQ(obj);
+      if (n && !out.some(v => v.q === n.q)) out.push(n);
+    }
+    return out;
+  }
+
   async function fetchQuizQuestions(subjData, cleanTopic, qCount) {
     const apiKey = getActiveAiApiKey();
     const model = getActiveAiModel();
@@ -6036,7 +6080,8 @@ ${schema}`;
       ],
       stream: false,
       temperature: 0.7,
-      max_tokens: qCount <= 5 ? 4500 : 8000
+      // v0.6.15: 5-Q 6000 (4500 truncated under CoT load) / 10-Q 8000 ceiling.
+      max_tokens: qCount <= 5 ? 6000 : 8000
     };
     const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
@@ -6066,10 +6111,21 @@ ${schema}`;
     const data = await resp.json();
     const raw = (data.choices?.[0]?.message?.content || '').trim();
     if (!raw) throw new Error('Empty quiz response — tap Start to retry');
-    const parsed = parseQuizJson(raw);
-    const arr = Array.isArray(parsed) ? parsed : [parsed];
-    const valid = arr.map(normalizeQuizQ).filter(Boolean).slice(0, qCount);
-    if (valid.length < 3) throw new Error('Quiz came back malformed — tap Start to retry');
+    let valid = [];
+    try {
+      const parsed = parseQuizJson(raw);
+      const arr = Array.isArray(parsed) ? parsed : [parsed];
+      valid = arr.map(normalizeQuizQ).filter(Boolean).slice(0, qCount);
+    } catch (e) { /* fall through to salvage below */ }
+    if (valid.length < 3) {
+      // Truncated/garbled array — salvage complete question objects out of the raw text.
+      const seen = new Set(valid.map(v => v.q));
+      for (const s of salvageQuizQuestions(raw)) {
+        if (valid.length >= qCount) break;
+        if (!seen.has(s.q)) { valid.push(s); seen.add(s.q); }
+      }
+    }
+    if (valid.length < 3) throw new Error('QUIZ_GARBLED');
     return valid;
   }
 
@@ -6253,11 +6309,16 @@ ${schema}`;
       if (quizStatus) quizStatus.style.display = 'none';
     } catch (err) {
       console.error('Quiz generation error:', err);
+      // Never leak raw parser gibberish ("Unexpected token...") to the UI.
+      const rawMsg = String((err && err.message) || 'Quiz failed');
+      const friendly = /Unexpected token|not valid JSON|QUIZ_GARBLED|malformed|Empty quiz/i.test(rawMsg)
+        ? 'Quiz came back garbled'
+        : rawMsg;
       if (quizStatus) {
         quizStatus.style.display = 'inline-flex';
-        quizStatus.innerHTML = `<span>⚠️ ${escapeHtml(err.message || 'Quiz failed')} — try again.</span>`;
+        quizStatus.innerHTML = `<span>⚠️ ${escapeHtml(friendly)} — try again.</span>`;
       }
-      showToast(`Quiz error: ${err.message || 'Generation issue'}`);
+      showToast(`Quiz error: ${friendly}`);
     } finally {
       if (quizGenerateBtn) {
         quizGenerateBtn.disabled = false;
