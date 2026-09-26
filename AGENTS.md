@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.16** [build 76]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.17** [build 77]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.16):
+Recent major changes (Sep 2026, now v0.6.17):
+- v0.6.17 (Build 77):
+  - Hint Buddy breathing room (user demand): chat area taller (150px min, up to 48vh/420px), roomier bubbles with relaxed line height, and the page smooth-scrolls the whole panel into view on open so nothing sits cut off.
+  - Triple bump `v0.6.17` / `versionCode: 77` / `CACHE_NAME: study-forge-v0.6.17`.
+- v0.6.16 (Build 76):
 - v0.6.16 (Build 76):
   - Hint Buddy in quizzes (user demand): top-right 💡 Ask AI button on quiz page opens tutor chat grounded in topic + current question/options (answer hiddenly known, HARD RULE never to reveal it). Socratic nudges only (formula blanks, single-option elimination, leading questions, ≤80 words), quick chips (hint/formula/eliminate), per-question context dividers, result-screen follow-ups, Esc/back to dismiss, history resets per run.
   - Triple bump `v0.6.16` / `versionCode: 76` / `CACHE_NAME: study-forge-v0.6.16`.

@@ -6329,7 +6329,14 @@ ${schema}`;
     if (show && quizHelpMsgs && !quizHelpMsgs.children.length) {
       addQuizHelpMsg('bot', `Stuck on Q${quizIndex + 1}? Ask me anything — I'll nudge you to it, never spoil it. 🎯`);
     }
-    if (show && quizHelpInput) quizHelpInput.focus();
+    if (show) {
+      if (quizHelpInput) quizHelpInput.focus();
+      // Bring the whole panel into view so nothing sits cut off under the fold.
+      setTimeout(() => {
+        try { quizHelpPanel.scrollIntoView({ behavior: 'smooth', block: 'end' }); }
+        catch (e) {}
+      }, 60);
+    }
   }
   if (quizHelpBtn) quizHelpBtn.addEventListener('click', () => toggleQuizHelp());
   if (quizHelpClose) quizHelpClose.addEventListener('click', () => toggleQuizHelp(false));
