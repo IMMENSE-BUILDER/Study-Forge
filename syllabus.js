@@ -6,7 +6,7 @@
    ============================================================ */
 
 const SF_STATE_VERSION = 6;
-const SF_APP_VERSION = "v0.6.17";
+const SF_APP_VERSION = "v0.6.18";
 
 function defaultProfile() {
   return {

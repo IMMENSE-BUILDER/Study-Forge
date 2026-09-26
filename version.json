@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":77,"latest":"v0.6.17","notes":"Hint Buddy breathing room: taller chat area (up to 48vh), roomier bubbles, panel auto-scrolls into view on open."}
+{"apkUrl":"","app":"StudyForged","versionCode":78,"latest":"v0.6.18","notes":"Start-at-top fix: manual scroll restoration + pin to top on load, boot, and every tab switch (tall-panel scroll no longer clamps short panels to their bottom)."}

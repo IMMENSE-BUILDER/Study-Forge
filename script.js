@@ -1,4 +1,14 @@
 const STORAGE_KEY = "studyForgeState-v1";
+
+// v0.6.18: never restore a stale mid-page scroll — every load starts at the very top.
+try {
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+} catch (e) {}
+function scrollPageToTop() {
+  try { window.scrollTo(0, 0); } catch (e) {}
+  try { document.documentElement.scrollTop = 0; } catch (e) {}
+  try { document.body.scrollTop = 0; } catch (e) {}
+}
 const DEFAULT_DEEPGRAM_KEY = 'b836a67d381f08fec71c60b8a32c84b9d2154017';
 
 function getDeepgramApiKey() {
@@ -2292,6 +2302,9 @@ function initBottomNav() {
 
     currentTab = targetPage;
     localStorage.setItem('activeTab', targetPage);
+    // v0.6.18: each panel opens at its top — leftover scroll from a taller panel
+    // otherwise clamps the new (shorter) panel straight to its bottom.
+    scrollPageToTop();
   }
 
   // Wire click events
@@ -6583,8 +6596,12 @@ document.addEventListener("click", (event) => {
   }
 }, true);
 
+// Late-layout insurance: re-pin to top once fonts/images settle (harmless if already there).
+window.addEventListener("load", () => { scrollPageToTop(); });
+
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
+  scrollPageToTop();
   wireEvents();
   wireCalendarEvents();
   initBottomNav();
