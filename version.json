@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":80,"latest":"v0.6.20","notes":"Fix TTS voice: aura-iris-en does not exist per Deepgram docs — corrected to aura-2-iris-en; API errors now toast instead of silent stuck button."}
+{"apkUrl":"","app":"StudyForged","versionCode":81,"latest":"v0.6.21","notes":"Voice cost cut: TTS moved to Aura-1 Hera (aura-hera-en), ~2x cheaper than Aura-2 voices."}

@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.20** [build 80]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.21** [build 81]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.20):
+Recent major changes (Sep 2026, now v0.6.21):
+- v0.6.21 (Build 81):
+  - Voice cost cut (user demand): TTS → Aura-1 Hera `aura-hera-en` (verified in Deepgram docs table; ~2x cheaper than Aura-2). Error surfacing from v0.6.20 kept.
+  - Triple bump `v0.6.21` / `versionCode: 81` / `CACHE_NAME: study-forge-v0.6.21`.
+- v0.6.20 (Build 80):
 - v0.6.20 (Build 80):
   - TTS voice correction: `aura-iris-en` does NOT exist (Deepgram docs list Iris only as `aura-2-iris-en`, Aura-2, feminine Young Adult en-us) — old name would 400, and the missing `res.ok` check then played an error blob into silence with the button stuck on "Reading...". Fixed name + API errors now toast visibly and reset the button.
   - Triple bump `v0.6.20` / `versionCode: 80` / `CACHE_NAME: study-forge-v0.6.20`.
