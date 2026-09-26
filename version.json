@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":82,"latest":"v0.6.22","notes":"TTS reads words only: new toSpokenText cleaner strips markdown/KaTeX/emoji/code fences into spoken English (verified by tts-check harness, 6/6 clean)."}
+{"apkUrl":"","app":"StudyForged","versionCode":83,"latest":"v0.6.23","notes":"Fix silent TTS: play() rejection (expired tap permission on slow fetch) and media errors now reset the button with guidance instead of stranding on Reading in silence."}

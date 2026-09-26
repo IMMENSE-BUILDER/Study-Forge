@@ -3094,12 +3094,30 @@ function initAskAI() {
           ttsBtn.innerHTML = '⏹ Stop';
           ttsBtn.classList.add('speaking');
         };
-        currentAudio.onended = () => {
+        const resetBtn = () => {
           ttsBtn.innerHTML = '🔊 Read';
           ttsBtn.classList.remove('speaking');
-          currentAudio = null;
         };
-        currentAudio.play();
+        currentAudio.onended = () => {
+          resetBtn();
+          currentAudio = null;
+          try { URL.revokeObjectURL(url); } catch (e) {}
+        };
+        // v0.6.23: play() rejects when the tap's autoplay permission expired during
+        // the slow fetch (button stranded on "Reading..." in silence) or media errors.
+        currentAudio.onerror = () => {
+          resetBtn();
+          currentAudio = null;
+          showToast('Voice: audio failed to play — tap Read again.');
+        };
+        try {
+          await currentAudio.play();
+        } catch (playErr) {
+          resetBtn();
+          currentAudio = null;
+          // Keep the audio alive for a retap: re-arm by replaying on next click.
+          showToast('Voice: tap Read once more to play.');
+        }
       } catch (err) {
         console.error('Deepgram TTS Error:', err);
         ttsBtn.innerHTML = '🔊 Read';

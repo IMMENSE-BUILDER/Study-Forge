@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.22** [build 82]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.23** [build 83]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.22):
+Recent major changes (Sep 2026, now v0.6.23):
+- v0.6.23 (Build 83):
+  - Silent-TTS fix: `play()` rejects when the tap's autoplay permission expires during the slow voice fetch (or on media error) — button stranded on "Reading..." in silence with an unhandled rejection. Now awaited in try/catch + `onerror` handler: button resets with a guiding toast ("tap Read once more"). Cleaner re-proven on a full realistic answer (7/7 harness clean).
+  - Triple bump `v0.6.23` / `versionCode: 83` / `CACHE_NAME: study-forge-v0.6.23`.
+- v0.6.22 (Build 82):
 - v0.6.22 (Build 82):
   - TTS speaks words only (user demand): raw markdown reached Deepgram, so it read "*" as "star", "#" as "hash". New `toSpokenText()` cleaner (bold/italic/headers/lists/links/code fences/URLs/emoji stripped; KaTeX spoken as words — `\\rightarrow`→"gives", `\\sqrt`→"square root of"; `a*b`→"times", `<`→"less than", `&`→"and"). Verified by `tts-check.js` harness (6/6 clean). Copy button untouched (keeps raw markdown).
   - Triple bump `v0.6.22` / `versionCode: 82` / `CACHE_NAME: study-forge-v0.6.22`.
