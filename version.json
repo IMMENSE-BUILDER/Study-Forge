@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":81,"latest":"v0.6.21","notes":"Voice cost cut: TTS moved to Aura-1 Hera (aura-hera-en), ~2x cheaper than Aura-2 voices."}
+{"apkUrl":"","app":"StudyForged","versionCode":82,"latest":"v0.6.22","notes":"TTS reads words only: new toSpokenText cleaner strips markdown/KaTeX/emoji/code fences into spoken English (verified by tts-check harness, 6/6 clean)."}

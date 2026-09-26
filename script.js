@@ -2485,6 +2485,48 @@ function trimmedBuddyBlock(userText) {
 // Code fences are extracted before escaping; KaTeX output is trusted.
 // v0.6.7: skipMath fast-path for SSE streaming — skips KaTeX per-frame (CPU heavy on phones).
 // Final render always uses full math; streaming uses plain markdown for snappy 35ms frames.
+// v0.6.22: strip markdown/KaTeX/emoji so TTS reads words, not "star/hash/backslash".
+function toSpokenText(md) {
+  let s = String(md == null ? "" : md);
+  // Code fences → keep content inline, drop fence markers.
+  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => ` ${(String(code || '').trim().replace(/\s+/g, ' '))} `);
+  // KaTeX display/inline → inner math first.
+  s = s.replace(/\\\[([\s\S]*?)\\\]/g, (_, m) => ` ${m} `);
+  s = s.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => ` ${m} `);
+  s = s.replace(/\\\(([\s\S]*?)\\\)/g, (_, m) => ` ${m} `);
+  // Speak common LaTeX in words, then drop remaining commands/braces.
+  const mathWords = { times: 'times', cdot: 'times', div: 'divided by', pm: 'plus or minus', le: 'less than or equal to', ge: 'greater than or equal to', ne: 'not equal to', approx: 'approximately', infty: 'infinity', rightarrow: 'gives', leftarrow: 'from', Rightarrow: 'implies', sum: 'sum of', prod: 'product of', int: 'integral of', sqrt: 'square root of', frac: '', text: '', mathrm: '', mathbf: '', boldsymbol: '', vec: 'vector ', to: 'to', alpha: 'alpha', beta: 'beta', gamma: 'gamma', delta: 'delta', theta: 'theta', lambda: 'lambda', mu: 'mu', pi: 'pi', sigma: 'sigma', omega: 'omega' };
+  s = s.replace(/\\([a-zA-Z]+)/g, (_, cmd) => (cmd in mathWords ? ` ${mathWords[cmd]} ` : ' '));
+  s = s.replace(/[{}$^_~]/g, ' ');
+  // Markdown links/images → visible text only.
+  s = s.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1');
+  s = s.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+  // Headers, quotes, list markers, rules, bold/italic/strike/code marks.
+  s = s.replace(/^#{1,6}\s+/gm, '');
+  s = s.replace(/(^|\s)#(?=\s|$)/g, '$1');
+  s = s.replace(/^>\s?/gm, '');
+  s = s.replace(/^(\d+)[.)]\s+/gm, '');
+  s = s.replace(/^[-•*+]\s+/gm, '');
+  s = s.replace(/^(\*{3,}|-{3,}|_{3,})\s*$/gm, '');
+  s = s.replace(/(\*\*|__)(.*?)\1/g, '$2');
+  // Unspaced a*b and spaced digit 2 * 3 are multiplication; spaced *word* stays italic.
+  s = s.replace(/(\w)\*(\w)/g, '$1 times $2');
+  s = s.replace(/(\d)\s+\*\s+(\d)/g, '$1 times $2');
+  s = s.replace(/(^|[\s(])[*_]([^*_]+)[*_]/g, '$1$2');
+  s = s.replace(/~~(.*?)~~/g, '$1');
+  s = s.replace(/`([^`]*)`/g, '$1');
+  // Raw URLs, then comparisons/arrows as words (chat markdown has no real HTML tags).
+  s = s.replace(/https?:\/\/\S+/g, ' ');
+  s = s.replace(/-{1,2}>/g, ' to ');
+  s = s.replace(/</g, ' less than ');
+  s = s.replace(/>/g, ' greater than ');
+  s = s.replace(/&/g, ' and ');
+  s = s.replace(/\|/g, ', ');
+  s = s.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu, ' ');
+  s = s.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  return s;
+}
+
 function mdToHtml(text, skipMath) {
   // 1. Protect code blocks from being processed
   const codeBlocks = [];
@@ -3018,13 +3060,20 @@ function initAskAI() {
 
       ttsBtn.innerHTML = '⏳ Reading...';
       try {
+        // v0.6.22: speak cleaned words — never raw markdown ("star"/"hash" artifacts).
+        const spoken = toSpokenText(plainText);
+        if (!spoken) {
+          ttsBtn.innerHTML = '🔊 Read';
+          showToast('Nothing readable in this message.');
+          return;
+        }
         const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-hera-en', {
           method: 'POST',
           headers: {
             'Authorization': `Token ${dgKey}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ text: plainText })
+          body: JSON.stringify({ text: spoken })
         });
         // v0.6.20: surface API errors instead of playing an error-JSON blob into silence.
         if (!response.ok) {
