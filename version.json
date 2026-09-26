@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":73,"latest":"v0.6.13","notes":"New AI Quiz Arena at bottom of flashcard section: topic-typed 5/10-question MCQ tests on dedicated in-app quiz page, per-question feedback, instant score + XP, past-scores history."}
+{"apkUrl":"","app":"StudyForged","versionCode":74,"latest":"v0.6.14","notes":"Living flashcard loader: mock card now cycles build-stage messages with fade plus an indeterminate progress bar while the AI generates."}

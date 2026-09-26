@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.13** [build 73]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.14** [build 74]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.13):
+Recent major changes (Sep 2026, now v0.6.14):
+- v0.6.14 (Build 74):
+  - Living flashcard loader (user demand): mock skeleton keeps its breathing + sheen and now cycles build-stage messages every 1.6s (blueprint → derivations → traps → hooks → diagrams, with fade swap) plus an indeterminate progress bar; timer auto-stops on Card 1 / cache hit / error / abort / new request.
+  - Triple bump `v0.6.14` / `versionCode: 74` / `CACHE_NAME: study-forge-v0.6.14`.
+- v0.6.13 (Build 73):
 - v0.6.13 (Build 73):
   - AI Quiz Arena (user demand, no nav change): `quizBlock` at bottom of flashcard section in Notes — topic input + 5/10 selector + Start button + Past Scores history (`studyForge_quiz`).
   - Dedicated in-app quiz page (`#quizPage`, z 2400 above AI bar / below zoom): Q progress, live score, 4-option MCQ with shuffled order, instant correct/wrong marking + Why + Trap per question, Next flow, result card (score %, +10 XP/correct +20 perfect bonus, confetti ≥80%, Retake/Done). Subject-grounded prompts reuse Token Harbor active model + flashcard JSON parsers.

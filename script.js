@@ -5301,13 +5301,14 @@ function initFlashcards() {
           </div>
           <div class="fc-mock-visual">
             <div class="fc-mock-spark">⚡</div>
-            <div class="fc-mock-visual-text">Forging Visual Blueprint &amp; Derivations...</div>
+            <div class="fc-mock-visual-text" id="fcMockStage">Forging visual blueprint…</div>
           </div>
           <div class="fc-mock-takeaways">
             <div class="fc-mock-takeaway-item"><span class="fc-takeaway-chevron">▸</span><span class="fc-skeleton-line" style="width: 82%;"></span></div>
             <div class="fc-mock-takeaway-item"><span class="fc-takeaway-chevron">▸</span><span class="fc-skeleton-line" style="width: 74%;"></span></div>
             <div class="fc-mock-takeaway-item"><span class="fc-takeaway-chevron">▸</span><span class="fc-skeleton-line" style="width: 58%;"></span></div>
           </div>
+          <div class="fc-mock-progress"><span></span></div>
         </div>
         <div class="fc-mock-bottom">
           <div class="fc-mock-status-chip">
@@ -5321,10 +5322,38 @@ function initFlashcards() {
     controls.style.display = 'none';
     if (streamStatus) streamStatus.style.display = 'none';
 
+    // v0.6.14: living loader — cycle build-stage messages + progress bar while the AI works.
+    // Stopped the moment the mock leaves the screen (Card 1, cache hit, error, abort).
+    let mockStageTimer = null;
+    const stopMockStages = () => {
+      if (mockStageTimer) { clearInterval(mockStageTimer); mockStageTimer = null; }
+    };
+    {
+      const stages = [
+        'Forging visual blueprint…',
+        'Solving step derivations…',
+        'Hiding exam traps…',
+        'Writing memory hooks…',
+        'Polishing diagrams…'
+      ];
+      let stageIdx = 0;
+      mockStageTimer = setInterval(() => {
+        if (thisGenId !== currentGenerationId) { stopMockStages(); return; }
+        const el = document.getElementById('fcMockStage');
+        if (!el) { stopMockStages(); return; }
+        stageIdx = (stageIdx + 1) % stages.length;
+        el.textContent = stages[stageIdx];
+        el.classList.remove('fc-mock-stage-swap');
+        void el.offsetWidth;
+        el.classList.add('fc-mock-stage-swap');
+      }, 1600);
+    }
+
     const apiKey = getActiveAiApiKey();
     const model = getActiveAiModel();
 
     if (!apiKey && getActiveAiProvider() !== 'vercel') {
+      stopMockStages();
       showToast('Please set your API key in 🔑 Ask AI settings first');
       deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">🔑</span><p>Please enter your API key in the Ask AI 🔑 settings to enable flashcards.</p></div>`;
       generateBtn.disabled = false;
@@ -5361,6 +5390,7 @@ function initFlashcards() {
         nextBtn.disabled = currentCards.length <= 1;
         if (streamStatus) streamStatus.style.display = 'none';
         showToast('Loaded instant revision deck ⚡');
+        stopMockStages();
         renderDeckList();
         generateBtn.disabled = false;
         generateBtn.textContent = '🔥 Generate Cards';
@@ -5697,6 +5727,7 @@ ${getJsonSchemaInstructions(1)}`;
       await streamLlmCards(phase1Payload, (card) => {
         if (thisGenId !== currentGenerationId) return;
         if (!isValidCard(card)) return;
+        stopMockStages();
         currentCards.push(card);
         // Render Card 1 immediately!
         if (emptyState) emptyState.style.display = 'none';
@@ -5815,6 +5846,7 @@ ${getJsonSchemaInstructions(batchSize)}`;
 
     } catch (err) {
       if (thisGenId !== currentGenerationId) return;
+      stopMockStages();
       console.error('Flashcard generation error:', err);
       if (!currentCards.length) {
         deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">⚠️</span><p>Failed to generate cards: ${escapeHtml(err.message || 'Unknown error')}. Please try again.</p></div>`;
@@ -5825,6 +5857,7 @@ ${getJsonSchemaInstructions(batchSize)}`;
       }
       showToast(`Flashcards error: ${err.message || 'Generation issue'}`);
     } finally {
+      stopMockStages();
       if (thisGenId === currentGenerationId) {
         generateBtn.disabled = false;
         generateBtn.textContent = '🔥 Generate Cards';
