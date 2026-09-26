@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":72,"latest":"v0.6.12","notes":"Fix zoom lightbox close button: glyph bled outside its circle. Bulletproof centering (line-height 1, zero padding, clipped overflow)."}
+{"apkUrl":"","app":"StudyForged","versionCode":73,"latest":"v0.6.13","notes":"New AI Quiz Arena at bottom of flashcard section: topic-typed 5/10-question MCQ tests on dedicated in-app quiz page, per-question feedback, instant score + XP, past-scores history."}

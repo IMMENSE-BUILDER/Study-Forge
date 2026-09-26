@@ -5880,6 +5880,372 @@ ${getJsonSchemaInstructions(batchSize)}`;
   // Set default initial subject context to PPS
   updateSubjectContextBadge("PPS");
 
+  // ── AI Quiz Arena (bottom of flashcard section, dedicated in-app quiz page) ──
+  const QUIZ_STORAGE = 'studyForge_quiz';
+  const quizTopicInput = document.getElementById('quizTopicInput');
+  const quizCountSelect = document.getElementById('quizCountSelect');
+  const quizGenerateBtn = document.getElementById('quizGenerateBtn');
+  const quizStatus = document.getElementById('quizStatus');
+  const quizHistoryList = document.getElementById('quizHistoryList');
+  const quizClearBtn = document.getElementById('quizClearBtn');
+  const quizPage = document.getElementById('quizPage');
+  const quizPageTitle = document.getElementById('quizPageTitle');
+  const quizPageProgress = document.getElementById('quizPageProgress');
+  const quizLiveScore = document.getElementById('quizLiveScore');
+  const quizPageBody = document.getElementById('quizPageBody');
+  const quizNextQBtn = document.getElementById('quizNextQBtn');
+  const quizBackBtn = document.getElementById('quizBackBtn');
+
+  let quizQuestions = [];
+  let quizIndex = 0;
+  let quizScore = 0;
+  let quizTopicLabel = '';
+  let quizAnswered = false;
+
+  function loadQuizHistory() {
+    try { return JSON.parse(localStorage.getItem(QUIZ_STORAGE)) || []; }
+    catch { return []; }
+  }
+  function saveQuizHistory(h) {
+    try { localStorage.setItem(QUIZ_STORAGE, JSON.stringify(h)); } catch (e) {}
+  }
+  function renderQuizHistory() {
+    if (!quizHistoryList) return;
+    const h = loadQuizHistory();
+    quizHistoryList.innerHTML = '';
+    if (!h.length) {
+      const p = document.createElement('p');
+      p.className = 'fc-no-decks';
+      p.textContent = 'No quizzes yet — start your first test above!';
+      quizHistoryList.appendChild(p);
+      return;
+    }
+    h.forEach((a) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'quiz-history-item';
+      const name = document.createElement('span');
+      name.className = 'quiz-history-name';
+      name.textContent = String(a.topic || 'Quiz');
+      const badge = document.createElement('span');
+      badge.className = 'quiz-history-score';
+      badge.textContent = `${a.score}/${a.total}`;
+      row.append(name, badge);
+      row.addEventListener('click', () => {
+        if (quizTopicInput) {
+          quizTopicInput.value = String(a.topic || '');
+          quizTopicInput.focus();
+        }
+      });
+      quizHistoryList.appendChild(row);
+    });
+  }
+  if (quizClearBtn) {
+    quizClearBtn.addEventListener('click', () => {
+      saveQuizHistory([]);
+      renderQuizHistory();
+      showToast('Quiz history cleared.');
+    });
+  }
+
+  function normalizeQuizQ(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const q = String(raw.q || raw.question || '').trim();
+    const opts = Array.isArray(raw.options) ? raw.options.map(o => String(o == null ? '' : o).trim()) : [];
+    let ans = (typeof raw.answer === 'number') ? raw.answer : parseInt(raw.answer, 10);
+    if (!q || opts.length !== 4 || opts.some(o => !o) || !(ans >= 0 && ans <= 3)) return null;
+    return {
+      q,
+      options: opts,
+      answer: ans,
+      explain: String(raw.explain || raw.explanation || '').trim(),
+      trap: String(raw.trap || raw.examTrap || '').trim()
+    };
+  }
+
+  function parseQuizJson(raw) {
+    let cleaned = String(raw || '').trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+    const firstBracket = cleaned.indexOf('[');
+    const lastBracket = cleaned.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+      cleaned = cleaned.substring(firstBracket, lastBracket + 1);
+    }
+    try { return JSON.parse(cleaned); }
+    catch (e) { return parseLlmCards(cleaned); }
+  }
+
+  async function fetchQuizQuestions(subjData, cleanTopic, qCount) {
+    const apiKey = getActiveAiApiKey();
+    const model = getActiveAiModel();
+    const activeApiUrl = getActiveAiApiUrl();
+    if (!apiKey && getActiveAiProvider() !== 'vercel') {
+      throw new Error('Please set your API key in 🔑 Ask AI settings first');
+    }
+    const schema = `CRITICAL: Return ONLY a valid JSON array of exactly ${qCount} objects with these exact keys:
+- "q": The question (one crisp line; KaTeX \\( ... \\) for math, ANSI C in \`\`\`c fences for PPS code).
+- "options": Array of exactly 4 short answer options (max ~12 words each). Exactly one is correct.
+- "answer": Index (0-3) of the correct option. Vary positions across questions — do NOT always use 0.
+- "explain": 1-2 line reason why the answer is right.
+- "trap": 1-line exam/viva trap for this concept (what professors penalize).
+CRITICAL JSON RULES: raw JSON array only, no fences; double-escape LaTeX backslashes.`;
+    const system = `You are StudyForged Quiz Engine, elite engineering exam tutor for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS).
+TARGET SUBJECT: ${subjData.name} (${subjData.alias}, ${subjData.code}) · Faculty: ${subjData.faculty} · Units: ${subjData.units}
+Ground every question STRICTLY in ${subjData.alias} conventions.${subjData.alias.startsWith('PPS') ? ' ALL code in ANSI C (C99/C11) — never Python/JS.' : ''}
+${schema}`;
+    const payload = {
+      model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: `Write a ${qCount}-question MCQ quiz on "${cleanTopic}" for ${subjData.alias}. Mix recall + application + one viva-trap question.` }
+      ],
+      stream: false,
+      temperature: 0.7,
+      max_tokens: qCount <= 5 ? 4500 : 8000
+    };
+    const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    let resp = null;
+    let lastErr = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        resp = await fetch(attempt === 1 ? activeApiUrl : getActiveAiApiFallbackUrl(), {
+          method: 'POST', headers, body: JSON.stringify(payload)
+        });
+        if (resp.ok) break;
+        if (attempt === 1 && resp.status >= 500) {
+          await new Promise(r => setTimeout(r, 700));
+          continue;
+        }
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt === 1) await new Promise(r => setTimeout(r, 700));
+      }
+    }
+    if (!resp) throw (lastErr || new Error('Network error reaching AI backend'));
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `API error ${resp.status}`);
+    }
+    const data = await resp.json();
+    const raw = (data.choices?.[0]?.message?.content || '').trim();
+    if (!raw) throw new Error('Empty quiz response — tap Start to retry');
+    const parsed = parseQuizJson(raw);
+    const arr = Array.isArray(parsed) ? parsed : [parsed];
+    const valid = arr.map(normalizeQuizQ).filter(Boolean).slice(0, qCount);
+    if (valid.length < 3) throw new Error('Quiz came back malformed — tap Start to retry');
+    return valid;
+  }
+
+  function openQuizPage() {
+    if (!quizPage) return;
+    quizPage.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+  function closeQuizPage() {
+    if (!quizPage) return;
+    quizPage.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+  if (quizBackBtn) {
+    quizBackBtn.addEventListener('click', () => {
+      closeQuizPage();
+      showToast('Quiz exited — progress for this run is discarded.');
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && quizPage && quizPage.style.display !== 'none') closeQuizPage();
+  });
+
+  function renderQuizQ() {
+    if (!quizPageBody) return;
+    quizAnswered = false;
+    const q = quizQuestions[quizIndex];
+    quizPageBody.innerHTML = '';
+    if (quizNextQBtn) quizNextQBtn.style.display = 'none';
+    if (quizPageProgress) quizPageProgress.textContent = `Q ${quizIndex + 1} / ${quizQuestions.length}`;
+    if (quizLiveScore) quizLiveScore.textContent = `${quizScore} ✅`;
+
+    const card = document.createElement('div');
+    card.className = 'quiz-q-card';
+    const qEl = document.createElement('div');
+    qEl.className = 'quiz-q-text';
+    qEl.innerHTML = mdToHtml(q.q);
+    card.appendChild(qEl);
+
+    const optsBox = document.createElement('div');
+    optsBox.className = 'quiz-options';
+    // Shuffle option order per attempt so correct answers never sit in one slot.
+    const order = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+    order.forEach((origIdx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'quiz-option';
+      btn.innerHTML = mdToHtml(q.options[origIdx]);
+      btn.addEventListener('click', () => {
+        if (quizAnswered) return;
+        quizAnswered = true;
+        const correct = origIdx === q.answer;
+        optsBox.querySelectorAll('.quiz-option').forEach((b, bi) => {
+          b.disabled = true;
+          if (order[bi] === q.answer) b.classList.add('correct');
+        });
+        if (correct) {
+          quizScore++;
+          if (quizLiveScore) quizLiveScore.textContent = `${quizScore} ✅`;
+          showToast('Correct! +10 XP at the end 🔥');
+        } else {
+          btn.classList.add('wrong');
+        }
+        if (q.explain) {
+          const ex = document.createElement('div');
+          ex.className = 'quiz-explain';
+          ex.innerHTML = `<strong>💡 Why:</strong> ${mdToHtml(q.explain)}`;
+          card.appendChild(ex);
+        }
+        if (q.trap) {
+          const tr = document.createElement('div');
+          tr.className = 'quiz-trap';
+          tr.innerHTML = `<strong>⚠️ Trap:</strong> ${mdToHtml(q.trap)}`;
+          card.appendChild(tr);
+        }
+        const last = quizIndex >= quizQuestions.length - 1;
+        if (quizNextQBtn) {
+          quizNextQBtn.style.display = '';
+          quizNextQBtn.textContent = last ? 'See Result 🏁' : 'Next →';
+        }
+      });
+      optsBox.appendChild(btn);
+    });
+    card.appendChild(optsBox);
+    quizPageBody.appendChild(card);
+  }
+
+  function renderQuizResult() {
+    if (!quizPageBody) return;
+    quizPageBody.innerHTML = '';
+    if (quizNextQBtn) quizNextQBtn.style.display = 'none';
+    if (quizPageProgress) quizPageProgress.textContent = 'Result';
+    const total = quizQuestions.length;
+    const pct = Math.round((quizScore / total) * 100);
+    const xp = quizScore * 10 + (quizScore === total ? 20 : 0);
+    if (xp > 0) awardXP(xp);
+    if (pct >= 80) triggerConfetti();
+
+    const res = document.createElement('div');
+    res.className = 'quiz-result-card';
+    const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🔥' : pct >= 50 ? '💪' : '📚';
+    const h = document.createElement('h3');
+    h.textContent = `${emoji} ${quizScore} / ${total} (${pct}%)`;
+    res.appendChild(h);
+    const sub = document.createElement('p');
+    sub.textContent = pct === 100 ? `Perfect! +${xp} XP — flawless victory!`
+      : pct >= 80 ? `Excellent! +${xp} XP earned.`
+      : pct >= 50 ? `Good fight! +${xp} XP. Review the traps and retake.`
+      : `Keep grinding — +${xp} XP. Revisit the deck, then retake!`;
+    res.appendChild(sub);
+    const row = document.createElement('div');
+    row.className = 'quiz-result-actions';
+    const retake = document.createElement('button');
+    retake.type = 'button';
+    retake.className = 'quiz-next-btn';
+    retake.textContent = '🔁 Retake';
+    retake.addEventListener('click', () => {
+      quizIndex = 0;
+      quizScore = 0;
+      renderQuizQ();
+    });
+    const done = document.createElement('button');
+    done.type = 'button';
+    done.className = 'ghost';
+    done.textContent = 'Done';
+    done.addEventListener('click', closeQuizPage);
+    row.append(retake, done);
+    res.appendChild(row);
+    quizPageBody.appendChild(res);
+
+    try {
+      const hst = loadQuizHistory();
+      hst.unshift({ topic: quizTopicLabel, count: total, score: quizScore, total, date: new Date().toISOString() });
+      saveQuizHistory(hst.slice(0, 20));
+      renderQuizHistory();
+    } catch (e) {}
+    showToast(`Quiz done: ${quizScore}/${total} • +${xp} XP`);
+  }
+  if (quizNextQBtn) {
+    quizNextQBtn.addEventListener('click', () => {
+      if (!quizAnswered) return;
+      if (quizIndex < quizQuestions.length - 1) {
+        quizIndex++;
+        renderQuizQ();
+      } else {
+        renderQuizResult();
+      }
+    });
+  }
+
+  async function generateQuiz(rawTopic, qCount) {
+    const activeChip = quickChips ? quickChips.querySelector('.fc-chip.active') : null;
+    const activeChipSubj = activeChip ? activeChip.dataset.subject : '';
+    const subjData = updateSubjectContextBadge(rawTopic || activeChipSubj || 'PPS');
+    let cleanTopic = (rawTopic || '').trim();
+    const prefixRegex = new RegExp(`^(${subjData.alias}|${subjData.alias.replace(' Viva', '')}):\\s*`, 'i');
+    if (prefixRegex.test(cleanTopic)) cleanTopic = cleanTopic.replace(prefixRegex, '').trim();
+    if (!cleanTopic) cleanTopic = (rawTopic || '').trim();
+    if (!cleanTopic || /^[a-zA-Z\s]+:\s*$/.test(rawTopic || '')) {
+      showToast('Type a topic to quiz on (e.g. BEE: Thevenin)!');
+      if (quizTopicInput) quizTopicInput.focus();
+      return;
+    }
+    if (quizGenerateBtn) {
+      quizGenerateBtn.disabled = true;
+      quizGenerateBtn.textContent = '⏳ Forging quiz…';
+    }
+    if (quizStatus) {
+      quizStatus.style.display = 'inline-flex';
+      quizStatus.innerHTML = `<span class="fc-stream-dot"></span><span>Forging ${qCount} questions on ${escapeHtml(cleanTopic)}…</span>`;
+    }
+    try {
+      const qs = await fetchQuizQuestions(subjData, cleanTopic, qCount);
+      quizQuestions = qs;
+      quizIndex = 0;
+      quizScore = 0;
+      quizTopicLabel = `${subjData.alias}: ${cleanTopic}`;
+      if (quizPageTitle) quizPageTitle.textContent = `⚡ ${quizTopicLabel}`;
+      openQuizPage();
+      renderQuizQ();
+      if (quizStatus) quizStatus.style.display = 'none';
+    } catch (err) {
+      console.error('Quiz generation error:', err);
+      if (quizStatus) {
+        quizStatus.style.display = 'inline-flex';
+        quizStatus.innerHTML = `<span>⚠️ ${escapeHtml(err.message || 'Quiz failed')} — try again.</span>`;
+      }
+      showToast(`Quiz error: ${err.message || 'Generation issue'}`);
+    } finally {
+      if (quizGenerateBtn) {
+        quizGenerateBtn.disabled = false;
+        quizGenerateBtn.textContent = '🎯 Start Quiz';
+      }
+    }
+  }
+  if (quizGenerateBtn) {
+    quizGenerateBtn.addEventListener('click', () => {
+      const topic = quizTopicInput ? quizTopicInput.value.trim() : '';
+      const count = quizCountSelect ? (parseInt(quizCountSelect.value, 10) || 5) : 5;
+      generateQuiz(topic, count);
+    });
+  }
+  if (quizTopicInput) {
+    quizTopicInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && quizGenerateBtn) quizGenerateBtn.click();
+    });
+  }
+
+  renderQuizHistory();
   renderDeckList();
 }
 

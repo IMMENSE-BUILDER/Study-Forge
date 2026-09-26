@@ -368,6 +368,29 @@
           </div>
           <div class="fc-deck-list" id="fcDeckList"></div>
         </div>
+
+        <div class="quiz-block" id="quizBlock">
+          <div class="quiz-head">
+            <h3>⚡ AI Quiz Arena</h3>
+            <p class="quiz-sub">Topic-typed test • instant score + XP</p>
+          </div>
+          <div class="quiz-input-row">
+            <input id="quizTopicInput" class="quiz-topic-input" type="text" placeholder="e.g. SMT: Lagrange multipliers…" autocomplete="off" />
+            <select id="quizCountSelect" class="quiz-select" title="Number of questions">
+              <option value="5">5 Questions</option>
+              <option value="10">10 Questions</option>
+            </select>
+            <button id="quizGenerateBtn" class="quiz-generate-btn" type="button">🎯 Start Quiz</button>
+          </div>
+          <div class="quiz-status" id="quizStatus" style="display:none;"></div>
+          <div class="quiz-history" id="quizHistory">
+            <div class="quiz-history-head">
+              <h4>Past Scores</h4>
+              <button class="ghost quiz-clear-btn" id="quizClearBtn" type="button">Clear</button>
+            </div>
+            <div class="quiz-history-list" id="quizHistoryList"></div>
+          </div>
+        </div>
       </div>
       <div id="notesList"></div>
       <div class="note-form">
@@ -970,6 +993,22 @@
         <button type="button" class="fc-zoom-dock-btn fc-zoom-dock-flip" id="fcZoomFlipBtn" title="Flip card (or tap card)">🔄 Flip Card</button>
         <button type="button" class="fc-zoom-dock-btn" id="fcZoomNextBtn" title="Next card">Next →</button>
       </div>
+    </div>
+  </div>
+
+  <!-- AI Quiz Arena — dedicated in-app quiz page -->
+  <div id="quizPage" class="quiz-page" style="display: none;" role="dialog" aria-modal="true" aria-label="AI Quiz Arena">
+    <div class="quiz-page-head">
+      <button type="button" class="quiz-back-btn" id="quizBackBtn" title="Exit quiz">← Back</button>
+      <div class="quiz-page-titles">
+        <h2 id="quizPageTitle">⚡ Quiz</h2>
+        <span class="quiz-page-progress" id="quizPageProgress">Q 1 / 5</span>
+      </div>
+      <span class="quiz-live-score" id="quizLiveScore">0 ✅</span>
+    </div>
+    <div class="quiz-page-body" id="quizPageBody"></div>
+    <div class="quiz-page-foot">
+      <button type="button" class="quiz-next-btn" id="quizNextQBtn" style="display:none;">Next →</button>
     </div>
   </div>
 
