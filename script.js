@@ -3018,7 +3018,7 @@ function initAskAI() {
 
       ttsBtn.innerHTML = '⏳ Reading...';
       try {
-        const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-iris-en', {
+        const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-2-iris-en', {
           method: 'POST',
           headers: {
             'Authorization': `Token ${dgKey}`,
@@ -3026,6 +3026,16 @@ function initAskAI() {
           },
           body: JSON.stringify({ text: plainText })
         });
+        // v0.6.20: surface API errors instead of playing an error-JSON blob into silence.
+        if (!response.ok) {
+          let errMsg = `Voice error ${response.status}`;
+          try {
+            const errText = await response.text();
+            const errJson = JSON.parse(errText);
+            errMsg = errJson.err_msg || errJson.error || errMsg;
+          } catch (e) {}
+          throw new Error(errMsg);
+        }
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
 
@@ -3043,7 +3053,9 @@ function initAskAI() {
         currentAudio.play();
       } catch (err) {
         console.error('Deepgram TTS Error:', err);
-        ttsBtn.innerHTML = '❌ Error';
+        ttsBtn.innerHTML = '🔊 Read';
+        ttsBtn.classList.remove('speaking');
+        showToast(`Voice: ${err.message || 'playback failed'}`);
       }
     });
     containerEl.appendChild(ttsBtn);

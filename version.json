@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":79,"latest":"v0.6.19","notes":"Voice upgrade: AI read-aloud TTS switched from aura-asteria-en to aura-iris-en."}
+{"apkUrl":"","app":"StudyForged","versionCode":80,"latest":"v0.6.20","notes":"Fix TTS voice: aura-iris-en does not exist per Deepgram docs — corrected to aura-2-iris-en; API errors now toast instead of silent stuck button."}
