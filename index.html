@@ -1004,9 +1004,24 @@
         <h2 id="quizPageTitle">⚡ Quiz</h2>
         <span class="quiz-page-progress" id="quizPageProgress">Q 1 / 5</span>
       </div>
-      <span class="quiz-live-score" id="quizLiveScore">0 ✅</span>
+      <div class="quiz-page-head-right">
+        <button type="button" class="quiz-help-btn" id="quizHelpBtn" title="Ask AI for a hint — nudges, never spoilers">💡 Ask AI</button>
+        <span class="quiz-live-score" id="quizLiveScore">0 ✅</span>
+      </div>
     </div>
     <div class="quiz-page-body" id="quizPageBody"></div>
+    <div class="quiz-help-panel" id="quizHelpPanel" style="display:none;">
+      <div class="quiz-help-head">
+        <span>💡 Hint Buddy — nudges, not answers</span>
+        <button type="button" class="quiz-help-close" id="quizHelpClose" aria-label="Close hint chat">✕</button>
+      </div>
+      <div class="quiz-help-msgs" id="quizHelpMsgs"></div>
+      <div class="quiz-help-chips" id="quizHelpChips"></div>
+      <div class="quiz-help-inputrow">
+        <input id="quizHelpInput" type="text" placeholder="e.g. I don't remember the formula…" autocomplete="off" />
+        <button type="button" class="quiz-help-send" id="quizHelpSend" aria-label="Send">➤</button>
+      </div>
+    </div>
     <div class="quiz-page-foot">
       <button type="button" class="quiz-next-btn" id="quizNextQBtn" style="display:none;">Next →</button>
     </div>

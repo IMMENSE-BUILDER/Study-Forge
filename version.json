@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":75,"latest":"v0.6.15","notes":"Fix quiz Unexpected-token failure: 4-tier salvage recovery for truncated/garbled MCQ JSON, bigger 5-Q budget (6000), friendly error text instead of parser gibberish."}
+{"apkUrl":"","app":"StudyForged","versionCode":76,"latest":"v0.6.16","notes":"Hint Buddy inside quizzes: top-right Ask AI button opens tutor chat grounded in current question + topic; Socratic nudges only, never reveals answers; quick chips, per-question context, result follow-ups."}

@@ -6138,6 +6138,7 @@ ${schema}`;
     if (!quizPage) return;
     quizPage.style.display = 'none';
     document.body.style.overflow = '';
+    resetQuizHelp();
   }
   if (quizBackBtn) {
     quizBackBtn.addEventListener('click', () => {
@@ -6211,6 +6212,7 @@ ${schema}`;
     });
     card.appendChild(optsBox);
     quizPageBody.appendChild(card);
+    noteQuizHelpNewQuestion();
   }
 
   function renderQuizResult() {
@@ -6245,6 +6247,7 @@ ${schema}`;
     retake.addEventListener('click', () => {
       quizIndex = 0;
       quizScore = 0;
+      resetQuizHelp();
       renderQuizQ();
     });
     const done = document.createElement('button');
@@ -6263,6 +6266,7 @@ ${schema}`;
       renderQuizHistory();
     } catch (e) {}
     showToast(`Quiz done: ${quizScore}/${total} • +${xp} XP`);
+    noteQuizHelpResult(pct);
   }
   if (quizNextQBtn) {
     quizNextQBtn.addEventListener('click', () => {
@@ -6273,6 +6277,137 @@ ${schema}`;
       } else {
         renderQuizResult();
       }
+    });
+  }
+
+  // ── Hint Buddy: in-quiz tutor chat (nudges, never spoilers; question-aware) ──
+  const quizHelpBtn = document.getElementById('quizHelpBtn');
+  const quizHelpPanel = document.getElementById('quizHelpPanel');
+  const quizHelpMsgs = document.getElementById('quizHelpMsgs');
+  const quizHelpChips = document.getElementById('quizHelpChips');
+  const quizHelpInput = document.getElementById('quizHelpInput');
+  const quizHelpSend = document.getElementById('quizHelpSend');
+  const quizHelpClose = document.getElementById('quizHelpClose');
+  let quizHelpHistory = [];
+  let quizHelpBusy = false;
+  const QUIZ_HELP_CHIP_QS = ['🤏 Give me a hint', '📐 Which formula do I need?', '❌ Eliminate one option'];
+
+  function quizHelpScroll() {
+    if (quizHelpMsgs) quizHelpMsgs.scrollTop = quizHelpMsgs.scrollHeight;
+  }
+  function addQuizHelpMsg(role, html) {
+    if (!quizHelpMsgs) return;
+    const d = document.createElement('div');
+    d.className = `quiz-help-msg ${role}`;
+    if (role === 'user') d.textContent = html;
+    else d.innerHTML = html;
+    quizHelpMsgs.appendChild(d);
+    quizHelpScroll();
+  }
+  function resetQuizHelp() {
+    quizHelpHistory = [];
+    quizHelpBusy = false;
+    if (quizHelpMsgs) quizHelpMsgs.innerHTML = '';
+    renderQuizHelpChips();
+  }
+  function renderQuizHelpChips() {
+    if (!quizHelpChips) return;
+    quizHelpChips.innerHTML = '';
+    QUIZ_HELP_CHIP_QS.forEach((c) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'quiz-help-chip';
+      b.textContent = c;
+      b.addEventListener('click', () => sendQuizHelp(c));
+      quizHelpChips.appendChild(b);
+    });
+  }
+  function toggleQuizHelp(force) {
+    if (!quizHelpPanel) return;
+    const show = typeof force === 'boolean' ? force : quizHelpPanel.style.display === 'none';
+    quizHelpPanel.style.display = show ? '' : 'none';
+    if (show && quizHelpMsgs && !quizHelpMsgs.children.length) {
+      addQuizHelpMsg('bot', `Stuck on Q${quizIndex + 1}? Ask me anything — I'll nudge you to it, never spoil it. 🎯`);
+    }
+    if (show && quizHelpInput) quizHelpInput.focus();
+  }
+  if (quizHelpBtn) quizHelpBtn.addEventListener('click', () => toggleQuizHelp());
+  if (quizHelpClose) quizHelpClose.addEventListener('click', () => toggleQuizHelp(false));
+
+  function noteQuizHelpNewQuestion() {
+    if (!quizHelpMsgs || !quizHelpMsgs.children.length) return;
+    if (quizHelpPanel && quizHelpPanel.style.display === 'none') return;
+    addQuizHelpMsg('bot', `<em>— now on Q${quizIndex + 1}: ${escapeHtml(String(quizQuestions[quizIndex]?.q || '').slice(0, 80))}… —</em>`);
+  }
+  function noteQuizHelpResult(pct) {
+    if (!quizHelpMsgs) return;
+    if (quizHelpPanel) quizHelpPanel.style.display = '';
+    addQuizHelpMsg('bot', pct >= 50
+      ? `Quiz done — nice work! Ask me to explain any question in detail. 📚`
+      : `Quiz done — let's fix the gaps. Ask me about any question. 💪`);
+  }
+
+  function quizHelpSystem() {
+    const q = quizQuestions[quizIndex] || {};
+    const letters = ['A', 'B', 'C', 'D'];
+    const opts = (q.options || []).map((o, i) => `${letters[i]}) ${o}`).join(' | ');
+    return `You are Hint Buddy, a Socratic tutor inside a quiz on "${quizTopicLabel}".
+Current question (Q${quizIndex + 1}): "${q.q || ''}"
+Options: ${opts}
+Correct: ${letters[q.answer] || '?'} — explanation: ${q.explain || ''} — trap: ${q.trap || ''}
+HARD RULES: NEVER state the correct option letter/text or the final numeric answer. Nudge instead: recall the rule/formula (leave a blank to fill), eliminate ONE wrong option with reasoning, or ask a leading question. Under 80 words. KaTeX \\( \\) for math.`;
+  }
+
+  async function sendQuizHelp(text) {
+    const msg = String(text || '').trim();
+    if (!msg || quizHelpBusy || !quizQuestions.length) return;
+    if (quizHelpPanel && quizHelpPanel.style.display === 'none') toggleQuizHelp(true);
+    quizHelpBusy = true;
+    addQuizHelpMsg('user', msg);
+    quizHelpHistory.push({ role: 'user', content: msg });
+    if (quizHelpInput) quizHelpInput.value = '';
+    const thinking = document.createElement('div');
+    thinking.className = 'quiz-help-msg bot thinking';
+    thinking.textContent = 'Thinking…';
+    if (quizHelpMsgs) { quizHelpMsgs.appendChild(thinking); quizHelpScroll(); }
+    try {
+      const apiKey = getActiveAiApiKey();
+      if (!apiKey && getActiveAiProvider() !== 'vercel') throw new Error('key');
+      const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+      const payload = {
+        model: getActiveAiModel(),
+        messages: [
+          { role: 'system', content: quizHelpSystem() },
+          ...quizHelpHistory.slice(-6)
+        ],
+        stream: false,
+        temperature: 0.7,
+        max_tokens: 500
+      };
+      let resp = await fetch(getActiveAiApiUrl(), { method: 'POST', headers, body: JSON.stringify(payload) });
+      if (!resp.ok && getActiveAiApiFallbackUrl()) {
+        resp = await fetch(getActiveAiApiFallbackUrl(), { method: 'POST', headers, body: JSON.stringify(payload) });
+      }
+      if (!resp.ok) throw new Error(`API error ${resp.status}`);
+      const data = await resp.json();
+      const reply = (data.choices?.[0]?.message?.content || '').trim() || "Hmm, that didn't come through — ask again! 🤔";
+      thinking.remove();
+      addQuizHelpMsg('bot', mdToHtml(reply));
+      quizHelpHistory.push({ role: 'assistant', content: reply });
+    } catch (err) {
+      thinking.remove();
+      addQuizHelpMsg('bot', err && err.message === 'key'
+        ? 'Add your API key in 🔑 Ask AI settings first, then ask away!'
+        : 'Brain glitch — try that question again in a few seconds. ⚡');
+    } finally {
+      quizHelpBusy = false;
+    }
+  }
+  if (quizHelpSend) quizHelpSend.addEventListener('click', () => quizHelpInput && sendQuizHelp(quizHelpInput.value));
+  if (quizHelpInput) {
+    quizHelpInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendQuizHelp(quizHelpInput.value);
     });
   }
 
@@ -6340,6 +6475,7 @@ ${schema}`;
   }
 
   renderQuizHistory();
+  renderQuizHelpChips();
   renderDeckList();
 }
 

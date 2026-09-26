@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.15** [build 75]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.16** [build 76]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.15):
+Recent major changes (Sep 2026, now v0.6.16):
+- v0.6.16 (Build 76):
+  - Hint Buddy in quizzes (user demand): top-right 💡 Ask AI button on quiz page opens tutor chat grounded in topic + current question/options (answer hiddenly known, HARD RULE never to reveal it). Socratic nudges only (formula blanks, single-option elimination, leading questions, ≤80 words), quick chips (hint/formula/eliminate), per-question context dividers, result-screen follow-ups, Esc/back to dismiss, history resets per run.
+  - Triple bump `v0.6.16` / `versionCode: 76` / `CACHE_NAME: study-forge-v0.6.16`.
+- v0.6.15 (Build 75):
 - v0.6.15 (Build 75):
   - Quiz `Unexpected token ... not valid JSON` fix: 5-Q response truncated under CoT load and both parsers choked. Same 4-tier recovery as flashcards (parse → salvage balanced objects → regex fields → merge/dedupe, needs ≥3 valid), 5-Q budget 4500→6000, and parser gibberish never reaches the UI (friendly "Quiz came back garbled — try again").
   - Triple bump `v0.6.15` / `versionCode: 75` / `CACHE_NAME: study-forge-v0.6.15`.
