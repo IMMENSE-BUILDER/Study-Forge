@@ -5632,11 +5632,13 @@ label {
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 700px) {
   .cheatsheet-sheet .sheet-grid {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
   }
 }
+
+/* v0.6.37: HARD CAP at 3 columns — the 4th squeezed boxes into unreadable slivers. */
 
 .cheatsheet-sheet .sheet-sec {
   counter-increment: sheetnum;
@@ -5708,12 +5710,16 @@ label {
   padding: 2px 4px;
   text-align: left;
   vertical-align: top;
-  overflow-wrap: anywhere;
+  /* v0.6.37: break-word (not anywhere) — wraps only unbreakable overflow,
+     never chops real words like "indeper" mid-word. */
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .cheatsheet-sheet li,
 .cheatsheet-sheet p {
   overflow-wrap: break-word;
+  word-break: normal;
 }
 
 /* Wide display math scrolls inside its box instead of punching through the edge */

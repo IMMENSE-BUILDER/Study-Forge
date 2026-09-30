@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":96,"latest":"v0.6.36","notes":"Kill right-edge cropping: auto-fit now checks width too, display math scrolls inside its box, tables fixed-layout with wrapping cells."}
+{"apkUrl":"","app":"StudyForged","versionCode":97,"latest":"v0.6.37","notes":"Hard layout fix: 3-column cap everywhere, word-break only on unbreakable overflow (no more mid-word chops), 10-12 boxes at 650-800 words sized to truly fit one page."}

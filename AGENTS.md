@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.36** [build 96]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.37** [build 97]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.36):
+Recent major changes (Sep 2026, now v0.6.37):
+- v0.6.37 (Build 97):
+  - Hard layout fix (user demand, Wronskian screenshot): 4th-column breakpoint deleted (3-col cap everywhere), `overflow-wrap:anywhere` replaced (it chopped "independent" mid-word — now breaks only truly unbreakable overflow), content budget cut to 10–12 boxes / 650–800 words so one page actually holds it.
+  - Triple bump `v0.6.37` / `versionCode: 97` / `CACHE_NAME: study-forge-v0.6.37`.
+- v0.6.36 (Build 96):
 - v0.6.36 (Build 96):
   - Right-edge crop fix (user demand, Wronskian screenshot): wide KaTeX display math punched through box edges while fit only measured height. Auto-fit now checks both axes; display math scrolls inside its own box; tables fixed-layout with wrapping cells; inline math may wrap in tight cells; print keeps everything visible-wrap.
   - Triple bump `v0.6.36` / `versionCode: 96` / `CACHE_NAME: study-forge-v0.6.36`.
