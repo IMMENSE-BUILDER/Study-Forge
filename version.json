@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":95,"latest":"v0.6.35","notes":"Master page fix: strict numbered grid restored (free layout broke page math and cropped), 700-850 word fit budget, device-scaling forge loader."}
+{"apkUrl":"","app":"StudyForged","versionCode":96,"latest":"v0.6.36","notes":"Kill right-edge cropping: auto-fit now checks width too, display math scrolls inside its box, tables fixed-layout with wrapping cells."}

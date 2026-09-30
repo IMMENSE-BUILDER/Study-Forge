@@ -5697,6 +5697,7 @@ label {
 .cheatsheet-sheet table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 0.91em;
   margin: 3px 0;
 }
@@ -5707,6 +5708,26 @@ label {
   padding: 2px 4px;
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.cheatsheet-sheet li,
+.cheatsheet-sheet p {
+  overflow-wrap: break-word;
+}
+
+/* Wide display math scrolls inside its box instead of punching through the edge */
+.cheatsheet-sheet .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  margin: 3px 0;
+}
+
+/* Inline math may wrap inside tight table cells instead of spilling sideways */
+.cheatsheet-sheet .katex {
+  white-space: normal;
 }
 
 .cheatsheet-sheet th {
@@ -6041,6 +6062,14 @@ label {
 
   body.print-cheatsheet .cheatsheet-sheet .math-block {
     margin: 2px 0;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .katex {
+    white-space: normal;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .katex-display {
+    overflow: visible;
   }
 }
 

@@ -4319,11 +4319,13 @@ function initAskAI() {
 
   // STRICT A4 fit: shrink sheet type until content fits its box (binary search on
   // font-size; inner sizes are em-based so the whole sheet scales on one knob).
+  // v0.6.36: checks BOTH axes — wide KaTeX display math punched through the right
+  // edge while only vertical fit ran.
   function fitSheetToPage(sheet, minPx) {
     if (!sheet || !sheet.isConnected) return;
     const min = minPx || 8;
     sheet.style.fontSize = '';
-    const fits = () => sheet.scrollHeight <= sheet.clientHeight + 1;
+    const fits = () => sheet.scrollHeight <= sheet.clientHeight + 1 && sheet.scrollWidth <= sheet.clientWidth + 1;
     if (sheet.clientHeight <= 0 || fits()) return;
     let lo = min;
     let hi = parseFloat(getComputedStyle(sheet).fontSize) || 11;
@@ -4332,7 +4334,7 @@ function initAskAI() {
     while (hi - lo > 0.5 && guard++ < 12) {
       const mid = (lo + hi) / 2;
       sheet.style.fontSize = mid + 'px';
-      if (sheet.scrollHeight <= sheet.clientHeight + 1) { best = mid; lo = mid; }
+      if (sheet.scrollHeight <= sheet.clientHeight + 1 && sheet.scrollWidth <= sheet.clientWidth + 1) { best = mid; lo = mid; }
       else { hi = mid; }
     }
     sheet.style.fontSize = best + 'px';
