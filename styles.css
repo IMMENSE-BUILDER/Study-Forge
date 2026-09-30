@@ -5576,7 +5576,8 @@ label {
   flex-shrink: 0;
 }
 
-/* Screen preview of the dense sheet — true A4 proportions, demo-style dark grid */
+/* Screen preview of the dense sheet — STRICT A4 page: fixed ratio, never stretches.
+   Overflow hidden (not scroll): fitSheetToPage() shrinks type until all fits. */
 .cheatsheet-sheet {
   background: #17131c;
   color: #f3ead7;
@@ -5585,7 +5586,9 @@ label {
   padding: 10px;
   font-size: 11px;
   line-height: 1.32;
-  overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   aspect-ratio: 210 / 297;
 }
 
@@ -5747,11 +5750,15 @@ label {
   flex: 1;
   min-height: 0;
   display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
+/* Letterboxed strict-A4 page in fullscreen: ratio never stretches, backdrop frames it. */
 .sheet-fs-body .cheatsheet-sheet {
-  aspect-ratio: auto;
-  flex: 1;
+  flex: none;
+  width: min(100%, 66dvh);
+  aspect-ratio: 210 / 297;
   font-size: 13px;
 }
 

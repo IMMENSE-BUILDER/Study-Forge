@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":89,"latest":"v0.6.29","notes":"Strict A4 guarantee: measured auto-fit shrinks sheet type until all content fits the page box (chat+fullscreen+rotate); print hard-capped at 297mm so output can never spill to page 2."}
+{"apkUrl":"","app":"StudyForged","versionCode":90,"latest":"v0.6.30","notes":"Strict page lock: sheet overflow clips (never scrolls long), fullscreen letterboxes a true A4 page instead of stretching full-height."}

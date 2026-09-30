@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.29** [build 89]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.30** [build 90]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.29):
+Recent major changes (Sep 2026, now v0.6.30):
+- v0.6.30 (Build 90):
+  - Strict page lock (user demand): sheet `overflow:hidden` (a page never scrolls long — fit shrinks type instead) and fullscreen letterboxes a true A4 page (`min(100%,66dvh)`, ratio locked) instead of stretching to full phone height, which was the actual "long page".
+  - Triple bump `v0.6.30` / `versionCode: 90` / `CACHE_NAME: study-forge-v0.6.30`.
+- v0.6.29 (Build 89):
 - v0.6.29 (Build 89):
   - STRICT A4 guarantee (user demand): `fitSheetToPage()` measures the rendered sheet and binary-searches type size down until everything fits the page box — chat render, fullscreen open, and rotation all refit; inner sizes converted to em so one knob scales all; print sheet hard-capped at exactly 297mm (`border-box`, overflow clipped) so output physically cannot spill to page 2.
   - Triple bump `v0.6.29` / `versionCode: 89` / `CACHE_NAME: study-forge-v0.6.29`.
