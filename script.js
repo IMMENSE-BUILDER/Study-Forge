@@ -4258,6 +4258,36 @@ function initAskAI() {
     return out;
   }
 
+  // Cheatsheet fullscreen viewer (tap sheet or ⛶).
+  function openSheetFullscreen(html) {
+    const fs = document.getElementById('sheetFullscreen');
+    const body = document.getElementById('sheetFsBody');
+    if (!fs || !body) return;
+    body.innerHTML = '';
+    const sheet = document.createElement('div');
+    sheet.className = 'cheatsheet-sheet';
+    sheet.innerHTML = html;
+    body.appendChild(sheet);
+    fs.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSheetFullscreen() {
+    const fs = document.getElementById('sheetFullscreen');
+    if (!fs) return;
+    fs.style.display = 'none';
+    const qp = document.getElementById('quizPage');
+    if (!qp || qp.style.display === 'none') document.body.style.overflow = '';
+  }
+  const sheetFsClose = document.getElementById('sheetFsClose');
+  if (sheetFsClose) sheetFsClose.addEventListener('click', closeSheetFullscreen);
+  const sheetFsBackdrop = document.getElementById('sheetFsBackdrop');
+  if (sheetFsBackdrop) sheetFsBackdrop.addEventListener('click', closeSheetFullscreen);
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const fs = document.getElementById('sheetFullscreen');
+    if (fs && fs.style.display !== 'none') closeSheetFullscreen();
+  });
+
   async function generateCheatsheet() {
     if (sheetBusy) return;
     const alias = sheetSubject ? sheetSubject.value : '';
@@ -4301,10 +4331,11 @@ ${unitCtx}
 TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above.
 HARD RULES:
 - Output ONLY the inner HTML (no fences, no commentary). Allowed tags ONLY: h2,h3,h4,table,thead,tbody,tr,th,td,ul,ol,li,p,div,span,strong,em,code,pre,hr. No attributes except class. No <style>/<script>.
-- Structure: <div class="sheet-grid"> of <div class="sheet-sec"> blocks, each with <h3> + formula table and/or 3-6 ultra-terse bullets.
-- Every formula as KaTeX: inline \\( ... \\) , display \\[ ... \\]. Double-escape backslashes. ANSI C in <pre> (max 8 lines) for PPS.
-- End with one <div class="sheet-trap"> of 3 exam traps/viva pitfalls for this unit.
-- Terse exam-table language. ~500-650 words. MUST fit one printed A4 page — compress, never pad.`;
+- Structure: <div class="sheet-grid"> of <div class="sheet-sec"> blocks, each with <h3> + formula table and/or 3-5 ultra-terse bullets.
+- Every formula as KaTeX: inline \\( ... \\) , display \\[ ... \\]. Double-escape backslashes. ANSI C in <pre> (max 6 lines) for PPS.
+- ZERO filler: no intros, no motivational lines, no generic advice ("practice more", "revise daily", "understand basics"). Every bullet must carry a testable fact, formula, value, or step — cut anything else.
+- End with one <div class="sheet-trap"> of exactly 3 traps. Each trap = ONE line: specific mistake + what the professor deducts or asks in viva. No vague warnings.
+- ~380-450 words hard ceiling. Tables over prose. MUST fit one printed A4 page — compress, never pad.`;
     const payload = {
       model: getActiveAiModel(),
       messages: [
@@ -4375,8 +4406,16 @@ HARD RULES:
         userBubble.remove();
         generateCheatsheet();
       });
-      actions.append(dl, regen);
+      const fsBtn = document.createElement('button');
+      fsBtn.type = 'button';
+      fsBtn.className = 'ghost';
+      fsBtn.textContent = '⛶ Fullscreen';
+      fsBtn.addEventListener('click', () => openSheetFullscreen(safe));
+      actions.append(dl, fsBtn, regen);
       botMsg.appendChild(actions);
+      sheet.title = 'Tap to view fullscreen';
+      sheet.style.cursor = 'zoom-in';
+      sheet.addEventListener('click', () => openSheetFullscreen(safe));
       if (sheetStatus) sheetStatus.style.display = 'none';
       showToast('Cheatsheet ready — Download for a zero-margin 1-page PDF! 📄');
     } catch (err) {

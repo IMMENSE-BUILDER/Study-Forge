@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.24** [build 84]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.25** [build 85]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.24):
+Recent major changes (Sep 2026, now v0.6.25):
+- v0.6.25 (Build 85):
+  - Cheatsheet tightening (user demand): true A4-ratio sheet on screen (internal scroll, 3-col ≥900px, denser type), tap-sheet or ⛶ Fullscreen viewer (backdrop/Esc close, hidden from print), prompt now bans filler/generic advice with 380–450 word ceiling and exactly 3 one-line traps (mistake + deduction each).
+  - Triple bump `v0.6.25` / `versionCode: 85` / `CACHE_NAME: study-forge-v0.6.25`.
+- v0.6.24 (Build 84):
 - v0.6.24 (Build 84):
   - 1-page unit cheatsheets in Ask AI (user demand, no nav change): 💬 Chat / 📄 Cheatsheet toggle in AI page; subject + unit picker; unit topics grounded verbatim from official 2026 `SF_SEM1_SUBJECTS` (+faculty/textbook/exam) so the sheet covers the full unit.
   - Dense print-first sheet: AI HTML sanitized (scripts/handlers/inline styles stripped) + KaTeX pass; 🖨️ Download prints zero-margin single A4 (`@page margin:0`, app chrome hidden, 2-col 9pt) → Save as PDF; 🔁 Regenerate per sheet.
