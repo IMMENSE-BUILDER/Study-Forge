@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.34** [build 94]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.35** [build 95]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.34):
+Recent major changes (Sep 2026, now v0.6.35):
+- v0.6.35 (Build 95):
+  - Master page fix (user demand): free layout reverted — a fixed A4 page mathematically needs grid discipline, and flowing content could only ever clip. Strict 10–14 numbered-box grid restored with a 700–850 word fit budget (the combo that actually fit in the v0.6.26–28 era). Forge loader now scales with viewport (clamp widths, % insets, flex lines) instead of fixed 120px.
+  - Triple bump `v0.6.35` / `versionCode: 95` / `CACHE_NAME: study-forge-v0.6.35`.
+- v0.6.34 (Build 94):
 - v0.6.34 (Build 94):
   - Cheatsheet freedom (user demand): brand-new forging loader (mini A4 page, sweeping scan bar, waking content lines, cycling stages — flashcard skeleton retired here); ⏹ Stop generation button aborts the in-flight request and cleans up bubbles; layout no longer forced — model picks numbered grid, flowing sections, or a mix per unit (generic h3 styles + print cover freeform too).
   - Triple bump `v0.6.34` / `versionCode: 94` / `CACHE_NAME: study-forge-v0.6.34`.

@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":94,"latest":"v0.6.34","notes":"Cheatsheet freedom: new forging loader (scanning A4 page), Stop generation button with abort, free choice of grid or flowing layout per unit."}
+{"apkUrl":"","app":"StudyForged","versionCode":95,"latest":"v0.6.35","notes":"Master page fix: strict numbered grid restored (free layout broke page math and cropped), 700-850 word fit budget, device-scaling forge loader."}
