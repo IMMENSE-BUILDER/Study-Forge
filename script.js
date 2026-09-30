@@ -2410,6 +2410,27 @@ function getActiveAiApiFallbackUrl() {
     : '/th-api/v1/chat/completions';
 }
 
+// v0.6.32: dead/plan-gated model IDs fail in every tool at once — detect, tell, heal to default.
+function isModelMissingError(msg) {
+  const m = String(msg || '').toLowerCase();
+  return /model[^.]{0,60}(not found|does not exist|doesn.?t exist|invalid|unsupported|unknown|no such)/i.test(m) || /(^|[^0-9])404([^0-9]|$)/.test(m);
+}
+function healDeadModel() {
+  if (getActiveAiProvider() === 'vercel') return false;
+  const cur = getTokenHarborModel();
+  if (cur === DEFAULT_TOKENHARBOR_MODEL) return false;
+  try { localStorage.setItem('sf_tokenharbor_model', DEFAULT_TOKENHARBOR_MODEL); } catch (e) {}
+  try {
+    const sel = document.getElementById('aiModelSelect');
+    if (sel) sel.value = DEFAULT_TOKENHARBOR_MODEL;
+    const mi = document.getElementById('tokenharborModelInput');
+    if (mi) mi.value = DEFAULT_TOKENHARBOR_MODEL;
+  } catch (e) {}
+  updateAIModelBadge();
+  showToast(`"${cur}" isn't serving on your plan — back on ${DEFAULT_TOKENHARBOR_MODEL} ⚡`);
+  return true;
+}
+
 // Backward-compatibility aliases
 const getOpenRouterApiKey = getActiveAiApiKey;
 const getOpenRouterModel = getActiveAiModel;
@@ -3782,6 +3803,7 @@ function initAskAI() {
         throw err;
       }
       console.error('Token Harbor API Error:', err);
+      if (err && isModelMissingError(err.message)) healDeadModel();
       // Remove unanswered user prompt from chatHistory so context stays clean
       if (!isRetry && chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
         chatHistory.pop();
@@ -4454,7 +4476,9 @@ SCHEMA-LOCKED OUTPUT — nothing else is allowed:
       if (!resp) throw (lastErr || new Error('Network error reaching AI backend'));
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `API error ${resp.status}`);
+        const sheetErr = errData.error?.message || `API error ${resp.status}`;
+        if (isModelMissingError(sheetErr)) healDeadModel();
+        throw new Error(sheetErr);
       }
       const data = await resp.json();
       let raw = (data.choices?.[0]?.message?.content || '').trim();
@@ -5966,6 +5990,7 @@ CRITICAL JSON RULES:
         else if (resp.status === 402) showToast('Pass/credits required for model');
         else if (resp.status === 429) showToast('Rate limit reached. Please wait');
         else showToast(`Flashcards error: ${rawMsg}`);
+        if (isModelMissingError(rawMsg)) healDeadModel();
         throw new Error(rawMsg);
       }
 
@@ -6574,7 +6599,9 @@ ${schema}`;
     if (!resp) throw (lastErr || new Error('Network error reaching AI backend'));
     if (!resp.ok) {
       const errData = await resp.json().catch(() => ({}));
-      throw new Error(errData.error?.message || `API error ${resp.status}`);
+      const quizErr = errData.error?.message || `API error ${resp.status}`;
+      if (isModelMissingError(quizErr)) healDeadModel();
+      throw new Error(quizErr);
     }
     const data = await resp.json();
     const raw = (data.choices?.[0]?.message?.content || '').trim();
@@ -6864,7 +6891,10 @@ HARD RULES: NEVER state the correct option letter/text or the final numeric answ
       if (!resp.ok && getActiveAiApiFallbackUrl()) {
         resp = await fetch(getActiveAiApiFallbackUrl(), { method: 'POST', headers, body: JSON.stringify(payload) });
       }
-      if (!resp.ok) throw new Error(`API error ${resp.status}`);
+      if (!resp.ok) {
+        if (resp.status === 404) healDeadModel();
+        throw new Error(`API error ${resp.status}`);
+      }
       const data = await resp.json();
       const reply = (data.choices?.[0]?.message?.content || '').trim() || "Hmm, that didn't come through — ask again! 🤔";
       thinking.remove();

@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.31** [build 91]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.32** [build 92]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,12 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.31):
+Recent major changes (Sep 2026, now v0.6.32):
+- v0.6.32 (Build 92):
+  - Picker polish (user demand): dropdown shows exact full model IDs (no "current" tag), arrow nudged left via wider right padding.
+  - Dead-model auto-heal: verified IDs online — `qwen3.8-flash`/`deepseek-v4.1-flash`/`gpt-6-luna`/`glm-5.3-flash` exist; `gpt-6-luna-fast` has no public listing and Gemini 3.8 Flash isn't in Token Harbor's published catalog, so both likely 404 there. Any unknown/plan-gated ID now triggers one clear toast + auto-fallback to `glm-5.3-flash` across chat/flashcards/quiz/sheets/buddy instead of repeated silent failures.
+  - Triple bump `v0.6.32` / `versionCode: 92` / `CACHE_NAME: study-forge-v0.6.32`.
+- v0.6.31 (Build 91):
 - v0.6.31 (Build 91):
   - Global model picker (user demand): compact dropdown with native arrow in the Ask AI mode bar — GLM 5.3 Flash, Gemini 3.8 Flash, Qwen 3.8 Flash, GPT-6 Luna Fast, GPT-6 Luna, DeepSeek V4.1. Writes the existing `sf_tokenharbor_model` key every AI tool already resolves at call time, so chat/flashcards/quiz/sheets/buddy (+future tools) all follow instantly; flips standby provider back to Token Harbor; stays in sync with the 🔑 settings modal both ways. Default unchanged (`glm-5.3-flash` plan still active); `deepseek-v4.1-flash` removed from force-migration since it's now selectable.
   - Triple bump `v0.6.31` / `versionCode: 91` / `CACHE_NAME: study-forge-v0.6.31`.
