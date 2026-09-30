@@ -5495,6 +5495,276 @@ label {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Ask AI: Chat/Cheatsheet mode + 1-page unit cheatsheet ── */
+.ai-mode-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px 0;
+  flex-shrink: 0;
+}
+
+.ai-mode-btn {
+  flex: 1 1 0;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  padding: 7px 10px;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.ai-mode-btn.active {
+  background: var(--accent);
+  color: #111;
+  opacity: 1;
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+.ai-sheet-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px 0;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.ai-sheet-select {
+  flex: 1 1 140px;
+  min-width: 0;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ai-sheet-gen {
+  flex: 1 1 100%;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 800;
+  background: var(--accent);
+  color: #111;
+  box-shadow: 3px 3px 0 var(--shadow);
+  cursor: pointer;
+}
+
+.ai-sheet-gen:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--shadow);
+}
+
+.ai-sheet-gen:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.ai-sheet-status {
+  margin: 8px 16px 0;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Screen preview of the dense sheet */
+.cheatsheet-sheet {
+  background: #fff;
+  color: #111;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  overflow-x: auto;
+}
+
+.cheatsheet-sheet h2 {
+  font-size: 15px;
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 2.5px solid #111;
+}
+
+.cheatsheet-sheet .sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cheatsheet-sheet .sheet-sec {
+  border: 1.5px solid #333;
+  border-radius: 8px;
+  padding: 8px 9px;
+  break-inside: avoid;
+}
+
+.cheatsheet-sheet h3 {
+  font-size: 12.5px;
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid #333;
+}
+
+.cheatsheet-sheet h4 {
+  font-size: 12px;
+  margin: 6px 0 4px;
+}
+
+.cheatsheet-sheet table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  margin: 4px 0;
+}
+
+.cheatsheet-sheet th,
+.cheatsheet-sheet td {
+  border: 1px solid #555;
+  padding: 3px 5px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cheatsheet-sheet th {
+  background: #eee;
+}
+
+.cheatsheet-sheet ul,
+.cheatsheet-sheet ol {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.cheatsheet-sheet li {
+  margin-bottom: 2px;
+}
+
+.cheatsheet-sheet pre {
+  background: #f1f1f1;
+  border: 1px solid #999;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 10.5px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.cheatsheet-sheet .sheet-trap {
+  grid-column: 1 / -1;
+  border: 2px dashed #b91c1c;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fef2f2;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.sheet-dl-btn {
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  background: var(--accent);
+  color: #111;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding: 9px 16px;
+  box-shadow: 3px 3px 0 var(--shadow);
+  cursor: pointer;
+}
+
+.sheet-dl-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--shadow);
+}
+
+@media (max-width: 560px) {
+  .cheatsheet-sheet .sheet-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Zero-margin 1-page PDF: only the sheet prints */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  body.print-cheatsheet > *:not(#aiPage) {
+    display: none !important;
+  }
+
+  body.print-cheatsheet #aiPage {
+    position: static;
+    transform: none;
+    opacity: 1;
+    height: auto;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  body.print-cheatsheet #aiPage .ai-page-header,
+  body.print-cheatsheet #aiPage .ai-mode-bar,
+  body.print-cheatsheet #aiPage .ai-sheet-bar,
+  body.print-cheatsheet #aiPage .ai-sheet-status,
+  body.print-cheatsheet #aiPage .ai-input-bar,
+  body.print-cheatsheet #aiPage .ai-image-preview-tray,
+  body.print-cheatsheet #aiPage .ai-history-overlay,
+  body.print-cheatsheet #aiPage .ai-history-sidebar,
+  body.print-cheatsheet #aiPage .ai-welcome,
+  body.print-cheatsheet #aiPage .ai-msg.user,
+  body.print-cheatsheet #aiPage .ai-msg.bot:not(.cheatsheet-msg),
+  body.print-cheatsheet #aiPage .ai-msg-actions,
+  body.print-cheatsheet #aiPage .sheet-actions,
+  body.print-cheatsheet #aiPage .fc-stream-dot {
+    display: none !important;
+  }
+
+  body.print-cheatsheet #aiPage .ai-chat-area {
+    overflow: visible;
+    padding: 0;
+  }
+
+  body.print-cheatsheet #aiPage .ai-msg.bot.cheatsheet-msg {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 9mm 8mm;
+    font-size: 9pt;
+    line-height: 1.35;
+    color: #000;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .sheet-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .math-block {
+    margin: 2px 0;
+  }
+}
+
 /* ── Hint Buddy: in-quiz tutor chat ── */
 .quiz-page-head-right {
   display: flex;

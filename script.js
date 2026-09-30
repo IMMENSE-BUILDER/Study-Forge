@@ -4150,6 +4150,257 @@ function initAskAI() {
 
   // Always start with a clean, dynamic canvas on load
   startNewChat();
+
+  // ── 1-Page Unit Cheatsheet mode (Ask AI section, no nav change) ──
+  const modeChatBtn = document.getElementById('aiModeChatBtn');
+  const modeSheetBtn = document.getElementById('aiModeSheetBtn');
+  const sheetBar = document.getElementById('aiSheetBar');
+  const sheetSubject = document.getElementById('aiSheetSubject');
+  const sheetUnit = document.getElementById('aiSheetUnit');
+  const sheetGenBtn = document.getElementById('aiSheetGenBtn');
+  const sheetStatus = document.getElementById('aiSheetStatus');
+  const chatInputBar = aiPage.querySelector('.ai-input-bar');
+  let sheetBusy = false;
+
+  function sheetSubjects() {
+    if (typeof SF_SEM1_SUBJECTS !== 'undefined' && Array.isArray(SF_SEM1_SUBJECTS) && SF_SEM1_SUBJECTS.length) {
+      return SF_SEM1_SUBJECTS;
+    }
+    return [];
+  }
+  function fillSheetSubjects() {
+    if (!sheetSubject) return;
+    sheetSubject.innerHTML = '';
+    sheetSubjects().forEach((s) => {
+      const o = document.createElement('option');
+      o.value = s.alias;
+      o.textContent = `${s.alias} — ${s.name}`;
+      sheetSubject.appendChild(o);
+    });
+    fillSheetUnits();
+  }
+  function fillSheetUnits() {
+    if (!sheetUnit || !sheetSubject) return;
+    const s = sheetSubjects().find(x => x.alias === sheetSubject.value);
+    const units = (s && Array.isArray(s.units)) ? s.units : [];
+    sheetUnit.innerHTML = '';
+    units.forEach((u, i) => {
+      const o = document.createElement('option');
+      o.value = String(i);
+      const preview = String(u).split(':').slice(1).join(':').trim().slice(0, 44);
+      o.textContent = `Unit ${i + 1}${preview ? ` — ${preview}…` : ''}`;
+      sheetUnit.appendChild(o);
+    });
+  }
+  function setSheetMode(on) {
+    if (modeChatBtn) {
+      modeChatBtn.classList.toggle('active', !on);
+      modeChatBtn.setAttribute('aria-selected', String(!on));
+    }
+    if (modeSheetBtn) {
+      modeSheetBtn.classList.toggle('active', on);
+      modeSheetBtn.setAttribute('aria-selected', String(on));
+    }
+    if (sheetBar) sheetBar.style.display = on ? '' : 'none';
+    if (sheetStatus) sheetStatus.style.display = 'none';
+    if (chatInputBar) chatInputBar.style.display = on ? 'none' : '';
+  }
+  if (modeChatBtn) modeChatBtn.addEventListener('click', () => setSheetMode(false));
+  if (modeSheetBtn) modeSheetBtn.addEventListener('click', () => setSheetMode(true));
+  if (sheetSubject) sheetSubject.addEventListener('change', fillSheetUnits);
+  fillSheetSubjects();
+
+  // Official 2026 syllabus grounding: exact unit topics the sheet MUST cover in full.
+  function getSheetUnitContext(alias, unitIdx) {
+    const s = sheetSubjects().find(x => x.alias === alias);
+    if (!s) return '';
+    const fac = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY[alias]) ? SF_FACULTY[alias].faculty : '';
+    const unitText = (Array.isArray(s.units) && s.units[unitIdx]) ? s.units[unitIdx] : '';
+    return `Subject: ${s.name} (${s.code}) · Faculty: ${fac} · Textbook: ${s.book || ''}\nExam: ${s.marking || '40 internal + 60 external'}\nUnit ${unitIdx + 1} syllabus — cover EVERY subtopic below, none skipped:\n${unitText}`;
+  }
+
+  // Strip scripts/handlers/inline styles from AI sheet HTML (same trust posture as flashcard SVG).
+  function sanitizeSheetHtml(html) {
+    try {
+      const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+      doc.querySelectorAll('script, style, link, iframe, object, embed, form, input, button, select, textarea, video, audio').forEach(n => n.remove());
+      const all = [doc.body, ...doc.body.querySelectorAll('*')];
+      all.forEach((el) => {
+        for (let i = el.attributes.length - 1; i >= 0; i--) {
+          const at = el.attributes[i];
+          if (at.name.toLowerCase().startsWith('on') || /javascript:/i.test(at.value) || at.name.toLowerCase() === 'style') {
+            el.removeAttribute(at.name);
+          }
+        }
+      });
+      return doc.body.innerHTML;
+    } catch (e) {
+      return `<p>${escapeHtml(String(html || '').slice(0, 2000))}</p>`;
+    }
+  }
+
+  // KaTeX pass over sanitized sheet HTML (delimiters only live in text, never attrs).
+  function renderSheetMath(html) {
+    if (typeof katex === 'undefined') return html;
+    let out = String(html || '');
+    const displayRe = (re) => {
+      out = out.replace(re, (_, math) => {
+        try { return `<div class="math-block">${katex.renderToString(String(math).trim(), { displayMode: true, throwOnError: false })}</div>`; }
+        catch (e) { return _; }
+      });
+    };
+    displayRe(/\\\[([\s\S]*?)\\\]/g);
+    displayRe(/\$\$([\s\S]*?)\$\$/g);
+    out = out.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+      try { return katex.renderToString(String(math).trim(), { displayMode: false, throwOnError: false }); }
+      catch (e) { return _; }
+    });
+    return out;
+  }
+
+  async function generateCheatsheet() {
+    if (sheetBusy) return;
+    const alias = sheetSubject ? sheetSubject.value : '';
+    const unitIdx = sheetUnit ? (parseInt(sheetUnit.value, 10) || 0) : 0;
+    const unitCtx = getSheetUnitContext(alias, unitIdx);
+    if (!alias || !unitCtx) {
+      showToast('Pick a subject and unit first.');
+      return;
+    }
+    const apiKey = getActiveAiApiKey();
+    if (!apiKey && getActiveAiProvider() !== 'vercel') {
+      showToast('Please set your API key in 🔑 Ask AI settings first');
+      return;
+    }
+    sheetBusy = true;
+    if (sheetGenBtn) { sheetGenBtn.disabled = true; sheetGenBtn.textContent = '⏳ Forging page…'; }
+    if (sheetStatus) {
+      sheetStatus.style.display = 'inline-flex';
+      sheetStatus.innerHTML = `<span class="fc-stream-dot"></span><span>Forging 1-page ${escapeHtml(alias)} Unit ${unitIdx + 1} cheatsheet…</span>`;
+    }
+    const userLine = `📄 Cheatsheet: ${alias} · Unit ${unitIdx + 1}`;
+    const userBubble = document.createElement('div');
+    userBubble.className = 'ai-msg user';
+    const userText = document.createElement('div');
+    userText.textContent = userLine;
+    userBubble.appendChild(userText);
+    chatArea.appendChild(userBubble);
+
+    const botMsg = document.createElement('div');
+    botMsg.className = 'ai-msg bot cheatsheet-msg';
+    chatArea.appendChild(botMsg);
+    const loading = document.createElement('div');
+    loading.className = 'ai-bot-content';
+    loading.innerHTML = `<div class="fc-mock-card" style="min-height:180px;max-width:100%;"><div class="fc-mock-visual"><div class="fc-mock-spark">⚡</div><div class="fc-mock-visual-text">Compressing a unit into one page…</div></div><div class="fc-mock-progress"><span></span></div></div>`;
+    botMsg.appendChild(loading);
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
+${unitCtx}
+
+TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above.
+HARD RULES:
+- Output ONLY the inner HTML (no fences, no commentary). Allowed tags ONLY: h2,h3,h4,table,thead,tbody,tr,th,td,ul,ol,li,p,div,span,strong,em,code,pre,hr. No attributes except class. No <style>/<script>.
+- Structure: <div class="sheet-grid"> of <div class="sheet-sec"> blocks, each with <h3> + formula table and/or 3-6 ultra-terse bullets.
+- Every formula as KaTeX: inline \\( ... \\) , display \\[ ... \\]. Double-escape backslashes. ANSI C in <pre> (max 8 lines) for PPS.
+- End with one <div class="sheet-trap"> of 3 exam traps/viva pitfalls for this unit.
+- Terse exam-table language. ~500-650 words. MUST fit one printed A4 page — compress, never pad.`;
+    const payload = {
+      model: getActiveAiModel(),
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: `Generate the 1-page cheatsheet HTML for ${alias} Unit ${unitIdx + 1}. Full unit coverage, print-dense.` }
+      ],
+      stream: false,
+      temperature: 0.5,
+      max_tokens: 8000
+    };
+    try {
+      const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+      let resp = null;
+      let lastErr = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          resp = await fetch(attempt === 1 ? getActiveAiApiUrl() : getActiveAiApiFallbackUrl(), {
+            method: 'POST', headers, body: JSON.stringify(payload)
+          });
+          if (resp.ok) break;
+          if (attempt === 1 && resp.status >= 500) {
+            await new Promise(r => setTimeout(r, 700));
+            continue;
+          }
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (attempt === 1) await new Promise(r => setTimeout(r, 700));
+        }
+      }
+      if (!resp) throw (lastErr || new Error('Network error reaching AI backend'));
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `API error ${resp.status}`);
+      }
+      const data = await resp.json();
+      let raw = (data.choices?.[0]?.message?.content || '').trim();
+      if (!raw) throw new Error('Empty cheatsheet response — try again');
+      raw = raw.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const safe = renderSheetMath(sanitizeSheetHtml(raw));
+      if (!safe || safe.replace(/<[^>]*>/g, '').trim().length < 200) {
+        throw new Error('Cheatsheet came back too thin — try again');
+      }
+      botMsg.innerHTML = '';
+      const sheet = document.createElement('div');
+      sheet.className = 'cheatsheet-sheet';
+      sheet.innerHTML = safe;
+      botMsg.appendChild(sheet);
+      const actions = document.createElement('div');
+      actions.className = 'sheet-actions';
+      const dl = document.createElement('button');
+      dl.type = 'button';
+      dl.className = 'sheet-dl-btn';
+      dl.textContent = '🖨️ Download / Save PDF';
+      dl.addEventListener('click', () => {
+        document.body.classList.add('print-cheatsheet');
+        setTimeout(() => {
+          try { window.print(); } catch (e) {}
+        }, 60);
+      });
+      const regen = document.createElement('button');
+      regen.type = 'button';
+      regen.className = 'ghost';
+      regen.textContent = '🔁 Regenerate';
+      regen.addEventListener('click', () => {
+        botMsg.remove();
+        userBubble.remove();
+        generateCheatsheet();
+      });
+      actions.append(dl, regen);
+      botMsg.appendChild(actions);
+      if (sheetStatus) sheetStatus.style.display = 'none';
+      showToast('Cheatsheet ready — Download for a zero-margin 1-page PDF! 📄');
+    } catch (err) {
+      console.error('Cheatsheet error:', err);
+      botMsg.innerHTML = '';
+      const fail = document.createElement('div');
+      fail.className = 'ai-bot-content';
+      fail.textContent = `⚠️ ${err.message || 'Generation failed'} — try again.`;
+      botMsg.appendChild(fail);
+      if (sheetStatus) {
+        sheetStatus.style.display = 'inline-flex';
+        sheetStatus.innerHTML = `<span>⚠️ ${escapeHtml(err.message || 'Generation failed')} — try again.</span>`;
+      }
+      showToast(`Cheatsheet error: ${err.message || 'Generation issue'}`);
+    } finally {
+      sheetBusy = false;
+      if (sheetGenBtn) { sheetGenBtn.disabled = false; sheetGenBtn.textContent = '⚡ 1-Page Cheatsheet'; }
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+  }
+  if (sheetGenBtn) sheetGenBtn.addEventListener('click', generateCheatsheet);
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('print-cheatsheet');
+  });
 }
 
 // ─── AI Flashcards (Token Harbor GLM-5.3-Flash) ───

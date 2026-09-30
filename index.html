@@ -167,6 +167,16 @@
         </svg>
       </button>
     </div>
+    <div class="ai-mode-bar" role="tablist" aria-label="Ask AI mode">
+      <button type="button" class="ai-mode-btn active" id="aiModeChatBtn" role="tab" aria-selected="true">💬 Chat</button>
+      <button type="button" class="ai-mode-btn" id="aiModeSheetBtn" role="tab" aria-selected="false">📄 Cheatsheet</button>
+    </div>
+    <div class="ai-sheet-bar" id="aiSheetBar" style="display:none;">
+      <select id="aiSheetSubject" class="ai-sheet-select" title="Subject"></select>
+      <select id="aiSheetUnit" class="ai-sheet-select" title="Unit"></select>
+      <button type="button" class="ai-sheet-gen" id="aiSheetGenBtn">⚡ 1-Page Cheatsheet</button>
+    </div>
+    <div class="ai-sheet-status" id="aiSheetStatus" style="display:none;"></div>
     <div class="ai-chat-area" id="aiChatArea">
       <div class="ai-welcome">
         <div class="ai-welcome-icon">🧠</div>

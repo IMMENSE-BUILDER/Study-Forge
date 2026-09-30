@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":83,"latest":"v0.6.23","notes":"Fix silent TTS: play() rejection (expired tap permission on slow fetch) and media errors now reset the button with guidance instead of stranding on Reading in silence."}
+{"apkUrl":"","app":"StudyForged","versionCode":84,"latest":"v0.6.24","notes":"1-page unit cheatsheets in Ask AI: Chat/Cheatsheet toggle, subject+unit picker grounded in official 2026 syllabus, dense printable sheet with KaTeX, zero-margin A4 download via print."}

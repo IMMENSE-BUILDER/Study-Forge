@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.23** [build 83]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.24** [build 84]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,12 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.23):
+Recent major changes (Sep 2026, now v0.6.24):
+- v0.6.24 (Build 84):
+  - 1-page unit cheatsheets in Ask AI (user demand, no nav change): 💬 Chat / 📄 Cheatsheet toggle in AI page; subject + unit picker; unit topics grounded verbatim from official 2026 `SF_SEM1_SUBJECTS` (+faculty/textbook/exam) so the sheet covers the full unit.
+  - Dense print-first sheet: AI HTML sanitized (scripts/handlers/inline styles stripped) + KaTeX pass; 🖨️ Download prints zero-margin single A4 (`@page margin:0`, app chrome hidden, 2-col 9pt) → Save as PDF; 🔁 Regenerate per sheet.
+  - Triple bump `v0.6.24` / `versionCode: 84` / `CACHE_NAME: study-forge-v0.6.24`.
+- v0.6.23 (Build 83):
 - v0.6.23 (Build 83):
   - Silent-TTS fix: `play()` rejects when the tap's autoplay permission expires during the slow voice fetch (or on media error) — button stranded on "Reading..." in silence with an unhandled rejection. Now awaited in try/catch + `onerror` handler: button resets with a guiding toast ("tap Read once more"). Cleaner re-proven on a full realistic answer (7/7 harness clean).
   - Triple bump `v0.6.23` / `versionCode: 83` / `CACHE_NAME: study-forge-v0.6.23`.
