@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.26** [build 86]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.27** [build 87]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.26):
+Recent major changes (Sep 2026, now v0.6.27):
+- v0.6.27 (Build 87):
+  - Zero-advice enforcement (user demand): prompt rewritten as a schema lock with forbidden strings (naming the words primed the model to write them), PLUS `stripAdviceNodes()` code scrubber that deletes trap/tip boxes, advice-titled sections, and warning-led lines before display (chat + fullscreen both use scrubbed HTML).
+  - Triple bump `v0.6.27` / `versionCode: 87` / `CACHE_NAME: study-forge-v0.6.27`.
+- v0.6.26 (Build 86):
 - v0.6.26 (Build 86):
   - Demo-style cheatsheet (user demand): 8–12 auto-numbered formula boxes (CSS counters, model forbidden from numbering) on a dark neon grid like the reference; tips/tricks/hacks/traps/motivation BANNED entirely — formulas, values, ≤6-word facts only, 350–400 word ceiling; old trap box hidden; print auto-flips to ink-friendly light.
   - Triple bump `v0.6.26` / `versionCode: 86` / `CACHE_NAME: study-forge-v0.6.26`.

@@ -4288,6 +4288,26 @@ function initAskAI() {
     if (fs && fs.style.display !== 'none') closeSheetFullscreen();
   });
 
+  // Code-level advice scrubber: deletes trap/tip boxes and advice lines the model
+  // sneaks in despite the schema lock — runs before the sheet is ever shown.
+  function stripAdviceNodes(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('.sheet-trap, .trap, .tips, .warnings').forEach(n => n.remove());
+    root.querySelectorAll('h3, h4').forEach((h) => {
+      if (/^(exam\s+)?(tips?|tricks?|hacks?|traps?|warnings?|important notes?|things to remember|key points|to remember)\b/i.test(h.textContent.trim())) {
+        const box = h.closest('.sheet-sec');
+        (box || h).remove();
+      }
+    });
+    root.querySelectorAll('li, p').forEach((el) => {
+      const t = el.textContent.trim();
+      if (!t) return;
+      if (/^[⚠️💡⭐📌🔥❌❗👉]\s*(traps?|tips?|tricks?|hacks?|warnings?|pitfalls?|mistakes?|notes?|remember|warning)\b/iu.test(t)) { el.remove(); return; }
+      if (/^(remember|note|warning|traps?|tips?|tricks?|hacks?)\b\s*[:\-]/i.test(t)) { el.remove(); return; }
+      if (/\b(common mistakes?|watch out|keep in mind|pro tips?)\b/i.test(t)) { el.remove(); return; }
+    });
+  }
+
   async function generateCheatsheet() {
     if (sheetBusy) return;
     const alias = sheetSubject ? sheetSubject.value : '';
@@ -4328,12 +4348,12 @@ function initAskAI() {
     const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
 ${unitCtx}
 
-TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above, in the style of a classic exam cheat sheet: a tight grid of numbered formula boxes, tiny text, zero prose.
-HARD RULES:
+TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above, in the style of a classic exam cheat sheet: a tight grid of numbered formula boxes, tiny text.
+SCHEMA-LOCKED OUTPUT — nothing else is allowed:
 - Output ONLY the inner HTML (no fences, no commentary). Allowed tags ONLY: h2,h3,h4,table,thead,tbody,tr,th,td,ul,ol,li,p,div,span,strong,em,code,pre,hr. No attributes except class. No <style>/<script>.
 - Structure: ONE <h2> unit title, then <div class="sheet-grid"> of 8-12 <div class="sheet-sec"> boxes, one per subtopic in taught order. Each box: <h3>SHORT CAPS TITLE (do NOT number it — numbering is automatic)</h3> + formula table and/or 2-4 micro-lines.
-- Each line inside a box is ONLY: a formula (KaTeX), a value, or a fact of max 6 words. NO full sentences anywhere.
-- BANNED ENTIRELY: tips, tricks, hacks, traps, warnings, pitfalls, motivation, intros, outros, "remember / note / pro-tip" lines, and any trap/advice div. If it isn't a formula, value, or 6-word fact — delete it.
+- Each line inside a box is ONLY one of: a formula (KaTeX), a value with units, or a definition of max 6 words. NO full sentences.
+- The following strings MUST NOT appear anywhere in the output (they cause instant rejection): trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful, avoid. Write ZERO advice of any kind.
 - Every formula as KaTeX: inline \\( ... \\) , display \\[ ... \\]. Double-escape backslashes. ANSI C in <pre> (max 6 lines) for PPS.
 - ~350-400 words hard ceiling. MUST fit one printed A4 page — compress, never pad.`;
     const payload = {
@@ -4384,6 +4404,7 @@ HARD RULES:
       const sheet = document.createElement('div');
       sheet.className = 'cheatsheet-sheet';
       sheet.innerHTML = safe;
+      stripAdviceNodes(sheet);
       botMsg.appendChild(sheet);
       const actions = document.createElement('div');
       actions.className = 'sheet-actions';
@@ -4410,12 +4431,12 @@ HARD RULES:
       fsBtn.type = 'button';
       fsBtn.className = 'ghost';
       fsBtn.textContent = '⛶ Fullscreen';
-      fsBtn.addEventListener('click', () => openSheetFullscreen(safe));
+      fsBtn.addEventListener('click', () => openSheetFullscreen(sheet.innerHTML));
       actions.append(dl, fsBtn, regen);
       botMsg.appendChild(actions);
       sheet.title = 'Tap to view fullscreen';
       sheet.style.cursor = 'zoom-in';
-      sheet.addEventListener('click', () => openSheetFullscreen(safe));
+      sheet.addEventListener('click', () => openSheetFullscreen(sheet.innerHTML));
       if (sheetStatus) sheetStatus.style.display = 'none';
       showToast('Cheatsheet ready — Download for a zero-margin 1-page PDF! 📄');
     } catch (err) {
