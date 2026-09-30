@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":92,"latest":"v0.6.32","notes":"Model picker polish: exact full IDs as labels, arrow nudged left, dead-model auto-heal (unknown/plan-gated IDs fall back to GLM 5.3 with a clear toast across all tools)."}
+{"apkUrl":"","app":"StudyForged","versionCode":93,"latest":"v0.6.33","notes":"Topper-wall density: 10-16 micro-boxes, 900-1100 words, abbreviations/symbols, 4-col color-coded grid; print 3-col 8pt."}

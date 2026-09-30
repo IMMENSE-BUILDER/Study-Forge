@@ -4334,7 +4334,7 @@ function initAskAI() {
   }
   function refitVisibleSheets() {
     document.querySelectorAll('.cheatsheet-sheet').forEach((s) => {
-      if (s.offsetParent !== null) fitSheetToPage(s, 8);
+      if (s.offsetParent !== null) fitSheetToPage(s, 7);
     });
   }
   let sheetResizeTimer = null;
@@ -4355,7 +4355,7 @@ function initAskAI() {
     body.appendChild(sheet);
     fs.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => fitSheetToPage(sheet, 9));
+    requestAnimationFrame(() => fitSheetToPage(sheet, 8));
   }
   function closeSheetFullscreen() {
     const fs = document.getElementById('sheetFullscreen');
@@ -4434,14 +4434,14 @@ function initAskAI() {
     const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
 ${unitCtx}
 
-TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above, in the style of a classic exam cheat sheet: a tight grid of numbered formula boxes, tiny text.
+TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above — styled like a handwritten topper's cheat sheet: wall-to-wall numbered micro-boxes, abbreviations, symbols, color-coded titles.
 SCHEMA-LOCKED OUTPUT — nothing else is allowed:
 - Output ONLY the inner HTML (no fences, no commentary). Allowed tags ONLY: h2,h3,h4,table,thead,tbody,tr,th,td,ul,ol,li,p,div,span,strong,em,code,pre,hr. No attributes except class. No <style>/<script>.
-- Structure: ONE <h2> unit title, then <div class="sheet-grid"> of 8-12 <div class="sheet-sec"> boxes, one per subtopic in taught order. Each box: <h3>SHORT CAPS TITLE (do NOT number it — numbering is automatic)</h3> + formula table and/or 2-4 micro-lines.
-- Each line inside a box is ONLY one of: a formula (KaTeX), a value with units, or a definition of max 6 words. NO full sentences.
+- Structure: ONE <h2> unit title, then <div class="sheet-grid"> of 10-16 <div class="sheet-sec"> boxes, one per subtopic in taught order. Each box: <h3>SHORT CAPS TITLE (do NOT number it — numbering is automatic)</h3> + formula table and/or 4-8 micro-lines.
+- MICRO-NOTE STYLE: fragments only, never sentences. Standard abbreviations encouraged (w/, thru, b/w, → leads-to, ↑ ↓, Δ, ∴, ∵, ✓, ★ high-yield, ≈, ∝, ≤ ≥ ≠). Each line: a formula (KaTeX), a value with units, or a ≤10-word fragment.
 - The following strings MUST NOT appear anywhere in the output (they cause instant rejection): trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful, avoid. Write ZERO advice of any kind.
 - Every formula as KaTeX: inline \\( ... \\) , display \\[ ... \\]. Double-escape backslashes. ANSI C in <pre> (max 6 lines) for PPS.
-- ~350-400 words hard ceiling. MUST fit one printed A4 page — compress, never pad.`;
+- ~900-1100 words of pure content. MUST fit one printed A4 page — density over brevity: abbreviate and symbolize, never cut subtopics.`;
     const payload = {
       model: getActiveAiModel(),
       messages: [
@@ -4525,7 +4525,7 @@ SCHEMA-LOCKED OUTPUT — nothing else is allowed:
       sheet.title = 'Tap to view fullscreen';
       sheet.style.cursor = 'zoom-in';
       sheet.addEventListener('click', () => openSheetFullscreen(sheet.innerHTML));
-      requestAnimationFrame(() => fitSheetToPage(sheet, 8));
+      requestAnimationFrame(() => fitSheetToPage(sheet, 7));
       if (sheetStatus) sheetStatus.style.display = 'none';
       showToast('Cheatsheet ready — Download for a zero-margin 1-page PDF! 📄');
     } catch (err) {

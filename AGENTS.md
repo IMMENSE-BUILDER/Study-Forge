@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.32** [build 92]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.33** [build 93]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.32):
+Recent major changes (Sep 2026, now v0.6.33):
+- v0.6.33 (Build 93):
+  - Topper-wall density (user demand, reference photo): prompt now orders 10–16 micro-boxes with ~900–1100 words, fragment style with abbreviations/symbols (→ ∴ ★ ≈ ∝); grid goes 2/3/4 cols with blue/pink/amber/green title rhythm; print 3-col 8pt; fit floor lowered (7px) for the heavier content.
+  - Triple bump `v0.6.33` / `versionCode: 93` / `CACHE_NAME: study-forge-v0.6.33`.
+- v0.6.32 (Build 92):
 - v0.6.32 (Build 92):
   - Picker polish (user demand): dropdown shows exact full model IDs (no "current" tag), arrow nudged left via wider right padding.
   - Dead-model auto-heal: verified IDs online — `qwen3.8-flash`/`deepseek-v4.1-flash`/`gpt-6-luna`/`glm-5.3-flash` exist; `gpt-6-luna-fast` has no public listing and Gemini 3.8 Flash isn't in Token Harbor's published catalog, so both likely 404 there. Any unknown/plan-gated ID now triggers one clear toast + auto-fallback to `glm-5.3-flash` across chat/flashcards/quiz/sheets/buddy instead of repeated silent failures.
