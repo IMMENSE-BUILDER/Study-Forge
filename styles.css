@@ -5576,15 +5576,15 @@ label {
   flex-shrink: 0;
 }
 
-/* Screen preview of the dense sheet — true A4 proportions */
+/* Screen preview of the dense sheet — true A4 proportions, demo-style dark grid */
 .cheatsheet-sheet {
-  background: #fff;
-  color: #111;
+  background: #17131c;
+  color: #f3ead7;
   border: 2.5px solid var(--ink);
   border-radius: 12px;
   padding: 10px;
-  font-size: 11.5px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.32;
   overflow-y: auto;
   aspect-ratio: 210 / 297;
 }
@@ -5593,13 +5593,17 @@ label {
   font-size: 14px;
   margin: 0 0 6px;
   padding-bottom: 5px;
-  border-bottom: 2.5px solid #111;
+  border-bottom: 2.5px solid #f59e0b;
+  color: #ffd97a;
+  text-align: center;
+  letter-spacing: 0.04em;
 }
 
 .cheatsheet-sheet .sheet-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 7px;
+  counter-reset: sheetnum;
 }
 
 @media (min-width: 900px) {
@@ -5609,47 +5613,59 @@ label {
 }
 
 .cheatsheet-sheet .sheet-sec {
-  border: 1.5px solid #333;
+  counter-increment: sheetnum;
+  background: #221b2e;
+  border: 1.5px solid #b96bff;
   border-radius: 8px;
   padding: 7px 8px;
   break-inside: avoid;
 }
 
-.cheatsheet-sheet h3 {
-  font-size: 11.5px;
+.cheatsheet-sheet .sheet-sec h3 {
+  font-size: 10.5px;
   margin: 0 0 5px;
   padding-bottom: 3px;
-  border-bottom: 1.5px solid #333;
+  border-bottom: 1px solid #b96bff;
+  color: #ffd97a;
+  letter-spacing: 0.03em;
+}
+
+.cheatsheet-sheet .sheet-sec h3::before {
+  content: counter(sheetnum) ". ";
+  color: #f59e0b;
+  font-weight: 800;
 }
 
 .cheatsheet-sheet h4 {
-  font-size: 11px;
+  font-size: 10.5px;
   margin: 5px 0 3px;
+  color: #ffd97a;
 }
 
 .cheatsheet-sheet table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10.5px;
+  font-size: 10px;
   margin: 3px 0;
 }
 
 .cheatsheet-sheet th,
 .cheatsheet-sheet td {
-  border: 1px solid #555;
+  border: 1px solid #6d5b8a;
   padding: 2px 4px;
   text-align: left;
   vertical-align: top;
 }
 
 .cheatsheet-sheet th {
-  background: #eee;
+  background: #2e2540;
+  color: #ffd97a;
 }
 
 .cheatsheet-sheet ul,
 .cheatsheet-sheet ol {
   margin: 3px 0;
-  padding-left: 16px;
+  padding-left: 14px;
 }
 
 .cheatsheet-sheet li {
@@ -5657,21 +5673,26 @@ label {
 }
 
 .cheatsheet-sheet pre {
-  background: #f1f1f1;
-  border: 1px solid #999;
+  background: #100c16;
+  border: 1px solid #6d5b8a;
   border-radius: 6px;
   padding: 5px 7px;
-  font-size: 10px;
+  font-size: 9.5px;
   overflow-x: auto;
   white-space: pre-wrap;
+  color: #d9f99d;
+}
+
+.cheatsheet-sheet code {
+  color: #d9f99d;
+}
+
+.cheatsheet-sheet .math-block {
+  margin: 3px 0;
 }
 
 .cheatsheet-sheet .sheet-trap {
-  grid-column: 1 / -1;
-  border: 2px dashed #b91c1c;
-  border-radius: 8px;
-  padding: 7px 9px;
-  background: #fef2f2;
+  display: none;
 }
 
 /* Cheatsheet fullscreen viewer (above quiz 2400, at zoom 2500 level) */
@@ -5825,8 +5846,46 @@ label {
     font-size: 9pt;
     line-height: 1.35;
     color: #000;
+    background: #fff;
     aspect-ratio: auto;
     overflow: visible;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet h2 {
+    color: #000;
+    border-bottom-color: #000;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .sheet-sec {
+    background: #fff;
+    border-color: #000;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .sheet-sec h3,
+  body.print-cheatsheet .cheatsheet-sheet h4 {
+    color: #000;
+    border-bottom-color: #000;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .sheet-sec h3::before {
+    color: #000;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet th {
+    background: #eee;
+    color: #000;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet th,
+  body.print-cheatsheet .cheatsheet-sheet td {
+    border-color: #000;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet pre,
+  body.print-cheatsheet .cheatsheet-sheet code {
+    background: #f1f1f1;
+    color: #000;
+    border-color: #999;
   }
 
   body.print-cheatsheet .cheatsheet-sheet .sheet-grid {

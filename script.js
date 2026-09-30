@@ -4328,14 +4328,14 @@ function initAskAI() {
     const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
 ${unitCtx}
 
-TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above.
+TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above, in the style of a classic exam cheat sheet: a tight grid of numbered formula boxes, tiny text, zero prose.
 HARD RULES:
 - Output ONLY the inner HTML (no fences, no commentary). Allowed tags ONLY: h2,h3,h4,table,thead,tbody,tr,th,td,ul,ol,li,p,div,span,strong,em,code,pre,hr. No attributes except class. No <style>/<script>.
-- Structure: <div class="sheet-grid"> of <div class="sheet-sec"> blocks, each with <h3> + formula table and/or 3-5 ultra-terse bullets.
+- Structure: ONE <h2> unit title, then <div class="sheet-grid"> of 8-12 <div class="sheet-sec"> boxes, one per subtopic in taught order. Each box: <h3>SHORT CAPS TITLE (do NOT number it — numbering is automatic)</h3> + formula table and/or 2-4 micro-lines.
+- Each line inside a box is ONLY: a formula (KaTeX), a value, or a fact of max 6 words. NO full sentences anywhere.
+- BANNED ENTIRELY: tips, tricks, hacks, traps, warnings, pitfalls, motivation, intros, outros, "remember / note / pro-tip" lines, and any trap/advice div. If it isn't a formula, value, or 6-word fact — delete it.
 - Every formula as KaTeX: inline \\( ... \\) , display \\[ ... \\]. Double-escape backslashes. ANSI C in <pre> (max 6 lines) for PPS.
-- ZERO filler: no intros, no motivational lines, no generic advice ("practice more", "revise daily", "understand basics"). Every bullet must carry a testable fact, formula, value, or step — cut anything else.
-- End with one <div class="sheet-trap"> of exactly 3 traps. Each trap = ONE line: specific mistake + what the professor deducts or asks in viva. No vague warnings.
-- ~380-450 words hard ceiling. Tables over prose. MUST fit one printed A4 page — compress, never pad.`;
+- ~350-400 words hard ceiling. MUST fit one printed A4 page — compress, never pad.`;
     const payload = {
       model: getActiveAiModel(),
       messages: [
