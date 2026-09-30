@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":87,"latest":"v0.6.27","notes":"Zero-advice enforcement: schema-locked prompt plus code-level scrubber that deletes trap/tip boxes and advice lines before display."}
+{"apkUrl":"","app":"StudyForged","versionCode":88,"latest":"v0.6.28","notes":"Kill 1-column mobile collapse: cheatsheet grid keeps 2 cols on phones with smaller type, true A4 grid everywhere."}

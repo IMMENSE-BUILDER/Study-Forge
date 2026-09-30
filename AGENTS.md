@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.27** [build 87]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.28** [build 88]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.27):
+Recent major changes (Sep 2026, now v0.6.28):
+- v0.6.28 (Build 88):
+  - Long-list-on-phone fix: leftover ≤560px rule collapsed the sheet grid to 1 column (the "long list"). Grid now keeps 2 cols on phones with stepped-down type (10px body / 9px tables) — A4 grid everywhere, small letters as demanded.
+  - Triple bump `v0.6.28` / `versionCode: 88` / `CACHE_NAME: study-forge-v0.6.28`.
+- v0.6.27 (Build 87):
 - v0.6.27 (Build 87):
   - Zero-advice enforcement (user demand): prompt rewritten as a schema lock with forbidden strings (naming the words primed the model to write them), PLUS `stripAdviceNodes()` code scrubber that deletes trap/tip boxes, advice-titled sections, and warning-led lines before display (chat + fullscreen both use scrubbed HTML).
   - Triple bump `v0.6.27` / `versionCode: 87` / `CACHE_NAME: study-forge-v0.6.27`.

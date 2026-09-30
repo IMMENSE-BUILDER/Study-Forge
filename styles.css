@@ -5779,9 +5779,24 @@ label {
   box-shadow: 0 0 0 var(--shadow);
 }
 
+/* v0.6.28: never collapse to 1 column — demo-style grid keeps 2 cols even on phones. */
 @media (max-width: 560px) {
+  .cheatsheet-sheet {
+    font-size: 10px;
+    padding: 8px;
+  }
+
   .cheatsheet-sheet .sheet-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .cheatsheet-sheet table {
+    font-size: 9px;
+  }
+
+  .cheatsheet-sheet pre {
+    font-size: 8.5px;
   }
 }
 
