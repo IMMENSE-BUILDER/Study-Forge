@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.33** [build 93]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.34** [build 94]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.33):
+Recent major changes (Sep 2026, now v0.6.34):
+- v0.6.34 (Build 94):
+  - Cheatsheet freedom (user demand): brand-new forging loader (mini A4 page, sweeping scan bar, waking content lines, cycling stages — flashcard skeleton retired here); ⏹ Stop generation button aborts the in-flight request and cleans up bubbles; layout no longer forced — model picks numbered grid, flowing sections, or a mix per unit (generic h3 styles + print cover freeform too).
+  - Triple bump `v0.6.34` / `versionCode: 94` / `CACHE_NAME: study-forge-v0.6.34`.
+- v0.6.33 (Build 93):
 - v0.6.33 (Build 93):
   - Topper-wall density (user demand, reference photo): prompt now orders 10–16 micro-boxes with ~900–1100 words, fragment style with abbreviations/symbols (→ ∴ ★ ≈ ∝); grid goes 2/3/4 cols with blue/pink/amber/green title rhythm; print 3-col 8pt; fit floor lowered (7px) for the heavier content.
   - Triple bump `v0.6.33` / `versionCode: 93` / `CACHE_NAME: study-forge-v0.6.33`.

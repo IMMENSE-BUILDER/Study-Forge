@@ -5678,6 +5678,22 @@ label {
   color: #ffd97a;
 }
 
+/* Freeform (non-box) sections pick the same rhythm when the model skips the grid */
+.cheatsheet-sheet > h3 {
+  font-size: 0.95em;
+  margin: 8px 0 5px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #b96bff;
+  color: #ffd97a;
+  letter-spacing: 0.03em;
+}
+
+.cheatsheet-sheet > h4 {
+  font-size: 0.95em;
+  margin: 6px 0 4px;
+  color: #ffd97a;
+}
+
 .cheatsheet-sheet table {
   width: 100%;
   border-collapse: collapse;
@@ -5729,6 +5745,75 @@ label {
 
 .cheatsheet-sheet .sheet-trap {
   display: none;
+}
+
+/* Forging loader: mini A4 page with a scanning light bar + waking content lines */
+.sheet-forge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 10px 14px;
+}
+
+.sheet-forge-page {
+  position: relative;
+  width: 120px;
+  aspect-ratio: 210 / 297;
+  border: 2.5px solid var(--ink);
+  border-radius: 6px;
+  background: #17131c;
+  overflow: hidden;
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+
+.sheet-forge-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18%;
+  height: 18%;
+  background: linear-gradient(to bottom, transparent, rgba(245, 158, 11, 0.85), transparent);
+  animation: sheet-forge-scan 1.5s ease-in-out infinite;
+}
+
+@keyframes sheet-forge-scan {
+  0% { top: -18%; }
+  100% { top: 104%; }
+}
+
+.sheet-forge-lines {
+  position: absolute;
+  inset: 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet-forge-lines span {
+  display: block;
+  height: 7px;
+  border-radius: 4px;
+  background: #4a3f61;
+  animation: sheet-forge-line 1.5s ease-in-out infinite;
+}
+
+.sheet-forge-lines span:nth-child(2n) { width: 82%; }
+.sheet-forge-lines span:nth-child(3n) { width: 64%; animation-delay: 0.25s; }
+.sheet-forge-lines span:nth-child(2) { animation-delay: 0.12s; }
+.sheet-forge-lines span:nth-child(4) { animation-delay: 0.37s; }
+.sheet-forge-lines span:nth-child(5) { animation-delay: 0.5s; }
+.sheet-forge-lines span:nth-child(6) { animation-delay: 0.62s; width: 74%; }
+
+@keyframes sheet-forge-line {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; background: #f59e0b; }
+}
+
+.sheet-forge-text {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
 }
 
 /* Cheatsheet fullscreen viewer (above quiz 2400, at zoom 2500 level) */
@@ -5920,6 +6005,7 @@ label {
   }
 
   body.print-cheatsheet .cheatsheet-sheet .sheet-sec h3,
+  body.print-cheatsheet .cheatsheet-sheet > h3,
   body.print-cheatsheet .cheatsheet-sheet h4,
   body.print-cheatsheet .cheatsheet-sheet .sheet-sec:nth-child(n) h3,
   body.print-cheatsheet .cheatsheet-sheet .sheet-sec h3::before {

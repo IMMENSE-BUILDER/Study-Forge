@@ -4194,6 +4194,11 @@ function initAskAI() {
   const sheetStatus = document.getElementById('aiSheetStatus');
   const chatInputBar = aiPage.querySelector('.ai-input-bar');
   let sheetBusy = false;
+  let sheetAbort = null;
+  let sheetForgeTimer = null;
+  const stopSheetForge = () => {
+    if (sheetForgeTimer) { clearInterval(sheetForgeTimer); sheetForgeTimer = null; }
+  };
 
   function sheetSubjects() {
     if (typeof SF_SEM1_SUBJECTS !== 'undefined' && Array.isArray(SF_SEM1_SUBJECTS) && SF_SEM1_SUBJECTS.length) {
@@ -4409,7 +4414,8 @@ function initAskAI() {
       return;
     }
     sheetBusy = true;
-    if (sheetGenBtn) { sheetGenBtn.disabled = true; sheetGenBtn.textContent = '⏳ Forging page…'; }
+    sheetAbort = new AbortController();
+    if (sheetGenBtn) { sheetGenBtn.disabled = false; sheetGenBtn.textContent = '⏹ Stop generation'; }
     if (sheetStatus) {
       sheetStatus.style.display = 'inline-flex';
       sheetStatus.innerHTML = `<span class="fc-stream-dot"></span><span>Forging 1-page ${escapeHtml(alias)} Unit ${unitIdx + 1} cheatsheet…</span>`;
@@ -4427,9 +4433,19 @@ function initAskAI() {
     chatArea.appendChild(botMsg);
     const loading = document.createElement('div');
     loading.className = 'ai-bot-content';
-    loading.innerHTML = `<div class="fc-mock-card" style="min-height:180px;max-width:100%;"><div class="fc-mock-visual"><div class="fc-mock-spark">⚡</div><div class="fc-mock-visual-text">Compressing a unit into one page…</div></div><div class="fc-mock-progress"><span></span></div></div>`;
+    loading.innerHTML = `<div class="sheet-forge"><div class="sheet-forge-page"><div class="sheet-forge-scan"></div><div class="sheet-forge-lines"><span></span><span></span><span></span><span></span><span></span><span></span></div></div><div class="sheet-forge-text" id="sheetForgeStage">Reading unit syllabus…</div></div>`;
     botMsg.appendChild(loading);
     chatArea.scrollTop = chatArea.scrollHeight;
+    {
+      const stages = ['Reading unit syllabus…', 'Distilling formulas…', 'Compressing tables…', 'Symbolizing notes…', 'Fitting one page…'];
+      let stageIdx = 0;
+      sheetForgeTimer = setInterval(() => {
+        const el = document.getElementById('sheetForgeStage');
+        if (!el) { stopSheetForge(); return; }
+        stageIdx = (stageIdx + 1) % stages.length;
+        el.textContent = stages[stageIdx];
+      }, 1400);
+    }
 
     const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
 ${unitCtx}
@@ -4437,7 +4453,7 @@ ${unitCtx}
 TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above — styled like a handwritten topper's cheat sheet: wall-to-wall numbered micro-boxes, abbreviations, symbols, color-coded titles.
 SCHEMA-LOCKED OUTPUT — nothing else is allowed:
 - Output ONLY the inner HTML (no fences, no commentary). Allowed tags ONLY: h2,h3,h4,table,thead,tbody,tr,th,td,ul,ol,li,p,div,span,strong,em,code,pre,hr. No attributes except class. No <style>/<script>.
-- Structure: ONE <h2> unit title, then <div class="sheet-grid"> of 10-16 <div class="sheet-sec"> boxes, one per subtopic in taught order. Each box: <h3>SHORT CAPS TITLE (do NOT number it — numbering is automatic)</h3> + formula table and/or 4-8 micro-lines.
+- Structure: layout is FREE — pick whatever fits the unit: the numbered-box <div class="sheet-grid"> (8-16 <div class="sheet-sec"> boxes, <h3>SHORT CAPS TITLE, do NOT number it — numbering is automatic) for formula-heavy units, or flowing <h3> sections with tables and lists for derivations and processes. You may mix both. Only rule: everything stays micro-note dense.
 - MICRO-NOTE STYLE: fragments only, never sentences. Standard abbreviations encouraged (w/, thru, b/w, → leads-to, ↑ ↓, Δ, ∴, ∵, ✓, ★ high-yield, ≈, ∝, ≤ ≥ ≠). Each line: a formula (KaTeX), a value with units, or a ≤10-word fragment.
 - The following strings MUST NOT appear anywhere in the output (they cause instant rejection): trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful, avoid. Write ZERO advice of any kind.
 - Every formula as KaTeX: inline \\( ... \\) , display \\[ ... \\]. Double-escape backslashes. ANSI C in <pre> (max 6 lines) for PPS.
@@ -4460,7 +4476,8 @@ SCHEMA-LOCKED OUTPUT — nothing else is allowed:
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           resp = await fetch(attempt === 1 ? getActiveAiApiUrl() : getActiveAiApiFallbackUrl(), {
-            method: 'POST', headers, body: JSON.stringify(payload)
+            method: 'POST', headers, body: JSON.stringify(payload),
+            signal: sheetAbort ? sheetAbort.signal : undefined
           });
           if (resp.ok) break;
           if (attempt === 1 && resp.status >= 500) {
@@ -4469,6 +4486,7 @@ SCHEMA-LOCKED OUTPUT — nothing else is allowed:
           }
           break;
         } catch (e) {
+          if (e && e.name === 'AbortError') throw e;
           lastErr = e;
           if (attempt === 1) await new Promise(r => setTimeout(r, 700));
         }
@@ -4530,23 +4548,38 @@ SCHEMA-LOCKED OUTPUT — nothing else is allowed:
       showToast('Cheatsheet ready — Download for a zero-margin 1-page PDF! 📄');
     } catch (err) {
       console.error('Cheatsheet error:', err);
-      botMsg.innerHTML = '';
-      const fail = document.createElement('div');
-      fail.className = 'ai-bot-content';
-      fail.textContent = `⚠️ ${err.message || 'Generation failed'} — try again.`;
-      botMsg.appendChild(fail);
-      if (sheetStatus) {
-        sheetStatus.style.display = 'inline-flex';
-        sheetStatus.innerHTML = `<span>⚠️ ${escapeHtml(err.message || 'Generation failed')} — try again.</span>`;
+      if (err && err.name === 'AbortError') {
+        try { botMsg.remove(); } catch (e) {}
+        try { userBubble.remove(); } catch (e) {}
+        if (sheetStatus) sheetStatus.style.display = 'none';
+        showToast('Cheatsheet stopped.');
+      } else {
+        botMsg.innerHTML = '';
+        const fail = document.createElement('div');
+        fail.className = 'ai-bot-content';
+        fail.textContent = `⚠️ ${err.message || 'Generation failed'} — try again.`;
+        botMsg.appendChild(fail);
+        if (sheetStatus) {
+          sheetStatus.style.display = 'inline-flex';
+          sheetStatus.innerHTML = `<span>⚠️ ${escapeHtml(err.message || 'Generation failed')} — try again.</span>`;
+        }
+        showToast(`Cheatsheet error: ${err.message || 'Generation issue'}`);
       }
-      showToast(`Cheatsheet error: ${err.message || 'Generation issue'}`);
     } finally {
+      stopSheetForge();
       sheetBusy = false;
+      sheetAbort = null;
       if (sheetGenBtn) { sheetGenBtn.disabled = false; sheetGenBtn.textContent = '⚡ 1-Page Cheatsheet'; }
       chatArea.scrollTop = chatArea.scrollHeight;
     }
   }
-  if (sheetGenBtn) sheetGenBtn.addEventListener('click', generateCheatsheet);
+  if (sheetGenBtn) sheetGenBtn.addEventListener('click', () => {
+    if (sheetBusy) {
+      if (sheetAbort) sheetAbort.abort();
+    } else {
+      generateCheatsheet();
+    }
+  });
   window.addEventListener('afterprint', () => {
     document.body.classList.remove('print-cheatsheet');
   });
