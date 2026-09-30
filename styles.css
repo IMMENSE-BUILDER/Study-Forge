@@ -5523,6 +5523,23 @@ label {
   box-shadow: 2px 2px 0 var(--shadow);
 }
 
+/* Global model picker: compact pill, native arrow kept for one-tap model swap. */
+.ai-model-select {
+  flex: 0 1 138px;
+  min-width: 0;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 12px;
+  padding: 7px 4px 7px 10px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
 .ai-sheet-bar {
   display: flex;
   gap: 8px;

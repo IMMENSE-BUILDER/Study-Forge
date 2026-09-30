@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":90,"latest":"v0.6.30","notes":"Strict page lock: sheet overflow clips (never scrolls long), fullscreen letterboxes a true A4 page instead of stretching full-height."}
+{"apkUrl":"","app":"StudyForged","versionCode":91,"latest":"v0.6.31","notes":"Global model picker in Ask AI mode bar: GLM 5.3, Gemini 3.8, Qwen 3.8, GPT-6 Luna Fast, GPT-6 Luna, DeepSeek V4.1 — one dropdown driving chat, flashcards, quiz, sheets and buddy."}

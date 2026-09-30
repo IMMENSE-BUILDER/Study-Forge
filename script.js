@@ -2361,7 +2361,8 @@ function getTokenHarborApiKey() {
 
 function getTokenHarborModel() {
   const stored = localStorage.getItem('sf_tokenharbor_model');
-  if (!stored || stored === 'deepseek-v4.1-flash' || stored === 'deepseek-v4-flash' || stored === 'deepseek-v4.1-flash:free' || stored === 'deepseek-v4-flash:free' || stored === 'mimo-v2.5' || stored === 'mimo-v2.5:free' || stored === 'glm-5.3') {
+  // v0.6.31: deepseek-v4.1-flash is user-selectable now — no longer force-migrated.
+  if (!stored || stored === 'deepseek-v4-flash' || stored === 'deepseek-v4.1-flash:free' || stored === 'deepseek-v4-flash:free' || stored === 'mimo-v2.5' || stored === 'mimo-v2.5:free' || stored === 'glm-5.3') {
     return DEFAULT_TOKENHARBOR_MODEL;
   }
   return stored;
@@ -2416,18 +2417,28 @@ const OPENROUTER_API_URL = TOKENHARBOR_API_URL;
 
 function updateAIModelBadge() {
   const badge = document.getElementById('aiModelBadge');
-  if (!badge) return;
-  const provider = getActiveAiProvider();
-  const model = getActiveAiModel();
-  let label = model;
-  if (label.startsWith('tokenharbor/')) label = label.replace('tokenharbor/', '');
-  if (label.startsWith('google/')) label = label.replace('google/', '');
-  if (label.startsWith('openai/')) label = label.replace('openai/', '');
-  if (label.startsWith('anthropic/')) label = label.replace('anthropic/', '');
-  label = label.replace(':free', ' (FREE)');
-  badge.textContent = label.toUpperCase();
-  const providerLabel = provider === 'vercel' ? 'Vercel AI' : 'Token Harbor';
-  badge.title = `${providerLabel} Model: ${model}`;
+  if (badge) {
+    const provider = getActiveAiProvider();
+    const model = getActiveAiModel();
+    let label = model;
+    if (label.startsWith('tokenharbor/')) label = label.replace('tokenharbor/', '');
+    if (label.startsWith('google/')) label = label.replace('google/', '');
+    if (label.startsWith('openai/')) label = label.replace('openai/', '');
+    if (label.startsWith('anthropic/')) label = label.replace('anthropic/', '');
+    label = label.replace(':free', ' (FREE)');
+    badge.textContent = label.toUpperCase();
+    const providerLabel = provider === 'vercel' ? 'Vercel AI' : 'Token Harbor';
+    badge.title = `${providerLabel} Model: ${model}`;
+  }
+  // v0.6.31: keep the global model dropdown in sync (init + settings save flow through here).
+  try {
+    const sel = document.getElementById('aiModelSelect');
+    if (sel) {
+      const thModel = getTokenHarborModel();
+      const has = Array.prototype.some.call(sel.options, (o) => o.value === thModel);
+      sel.value = has ? thModel : 'glm-5.3-flash';
+    }
+  } catch (e) {}
 }
 
 const AI_SYSTEM_PROMPT = `You are StudyForged, the dedicated AI academic tutor & exam coach for Satyam Kumar, 1st-year B.Tech IT at ADGIPS (GGSIPU, Delhi), Sec E, Room 2310 (AY 2026–27).
@@ -4207,6 +4218,27 @@ function initAskAI() {
   }
   if (modeChatBtn) modeChatBtn.addEventListener('click', () => setSheetMode(false));
   if (modeSheetBtn) modeSheetBtn.addEventListener('click', () => setSheetMode(true));
+  // v0.6.31: global model picker — one dropdown ruling chat, flashcards, quiz, sheets, buddy.
+  const AI_MODEL_IDS = ['glm-5.3-flash', 'gemini-3.8-flash', 'qwen3.8-flash', 'gpt-6-luna-fast', 'gpt-6-luna', 'deepseek-v4.1-flash'];
+  const modelSelect = document.getElementById('aiModelSelect');
+  if (modelSelect) {
+    modelSelect.addEventListener('change', () => {
+      const id = modelSelect.value;
+      if (!AI_MODEL_IDS.includes(id)) return;
+      localStorage.setItem('sf_tokenharbor_model', id);
+      // These IDs live on Token Harbor — flip back to it if the standby was active.
+      if (getActiveAiProvider() !== 'tokenharbor') {
+        setActiveAiProvider('tokenharbor');
+        if (providerSelect) {
+          providerSelect.value = 'tokenharbor';
+          syncProviderBlockVisibility();
+        }
+      }
+      if (modelInput) modelInput.value = id;
+      updateAIModelBadge();
+      showToast(`Model: ${id} — app-wide ⚡`);
+    });
+  }
   if (sheetSubject) sheetSubject.addEventListener('change', fillSheetUnits);
   fillSheetSubjects();
 
