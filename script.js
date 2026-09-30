@@ -4258,6 +4258,37 @@ function initAskAI() {
     return out;
   }
 
+  // STRICT A4 fit: shrink sheet type until content fits its box (binary search on
+  // font-size; inner sizes are em-based so the whole sheet scales on one knob).
+  function fitSheetToPage(sheet, minPx) {
+    if (!sheet || !sheet.isConnected) return;
+    const min = minPx || 8;
+    sheet.style.fontSize = '';
+    const fits = () => sheet.scrollHeight <= sheet.clientHeight + 1;
+    if (sheet.clientHeight <= 0 || fits()) return;
+    let lo = min;
+    let hi = parseFloat(getComputedStyle(sheet).fontSize) || 11;
+    let best = min;
+    let guard = 0;
+    while (hi - lo > 0.5 && guard++ < 12) {
+      const mid = (lo + hi) / 2;
+      sheet.style.fontSize = mid + 'px';
+      if (sheet.scrollHeight <= sheet.clientHeight + 1) { best = mid; lo = mid; }
+      else { hi = mid; }
+    }
+    sheet.style.fontSize = best + 'px';
+  }
+  function refitVisibleSheets() {
+    document.querySelectorAll('.cheatsheet-sheet').forEach((s) => {
+      if (s.offsetParent !== null) fitSheetToPage(s, 8);
+    });
+  }
+  let sheetResizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (sheetResizeTimer) clearTimeout(sheetResizeTimer);
+    sheetResizeTimer = setTimeout(refitVisibleSheets, 250);
+  });
+
   // Cheatsheet fullscreen viewer (tap sheet or ⛶).
   function openSheetFullscreen(html) {
     const fs = document.getElementById('sheetFullscreen');
@@ -4270,6 +4301,7 @@ function initAskAI() {
     body.appendChild(sheet);
     fs.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => fitSheetToPage(sheet, 9));
   }
   function closeSheetFullscreen() {
     const fs = document.getElementById('sheetFullscreen');
@@ -4437,6 +4469,7 @@ SCHEMA-LOCKED OUTPUT — nothing else is allowed:
       sheet.title = 'Tap to view fullscreen';
       sheet.style.cursor = 'zoom-in';
       sheet.addEventListener('click', () => openSheetFullscreen(sheet.innerHTML));
+      requestAnimationFrame(() => fitSheetToPage(sheet, 8));
       if (sheetStatus) sheetStatus.style.display = 'none';
       showToast('Cheatsheet ready — Download for a zero-margin 1-page PDF! 📄');
     } catch (err) {

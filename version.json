@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":88,"latest":"v0.6.28","notes":"Kill 1-column mobile collapse: cheatsheet grid keeps 2 cols on phones with smaller type, true A4 grid everywhere."}
+{"apkUrl":"","app":"StudyForged","versionCode":89,"latest":"v0.6.29","notes":"Strict A4 guarantee: measured auto-fit shrinks sheet type until all content fits the page box (chat+fullscreen+rotate); print hard-capped at 297mm so output can never spill to page 2."}
