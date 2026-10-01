@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.39** [build 99]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.40** [build 100]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.39):
+Recent major changes (Sep 2026, now v0.6.40):
+- v0.6.40 (Build 100):
+  - Long-token overflow fix (user demand, PPS screenshots): real hyphenation for long English words, prompt bans unbroken strings over 22 chars + `$var`-style placeholders, budget sized to 550–700 words so 12 boxes truly fit one page.
+  - Triple bump `v0.6.40` / `versionCode: 100` / `CACHE_NAME: study-forge-v0.6.40`.
+- v0.6.39 (Build 99):
 - v0.6.39 (Build 99):
   - Values pills fix: items over 48 chars render as list rows, never stretched full-width ovals. (User's white-background screenshot was a stale pre-v0.6.26 build — current sheet is dark in every theme — so reported overflow needs a fresh-tab retest to verify against live code.)
   - Triple bump `v0.6.39` / `versionCode: 99` / `CACHE_NAME: study-forge-v0.6.39`.

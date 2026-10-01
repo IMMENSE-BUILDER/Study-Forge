@@ -5710,16 +5710,18 @@ label {
   padding: 2px 4px;
   text-align: left;
   vertical-align: top;
-  /* v0.6.37: break-word (not anywhere) — wraps only unbreakable overflow,
-     never chops real words like "indeper" mid-word. */
+  /* v0.6.40: break-word for unbreakable tokens + real hyphenation for long
+     English words (clean "indepen-dent" instead of chopped "indeper"). */
   overflow-wrap: break-word;
   word-break: normal;
+  hyphens: auto;
 }
 
 .cheatsheet-sheet li,
 .cheatsheet-sheet p {
   overflow-wrap: break-word;
   word-break: normal;
+  hyphens: auto;
 }
 
 /* Wide display math scrolls inside its box instead of punching through the edge */

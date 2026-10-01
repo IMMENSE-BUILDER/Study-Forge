@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":99,"latest":"v0.6.39","notes":"Values items over 48 chars render as list rows instead of stretched full-width pills."}
+{"apkUrl":"","app":"StudyForged","versionCode":100,"latest":"v0.6.40","notes":"Long-token overflow fix: hyphenation for English words, 22-char unbroken-string ban + no-placeholder rule in prompt, fit-sized 550-700 word budget."}

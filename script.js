@@ -4672,8 +4672,9 @@ BOX TYPES — mix freely to fit the content (numbering automatic, do NOT number 
 - values: {"title":"CAPS TITLE","layout":"values","items":["...max 8 words",...max 8]} — constants, units, conditions.
 - code: {"title":"CAPS TITLE","layout":"code","code":"...max 6 lines ANSI C","notes":["...max 3"]} — PPS only.
 MICRO-NOTE STYLE: fragments, never sentences. Abbreviations encouraged (w/, thru, b/w, →, ↑ ↓, Δ, ∴, ∵, ≈, ∝, ≤ ≥ ≠). Prefix max 2 highest-yield lines per box with "★ ".
+HARD TYPOGRAPHY RULES (violations get cut): no unbroken string longer than 22 characters — insert spaces or split across rows; real ANSI C / textbook terms only, never placeholders like $var or FooBar; each table row must fit its two cells without running on.
 FORBIDDEN STRINGS ANYWHERE (instant rejection): trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful, avoid. ZERO advice.
-~700-900 words of pure content. Fit one A4 page — compress, never cut subtopics.`;
+~550-700 words of pure content. Fit one A4 page — compress, never cut subtopics.`;
     const payload = {
       model: getActiveAiModel(),
       messages: [
