@@ -1,8 +1,9 @@
-const CACHE_NAME = 'study-forge-v0.6.41';
+const CACHE_NAME = 'study-forge-v0.6.42';
 const ASSETS = [
     './',
     './index.html',
     './login.html',
+    './loader-lab.html',
     './styles.css',
     './script.js',
     './syllabus.js',

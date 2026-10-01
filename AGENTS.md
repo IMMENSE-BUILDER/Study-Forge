@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.41** [build 101]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.42** [build 102]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.41):
+Recent major changes (Sep 2026, now v0.6.42):
+- v0.6.42 (Build 102):
+  - Loader Lab (user demand): standalone `loader-lab.html` (not in nav, cached offline) showcasing 6 full-size flashcard-generation animations — Blueprint Draw, Flip Cascade, Orbital Atom, Progress Ring, Symbol Rain, Equalizer Bars. User picks a number; winner ships app-wide next.
+  - Triple bump `v0.6.42` / `versionCode: 102` / `CACHE_NAME: study-forge-v0.6.42`.
+- v0.6.41 (Build 101):
 - v0.6.41 (Build 101):
   - Strict B&W sheet (user demand): every amber/purple/green trace purged — pure black page, white text/borders, inverted number badges, gray code/chips; print stays ink-clean.
   - New loader: the page prints itself — white print-head sweeps down while content lines stamp in top-to-bottom on a 3s loop; sized up (150–250px) for PC and phone alike.
