@@ -4645,7 +4645,7 @@ function initAskAI() {
     chatArea.appendChild(botMsg);
     const loading = document.createElement('div');
     loading.className = 'ai-bot-content';
-    loading.innerHTML = `<div class="sheet-forge"><div class="sheet-forge-page"><div class="sheet-forge-scan"></div><div class="sheet-forge-lines"><span></span><span></span><span></span><span></span><span></span><span></span></div></div><div class="sheet-forge-text" id="sheetForgeStage">Reading unit syllabus…</div></div>`;
+    loading.innerHTML = `<div class="sheet-forge"><div class="sheet-forge-page"><div class="sheet-forge-head"></div><div class="sheet-forge-lines"><span></span><span></span><span></span><span></span><span></span><span></span></div></div><div class="sheet-forge-text" id="sheetForgeStage">Reading unit syllabus…</div></div>`;
     botMsg.appendChild(loading);
     chatArea.scrollTop = chatArea.scrollHeight;
     {

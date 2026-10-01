@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":100,"latest":"v0.6.40","notes":"Long-token overflow fix: hyphenation for English words, 22-char unbroken-string ban + no-placeholder rule in prompt, fit-sized 550-700 word budget."}
+{"apkUrl":"","app":"StudyForged","versionCode":101,"latest":"v0.6.41","notes":"Strict black-and-white sheet (amber/purple/green purged, badge inverted) and new self-printing loader animation, sized up for all screens."}

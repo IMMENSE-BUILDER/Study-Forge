@@ -5594,10 +5594,11 @@ label {
 }
 
 /* Screen preview of the dense sheet — STRICT A4 page: fixed ratio, never stretches.
-   Overflow hidden (not scroll): fitSheetToPage() shrinks type until all fits. */
+   Overflow hidden (not scroll): fitSheetToPage() shrinks type until all fits.
+   v0.6.41: pure black & white only. */
 .cheatsheet-sheet {
-  background: #17131c;
-  color: #f3ead7;
+  background: #000;
+  color: #fff;
   border: 2.5px solid var(--ink);
   border-radius: 12px;
   padding: 9px;
@@ -5613,8 +5614,8 @@ label {
   font-size: 1.27em;
   margin: 0 0 6px;
   padding-bottom: 5px;
-  border-bottom: 2.5px solid #f59e0b;
-  color: #ffd97a;
+  border-bottom: 2.5px solid #fff;
+  color: #fff;
   text-align: center;
   letter-spacing: 0.04em;
 }
@@ -5632,52 +5633,40 @@ label {
   }
 }
 
-@media (min-width: 700px) {
-  .cheatsheet-sheet .sheet-grid {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-}
-
 /* v0.6.37: HARD CAP at 3 columns — the 4th squeezed boxes into unreadable slivers. */
 
 .cheatsheet-sheet .sheet-sec {
   counter-increment: sheetnum;
-  background: #221b2e;
-  border: 1.5px solid #b96bff;
+  background: #0d0d0d;
+  border: 1.5px solid #f2f2f2;
   border-radius: 8px;
   padding: 6px 7px;
   break-inside: avoid;
 }
 
-/* Color-coded title rhythm like the handwritten reference */
-.cheatsheet-sheet .sheet-sec:nth-child(4n+1) { border-color: #7cc7ff; }
-.cheatsheet-sheet .sheet-sec:nth-child(4n+1) h3 { color: #7cc7ff; border-bottom-color: #7cc7ff; }
-.cheatsheet-sheet .sheet-sec:nth-child(4n+2) { border-color: #ff8ac2; }
-.cheatsheet-sheet .sheet-sec:nth-child(4n+2) h3 { color: #ff8ac2; border-bottom-color: #ff8ac2; }
-.cheatsheet-sheet .sheet-sec:nth-child(4n+3) { border-color: #ffd97a; }
-.cheatsheet-sheet .sheet-sec:nth-child(4n+3) h3 { color: #ffd97a; border-bottom-color: #ffd97a; }
-.cheatsheet-sheet .sheet-sec:nth-child(4n+4) { border-color: #9df0b5; }
-.cheatsheet-sheet .sheet-sec:nth-child(4n+4) h3 { color: #9df0b5; border-bottom-color: #9df0b5; }
-
 .cheatsheet-sheet .sheet-sec h3 {
   font-size: 0.95em;
   margin: 0 0 5px;
   padding-bottom: 3px;
-  border-bottom: 1px solid #b96bff;
-  color: #ffd97a;
+  border-bottom: 1px solid #f2f2f2;
+  color: #fff;
   letter-spacing: 0.03em;
 }
 
 .cheatsheet-sheet .sheet-sec h3::before {
   content: counter(sheetnum) ". ";
-  color: #f59e0b;
   font-weight: 800;
+  background: #fff;
+  color: #000;
+  border-radius: 4px;
+  padding: 0 5px;
+  margin-right: 4px;
 }
 
 .cheatsheet-sheet h4 {
   font-size: 0.95em;
   margin: 5px 0 3px;
-  color: #ffd97a;
+  color: #fff;
 }
 
 /* Freeform (non-box) sections pick the same rhythm when the model skips the grid */
@@ -5685,15 +5674,15 @@ label {
   font-size: 0.95em;
   margin: 8px 0 5px;
   padding-bottom: 3px;
-  border-bottom: 1px solid #b96bff;
-  color: #ffd97a;
+  border-bottom: 1px solid #fff;
+  color: #fff;
   letter-spacing: 0.03em;
 }
 
 .cheatsheet-sheet > h4 {
   font-size: 0.95em;
   margin: 6px 0 4px;
-  color: #ffd97a;
+  color: #fff;
 }
 
 .cheatsheet-sheet table {
@@ -5706,7 +5695,7 @@ label {
 
 .cheatsheet-sheet th,
 .cheatsheet-sheet td {
-  border: 1px solid #6d5b8a;
+  border: 1px solid #d9d9d9;
   padding: 2px 4px;
   text-align: left;
   vertical-align: top;
@@ -5739,8 +5728,8 @@ label {
 }
 
 .cheatsheet-sheet th {
-  background: #2e2540;
-  color: #ffd97a;
+  background: #1f1f1f;
+  color: #fff;
 }
 
 .cheatsheet-sheet ul,
@@ -5754,18 +5743,18 @@ label {
 }
 
 .cheatsheet-sheet pre {
-  background: #100c16;
-  border: 1px solid #6d5b8a;
+  background: #000;
+  border: 1px solid #999;
   border-radius: 6px;
   padding: 5px 7px;
   font-size: 0.86em;
   overflow-x: auto;
   white-space: pre-wrap;
-  color: #d9f99d;
+  color: #fff;
 }
 
 .cheatsheet-sheet code {
-  color: #d9f99d;
+  color: #fff;
 }
 
 .cheatsheet-sheet .math-block {
@@ -5785,84 +5774,93 @@ label {
 }
 
 .sheet-chip {
-  border: 1px solid #b96bff;
+  border: 1px solid #fff;
   border-radius: 999px;
   padding: 1px 8px;
   font-size: 0.92em;
 }
 
 .sheet-chip.star {
-  border-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.16);
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .sheet-sec li.star,
 .sheet-sec td.star,
 .sheet-sec tr.star td {
-  background: rgba(245, 158, 11, 0.16);
+  background: rgba(255, 255, 255, 0.13);
 }
 
-/* Forging loader: mini A4 page with a scanning light bar + waking content lines */
+/* Forging loader v2: the page PRINTS itself — lines stamp in top-to-bottom on loop */
 .sheet-forge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 18px 10px 14px;
+  gap: 14px;
+  padding: 22px 10px 16px;
 }
 
 .sheet-forge-page {
   position: relative;
-  width: clamp(120px, 30vw, 210px);
+  width: clamp(150px, 42vw, 250px);
   aspect-ratio: 210 / 297;
   border: 2.5px solid var(--ink);
   border-radius: 6px;
-  background: #17131c;
+  background: #000;
   overflow: hidden;
-  box-shadow: 3px 3px 0 var(--shadow);
+  box-shadow: 4px 4px 0 var(--shadow);
 }
 
-.sheet-forge-scan {
+.sheet-forge-head {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: -18%;
-  height: 18%;
-  background: linear-gradient(to bottom, transparent, rgba(245, 158, 11, 0.85), transparent);
-  animation: sheet-forge-scan 1.5s ease-in-out infinite;
+  left: 6%;
+  right: 6%;
+  top: -8%;
+  height: 7%;
+  border-radius: 4px;
+  background: linear-gradient(to bottom, transparent, #ffffff, transparent);
+  animation: sheet-forge-head 3s linear infinite;
+  z-index: 2;
 }
 
-@keyframes sheet-forge-scan {
-  0% { top: -18%; }
-  100% { top: 104%; }
+@keyframes sheet-forge-head {
+  0% { top: -8%; }
+  88% { top: 102%; }
+  100% { top: 102%; }
 }
 
 .sheet-forge-lines {
   position: absolute;
-  inset: 8% 10%;
+  inset: 9% 11%;
   display: flex;
   flex-direction: column;
-  gap: 9%;
+  justify-content: space-between;
 }
 
 .sheet-forge-lines span {
   display: block;
-  flex: 1;
-  border-radius: 4px;
-  background: #4a3f61;
-  animation: sheet-forge-line 1.5s ease-in-out infinite;
+  height: 3.2%;
+  border-radius: 3px;
+  background: #fff;
+  opacity: 0;
+  animation: sheet-forge-print 3s linear infinite;
 }
 
-.sheet-forge-lines span:nth-child(2n) { width: 82%; }
-.sheet-forge-lines span:nth-child(3n) { width: 64%; animation-delay: 0.25s; }
-.sheet-forge-lines span:nth-child(2) { animation-delay: 0.12s; }
-.sheet-forge-lines span:nth-child(4) { animation-delay: 0.37s; }
-.sheet-forge-lines span:nth-child(5) { animation-delay: 0.5s; }
-.sheet-forge-lines span:nth-child(6) { animation-delay: 0.62s; width: 74%; }
+.sheet-forge-lines span:nth-child(2n) { width: 84%; }
+.sheet-forge-lines span:nth-child(3n) { width: 66%; }
+.sheet-forge-lines span:nth-child(6) { width: 76%; }
+.sheet-forge-lines span:nth-child(1) { animation-delay: 0.15s; }
+.sheet-forge-lines span:nth-child(2) { animation-delay: 0.5s; }
+.sheet-forge-lines span:nth-child(3) { animation-delay: 0.85s; }
+.sheet-forge-lines span:nth-child(4) { animation-delay: 1.2s; }
+.sheet-forge-lines span:nth-child(5) { animation-delay: 1.55s; }
+.sheet-forge-lines span:nth-child(6) { animation-delay: 1.9s; }
 
-@keyframes sheet-forge-line {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; background: #f59e0b; }
+@keyframes sheet-forge-print {
+  0% { opacity: 0; transform: translateX(-10px); }
+  8% { opacity: 1; transform: none; }
+  80% { opacity: 1; }
+  92%, 100% { opacity: 0; }
 }
 
 .sheet-forge-text {
@@ -6094,7 +6092,7 @@ label {
   body.print-cheatsheet .sheet-sec td.star,
   body.print-cheatsheet .sheet-sec tr.star td,
   body.print-cheatsheet .sheet-chip.star {
-    background: #fef3c7;
+    background: #e8e8e8;
   }
 
   body.print-cheatsheet .cheatsheet-sheet .sheet-grid {
