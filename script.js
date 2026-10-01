@@ -4464,17 +4464,29 @@ function initAskAI() {
         });
         sec.appendChild(t);
       } else if (b.layout === 'values') {
+        // v0.6.39: long items render as list rows, NOT stretched full-width pills.
         const chips = document.createElement('div');
         chips.className = 'sheet-chips';
+        const longList = document.createElement('ul');
+        let hasLong = false;
         b.items.forEach((it) => {
           const st = sheetStar(it);
+          if (st.text.length > 48) {
+            hasLong = true;
+            const li = document.createElement('li');
+            li.innerHTML = sheetText(st.text);
+            if (st.starred) li.classList.add('star');
+            longList.appendChild(li);
+            return;
+          }
           const c = document.createElement('span');
           c.className = 'sheet-chip';
           c.innerHTML = sheetText(st.text);
           starify(c, st.starred);
           chips.appendChild(c);
         });
-        sec.appendChild(chips);
+        if (chips.children.length) sec.appendChild(chips);
+        if (hasLong) sec.appendChild(longList);
       } else if (b.layout === 'code') {
         if (b.code) {
           const pre = document.createElement('pre');

@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":98,"latest":"v0.6.38","notes":"Cheatsheet rebuilt on JSON contract: model returns data (table/flow/compare/values/code boxes + star marks), fixed renderer draws identical grid every time; 9/9 harness green."}
+{"apkUrl":"","app":"StudyForged","versionCode":99,"latest":"v0.6.39","notes":"Values items over 48 chars render as list rows instead of stretched full-width pills."}
