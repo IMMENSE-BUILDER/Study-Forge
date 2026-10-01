@@ -4279,42 +4279,240 @@ function initAskAI() {
   }
 
   // Strip scripts/handlers/inline styles from AI sheet HTML (same trust posture as flashcard SVG).
-  function sanitizeSheetHtml(html) {
-    try {
-      const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
-      doc.querySelectorAll('script, style, link, iframe, object, embed, form, input, button, select, textarea, video, audio').forEach(n => n.remove());
-      const all = [doc.body, ...doc.body.querySelectorAll('*')];
-      all.forEach((el) => {
-        for (let i = el.attributes.length - 1; i >= 0; i--) {
-          const at = el.attributes[i];
-          if (at.name.toLowerCase().startsWith('on') || /javascript:/i.test(at.value) || at.name.toLowerCase() === 'style') {
-            el.removeAttribute(at.name);
-          }
-        }
-      });
-      return doc.body.innerHTML;
-    } catch (e) {
-      return `<p>${escapeHtml(String(html || '').slice(0, 2000))}</p>`;
-    }
-  }
+  // ── Cheatsheet JSON contract: model returns DATA, renderer draws identical boxes ──
+  // (freeform HTML was un-fittable by construction — this kills the bug class).
+  const SHEET_LAYOUTS = ['table', 'flow', 'compare', 'values', 'code'];
+  const SHEET_ADVICE_ANY_RE = /\b(common mistakes?|watch out|keep in mind|pro tips?)\b/i;
 
-  // KaTeX pass over sanitized sheet HTML (delimiters only live in text, never attrs).
-  function renderSheetMath(html) {
-    if (typeof katex === 'undefined') return html;
-    let out = String(html || '');
-    const displayRe = (re) => {
-      out = out.replace(re, (_, math) => {
-        try { return `<div class="math-block">${katex.renderToString(String(math).trim(), { displayMode: true, throwOnError: false })}</div>`; }
-        catch (e) { return _; }
-      });
-    };
-    displayRe(/\\\[([\s\S]*?)\\\]/g);
-    displayRe(/\$\$([\s\S]*?)\$\$/g);
-    out = out.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
-      try { return katex.renderToString(String(math).trim(), { displayMode: false, throwOnError: false }); }
+  function sheetClip(s, n) {
+    s = String(s == null ? '' : s).trim();
+    return s.length > n ? s.slice(0, n - 1).trim() + '…' : s;
+  }
+  function sheetCleanLine(s, n) {
+    // Advice-shaped lines never enter the page, whatever the model emits.
+    const t = sheetClip(s, n || 220);
+    if (!t || sheetIsAdvice(t)) return '';
+    return t;
+  }
+  function sheetIsAdvice(t) {
+    const x = String(t || '').trim();
+    if (!x) return false;
+    if (/^(remember|note|warning|traps?|tips?|tricks?|hacks?)\b/i.test(x)) return true;
+    if (SHEET_ADVICE_ANY_RE.test(x)) return true;
+    return false;
+  }
+  // Escaped text + inline \( \) KaTeX (model strings only — never raw HTML).
+  function sheetText(s) {
+    const esc = escapeHtml(String(s == null ? '' : s));
+    if (typeof katex === 'undefined') return esc;
+    return esc.replace(/\\\(([\s\S]*?)\\\)/g, (_, m) => {
+      try { return katex.renderToString(String(m).trim(), { displayMode: false, throwOnError: true }); }
       catch (e) { return _; }
     });
-    return out;
+  }
+  // Raw LaTeX (table/compare formula cells) → KaTeX, fallback to plain text.
+  function sheetFormula(tex) {
+    const t = String(tex == null ? '' : tex).trim();
+    if (!t) return null;
+    if (typeof katex !== 'undefined') {
+      try {
+        const span = document.createElement('span');
+        span.innerHTML = katex.renderToString(t, { displayMode: false, throwOnError: true });
+        return span;
+      } catch (e) {}
+    }
+    return document.createTextNode(t);
+  }
+  function sheetStar(s) {
+    const starred = /^\s*★/.test(String(s || ''));
+    return { starred, text: String(s || '').replace(/^\s*★\s*/, '') };
+  }
+  function normalizeSheetBox(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const title = sheetClip(raw.title, 80);
+    // Advice-titled boxes (TIPS, TRAPS, ...) die with the whole box.
+    if (!title || sheetIsAdvice(title) || /^(exam\s+)?(tips?|tricks?|hacks?|traps?|warnings?|important notes?|things to remember|key points|to remember)\b/i.test(title)) return null;
+    const layout = SHEET_LAYOUTS.includes(raw.layout) ? raw.layout : 'table';
+    const box = { title, layout };
+    const strArr = (v, cap, len) => (Array.isArray(v) ? v : []).map(x => sheetCleanLine(x, len)).filter(Boolean).slice(0, cap);
+    if (layout === 'flow') {
+      box.steps = strArr(raw.steps, 6, 160);
+      if (!box.steps.length) return null;
+    } else if (layout === 'compare') {
+      const rows = (Array.isArray(raw.rows) ? raw.rows : []).slice(0, 6);
+      box.left = sheetClip(raw.left || 'A', 40);
+      box.right = sheetClip(raw.right || 'B', 40);
+      box.rows = rows.map(r => {
+        const a = Array.isArray(r) ? r : [r];
+        if (sheetIsAdvice(a[0]) || sheetIsAdvice(a[1])) return null;
+        return [sheetCleanLine(a[0], 160), sheetCleanLine(a[1], 160)];
+      }).filter(r => r && (r[0] || r[1]));
+      if (!box.rows.length) return null;
+    } else if (layout === 'values') {
+      box.items = strArr(raw.items, 8, 120);
+      if (!box.items.length) return null;
+    } else if (layout === 'code') {
+      box.code = sheetClip(raw.code, 400);
+      box.notes = strArr(raw.notes, 3, 140);
+      if (!box.code && !box.notes.length) return null;
+    } else {
+      const rows = (Array.isArray(raw.rows) ? raw.rows : []).slice(0, 6);
+      box.rows = rows.map(r => {
+        const a = Array.isArray(r) ? r : [r];
+        if (sheetIsAdvice(a[0]) || sheetIsAdvice(a[1])) return null;
+        return [sheetCleanLine(a[0], 120), sheetCleanLine(a[1], 220)];
+      }).filter(r => r && (r[0] || r[1]));
+      if (!box.rows.length) return null;
+    }
+    return box;
+  }
+  // Bracket-balance repair for truncated JSON (same failure mode as quiz/flashcards).
+  // Bracket-balance repair for truncated JSON (same failure mode as quiz/flashcards).
+  // v0.6.38: LIFO stack — the old braces-then-brackets order emitted mismatched closers.
+  function sheetBalance(s) {
+    let t = String(s || '');
+    let inStr = false, esc = false;
+    const stack = [];
+    for (let i = 0; i < t.length; i++) {
+      const c = t[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === '\\') esc = true;
+        else if (c === '"') inStr = false;
+      } else {
+        if (c === '"') inStr = true;
+        else if (c === '{' || c === '[') stack.push(c);
+        else if ((c === '}' || c === ']') && stack.length) stack.pop();
+      }
+    }
+    if (inStr) t += '"';
+    while (stack.length) t += (stack.pop() === '{' ? '}' : ']');
+    return t;
+  }
+  function sheetParseDoc(raw) {
+    let cleaned = String(raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const fb = cleaned.indexOf('{');
+    const lb = cleaned.lastIndexOf('}');
+    if (fb !== -1 && lb !== -1 && lb > fb) cleaned = cleaned.substring(fb, lb + 1);
+    let doc = null;
+    try { doc = JSON.parse(cleaned); }
+    catch (e1) {
+      try { doc = JSON.parse(sheetBalance(cleaned)); }
+      catch (e2) { doc = null; }
+    }
+    if (!doc || typeof doc !== 'object') return null;
+    const boxes = Array.isArray(doc) ? doc : doc.boxes;
+    if (!Array.isArray(boxes)) return null;
+    const title = sheetClip(doc.title || '', 90);
+    const valid = [];
+    for (const b of boxes) {
+      try {
+        const n = normalizeSheetBox(b);
+        if (n) valid.push(n);
+      } catch (e) {}
+      if (valid.length >= 14) break;
+    }
+    if (valid.length < 3) return null;
+    return { title, boxes: valid };
+  }
+  // Deterministic renderer: identical grid every generation — the page math always closes.
+  function buildSheetDOM(doc) {
+    const frag = document.createDocumentFragment();
+    if (doc.title) {
+      const h2 = document.createElement('h2');
+      h2.textContent = doc.title;
+      frag.appendChild(h2);
+    }
+    const grid = document.createElement('div');
+    grid.className = 'sheet-grid';
+    const starify = (el, starred) => { if (starred) el.classList.add('star'); };
+    doc.boxes.forEach((b) => {
+      const sec = document.createElement('div');
+      sec.className = 'sheet-sec';
+      const h = document.createElement('h3');
+      h.textContent = b.title;
+      sec.appendChild(h);
+      if (b.layout === 'flow') {
+        const ol = document.createElement('ol');
+        b.steps.forEach((s) => {
+          const st = sheetStar(s);
+          const li = document.createElement('li');
+          li.innerHTML = sheetText(st.text);
+          starify(li, st.starred);
+          ol.appendChild(li);
+        });
+        sec.appendChild(ol);
+      } else if (b.layout === 'compare') {
+        const t = document.createElement('table');
+        const head = document.createElement('tr');
+        [b.left, b.right].forEach((hh) => {
+          const th = document.createElement('th');
+          th.textContent = hh;
+          head.appendChild(th);
+        });
+        t.appendChild(head);
+        b.rows.forEach((r) => {
+          const tr = document.createElement('tr');
+          r.forEach((cell) => {
+            const st = sheetStar(cell);
+            const td = document.createElement('td');
+            td.innerHTML = sheetText(st.text);
+            starify(td, st.starred);
+            tr.appendChild(td);
+          });
+          t.appendChild(tr);
+        });
+        sec.appendChild(t);
+      } else if (b.layout === 'values') {
+        const chips = document.createElement('div');
+        chips.className = 'sheet-chips';
+        b.items.forEach((it) => {
+          const st = sheetStar(it);
+          const c = document.createElement('span');
+          c.className = 'sheet-chip';
+          c.innerHTML = sheetText(st.text);
+          starify(c, st.starred);
+          chips.appendChild(c);
+        });
+        sec.appendChild(chips);
+      } else if (b.layout === 'code') {
+        if (b.code) {
+          const pre = document.createElement('pre');
+          pre.textContent = b.code;
+          sec.appendChild(pre);
+        }
+        if (b.notes.length) {
+          const ul = document.createElement('ul');
+          b.notes.forEach((n) => {
+            const st = sheetStar(n);
+            const li = document.createElement('li');
+            li.innerHTML = sheetText(st.text);
+            starify(li, st.starred);
+            ul.appendChild(li);
+          });
+          sec.appendChild(ul);
+        }
+      } else {
+        const t = document.createElement('table');
+        b.rows.forEach((r) => {
+          const st = sheetStar(r[0] || '');
+          const tr = document.createElement('tr');
+          const td0 = document.createElement('td');
+          td0.innerHTML = sheetText(st.text || '—');
+          const td1 = document.createElement('td');
+          const fsrc = String(r[1] || '').replace(/^\s*★\s*/, '');
+          if (!fsrc) td1.textContent = '—';
+          else td1.appendChild(sheetFormula(fsrc));
+          starify(tr, st.starred);
+          tr.append(td0, td1);
+          t.appendChild(tr);
+        });
+        sec.appendChild(t);
+      }
+      grid.appendChild(sec);
+    });
+    frag.appendChild(grid);
+    return frag;
   }
 
   // STRICT A4 fit: shrink sheet type until content fits its box (binary search on
@@ -4452,14 +4650,18 @@ function initAskAI() {
     const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
 ${unitCtx}
 
-TASK: Emit ONE dense single-A4-page revision cheatsheet as raw HTML covering the ENTIRE unit above — styled like a handwritten topper's cheat sheet: wall-to-wall numbered micro-boxes, abbreviations, symbols, color-coded titles.
-SCHEMA-LOCKED OUTPUT — nothing else is allowed:
-- Output ONLY the inner HTML (no fences, no commentary). Allowed tags ONLY: h2,h3,h4,table,thead,tbody,tr,th,td,ul,ol,li,p,div,span,strong,em,code,pre,hr. No attributes except class. No <style>/<script>.
-- Structure: STRICT numbered-box grid (this is what makes the fixed A4 page work — no freeform). ONE <h2> unit title, then <div class="sheet-grid"> of 10-12 <div class="sheet-sec"> boxes, one per subtopic in taught order. Each box: <h3>SHORT CAPS TITLE (do NOT number it — numbering is automatic)</h3> + formula table and/or 4-6 micro-lines. Flowing non-box sections are NOT allowed. NEVER a 4th column of layout — max 3 across.
-- MICRO-NOTE STYLE: fragments only, never sentences. Standard abbreviations encouraged (w/, thru, b/w, → leads-to, ↑ ↓, Δ, ∴, ∵, ✓, ★ high-yield, ≈, ∝, ≤ ≥ ≠). Each line: a formula (KaTeX), a value with units, or a ≤10-word fragment.
-- The following strings MUST NOT appear anywhere in the output (they cause instant rejection): trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful, avoid. Write ZERO advice of any kind.
-- Every formula as KaTeX: inline \\( ... \\) , display \\[ ... \\]. Double-escape backslashes. ANSI C in <pre> (max 6 lines) for PPS.
-- ~650-800 words of pure content. MUST fit one printed A4 page — density over brevity: abbreviate and symbolize, never cut subtopics. If the unit is huge, compress harder (tighter fragments, more tables), NEVER overflow.`;
+TASK: Emit ONE dense single-A4 revision cheatsheet as raw JSON (no fences, no commentary) covering the ENTIRE unit above — every box becomes one numbered micro-box on the page.
+STRICT JSON SCHEMA (exact keys, nothing else):
+{"title": "UNIT N — NAME", "boxes": [ <10-12 box objects, one per subtopic in taught order> ]}
+BOX TYPES — mix freely to fit the content (numbering automatic, do NOT number titles):
+- table: {"title":"CAPS TITLE","layout":"table","rows":[["label","raw LaTeX formula"],...max 6]} — definitions & formulas. LaTeX WITHOUT delimiters, e.g. "V_{th} = V_{oc}".
+- flow: {"title":"CAPS TITLE","layout":"flow","steps":["...max 12 words",...max 6]} — derivations & procedures. KaTeX \\( \\) allowed inline.
+- compare: {"title":"CAPS TITLE","layout":"compare","left":"A","right":"B","rows":[["a1","b1"],...max 6]} — differences & vs-topics.
+- values: {"title":"CAPS TITLE","layout":"values","items":["...max 8 words",...max 8]} — constants, units, conditions.
+- code: {"title":"CAPS TITLE","layout":"code","code":"...max 6 lines ANSI C","notes":["...max 3"]} — PPS only.
+MICRO-NOTE STYLE: fragments, never sentences. Abbreviations encouraged (w/, thru, b/w, →, ↑ ↓, Δ, ∴, ∵, ≈, ∝, ≤ ≥ ≠). Prefix max 2 highest-yield lines per box with "★ ".
+FORBIDDEN STRINGS ANYWHERE (instant rejection): trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful, avoid. ZERO advice.
+~700-900 words of pure content. Fit one A4 page — compress, never cut subtopics.`;
     const payload = {
       model: getActiveAiModel(),
       messages: [
@@ -4501,17 +4703,14 @@ SCHEMA-LOCKED OUTPUT — nothing else is allowed:
         throw new Error(sheetErr);
       }
       const data = await resp.json();
-      let raw = (data.choices?.[0]?.message?.content || '').trim();
+      const raw = (data.choices?.[0]?.message?.content || '').trim();
       if (!raw) throw new Error('Empty cheatsheet response — try again');
-      raw = raw.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      const safe = renderSheetMath(sanitizeSheetHtml(raw));
-      if (!safe || safe.replace(/<[^>]*>/g, '').trim().length < 200) {
-        throw new Error('Cheatsheet came back too thin — try again');
-      }
+      const doc = sheetParseDoc(raw);
+      if (!doc) throw new Error('Cheatsheet came back garbled — try again');
       botMsg.innerHTML = '';
       const sheet = document.createElement('div');
       sheet.className = 'cheatsheet-sheet';
-      sheet.innerHTML = safe;
+      sheet.appendChild(buildSheetDOM(doc));
       stripAdviceNodes(sheet);
       botMsg.appendChild(sheet);
       const actions = document.createElement('div');

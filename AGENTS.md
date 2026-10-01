@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.37** [build 97]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.38** [build 98]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.37):
+Recent major changes (Sep 2026, now v0.6.38):
+- v0.6.38 (Build 98):
+  - Cheatsheet JSON-contract rebuild (user demand): model emits pure DATA (10–12 boxes in table/flow/compare/values/code layouts + ★ high-yield marks) and a fixed renderer draws the identical grid every generation — layout can no longer drift, overflow, or smuggle advice (no advice field exists; validator drops junk boxes/rows). LIFO bracket repair, per-box validation (min 3), textContent-only DOM (stronger XSS posture). Proven by `sheet-check.js` harness 9/9 (parse, star, advice-drop, truncation recovery, garbage honesty, layout fallback).
+  - Triple bump `v0.6.38` / `versionCode: 98` / `CACHE_NAME: study-forge-v0.6.38`.
+- v0.6.37 (Build 97):
 - v0.6.37 (Build 97):
   - Hard layout fix (user demand, Wronskian screenshot): 4th-column breakpoint deleted (3-col cap everywhere), `overflow-wrap:anywhere` replaced (it chopped "independent" mid-word — now breaks only truly unbreakable overflow), content budget cut to 10–12 boxes / 650–800 words so one page actually holds it.
   - Triple bump `v0.6.37` / `versionCode: 97` / `CACHE_NAME: study-forge-v0.6.37`.

@@ -5774,6 +5774,32 @@ label {
   display: none;
 }
 
+/* JSON-contract extras: value chips + ★ high-yield highlights */
+.sheet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 3px 0;
+}
+
+.sheet-chip {
+  border: 1px solid #b96bff;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.92em;
+}
+
+.sheet-chip.star {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.sheet-sec li.star,
+.sheet-sec td.star,
+.sheet-sec tr.star td {
+  background: rgba(245, 158, 11, 0.16);
+}
+
 /* Forging loader: mini A4 page with a scanning light bar + waking content lines */
 .sheet-forge {
   display: flex;
@@ -6060,6 +6086,13 @@ label {
     background: #f1f1f1;
     color: #000;
     border-color: #999;
+  }
+
+  body.print-cheatsheet .sheet-sec li.star,
+  body.print-cheatsheet .sheet-sec td.star,
+  body.print-cheatsheet .sheet-sec tr.star td,
+  body.print-cheatsheet .sheet-chip.star {
+    background: #fef3c7;
   }
 
   body.print-cheatsheet .cheatsheet-sheet .sheet-grid {
