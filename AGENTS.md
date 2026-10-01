@@ -10,7 +10,7 @@ weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study budd
 Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
 local bypass flag). All user data lives in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.43** [build 103]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.44** [build 104]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.43):
+Recent major changes (Sep 2026, now v0.6.44):
+- v0.6.44 (Build 104):
+  - Loader Lab: Domino Rally five pieces sized up (~28×82px) per user pick.
+  - Triple bump `v0.6.44` / `versionCode: 104` / `CACHE_NAME: study-forge-v0.6.44`.
+- v0.6.43 (Build 103):
 - v0.6.43 (Build 103):
   - Loader Lab ×26 (user demand): 20 more full-size contenders (neon ring, shuffle fan, terminal typing, Newton's cradle, wave field, tumbling block, open book, rocket, compass, dice, slots, radar, battery, puzzle, magnet, lighthouse, flame, dominoes, pac, morph blob).
   - Triple bump `v0.6.43` / `versionCode: 103` / `CACHE_NAME: study-forge-v0.6.43`.
