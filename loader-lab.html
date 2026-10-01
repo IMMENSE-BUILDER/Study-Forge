@@ -174,6 +174,274 @@
       0%, 100% { transform: scaleY(0.25); }
       50% { transform: scaleY(1); }
     }
+
+    /* ---------- 7. Neon Ring ---------- */
+    .neon { position: relative; width: 170px; height: 170px; }
+    .neon svg circle { fill: none; }
+    .neon .nr-bg { stroke: #3a352c; stroke-width: 10; }
+    .neon .nr-fg {
+      stroke: #ffd97a; stroke-width: 10; stroke-linecap: round;
+      stroke-dasharray: 70 370; filter: drop-shadow(0 0 6px #ffd97a);
+      transform-box: fill-box; transform-origin: center;
+      animation: nr-spin 2.2s linear infinite;
+    }
+    @keyframes nr-spin { to { transform: rotate(360deg); } }
+    .neon-core {
+      position: absolute; inset: 0; display: grid; place-items: center; font-size: 46px;
+      animation: neon-core 2s ease-in-out infinite;
+    }
+    @keyframes neon-core { 50% { transform: scale(1.2); } }
+
+    /* ---------- 8. Shuffle Fan ---------- */
+    .shuffle { position: relative; width: 130px; height: 160px; }
+    .shuffle i {
+      position: absolute; inset: 0; border-radius: 12px; border: 3px solid #000;
+      display: grid; place-items: center; font-size: 46px;
+      animation: shuf 2.8s ease-in-out infinite;
+    }
+    .shuffle i:nth-child(1) { background: #f59e0b; --r: -14deg; --x: -42px; }
+    .shuffle i:nth-child(2) { background: #ffd97a; --r: 0deg; --x: 0px; animation-delay: 0.12s; }
+    .shuffle i:nth-child(3) { background: #b96bff; --r: 14deg; --x: 42px; animation-delay: 0.24s; }
+    @keyframes shuf {
+      0%, 100% { transform: rotate(0) translateX(0); }
+      50% { transform: rotate(var(--r)) translateX(var(--x)); }
+    }
+
+    /* ---------- 9. Terminal Typing ---------- */
+    .term {
+      background: #000; border: 3px solid #000; border-radius: 12px;
+      padding: 18px; font-family: monospace; font-size: 15px; color: #4ade80;
+      width: min(320px, 86%);
+    }
+    .term p { overflow: hidden; white-space: nowrap; width: 0; opacity: 0; animation: typ 6s linear infinite; }
+    .term p:nth-child(2) { animation-delay: 2s; }
+    .term p:nth-child(3) { animation-delay: 4s; }
+    .term .cur { animation: blink 0.8s steps(1) infinite; }
+    @keyframes typ {
+      0% { width: 0; opacity: 1; }
+      28% { width: 100%; opacity: 1; }
+      31%, 97% { width: 100%; opacity: 1; }
+      98%, 100% { width: 0; opacity: 0; }
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ---------- 10. Newton's Cradle ---------- */
+    .cradle .cbar { width: 220px; height: 8px; background: #f59e0b; border-radius: 4px; margin: 0 auto; }
+    .cballs { display: flex; gap: 6px; justify-content: center; }
+    .cballs span { display: block; width: 2px; height: 90px; background: #8a7f63; position: relative; transform-origin: top center; }
+    .cballs i {
+      position: absolute; bottom: -14px; left: 50%; width: 28px; height: 28px; margin-left: -14px;
+      border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe9b8, #f59e0b);
+    }
+    .swingL { animation: cswL 2s ease-in-out infinite; }
+    .swingR { animation: cswR 2s ease-in-out infinite; }
+    @keyframes cswL { 0%, 50%, 100% { transform: rotate(0); } 12.5% { transform: rotate(28deg); } 25% { transform: rotate(0); } }
+    @keyframes cswR { 0%, 50%, 100% { transform: rotate(0); } 62.5% { transform: rotate(-28deg); } 75% { transform: rotate(0); } }
+
+    /* ---------- 11. Wave Field ---------- */
+    .wrow { display: flex; gap: 10px; margin: 6px 0; }
+    .wrow i {
+      width: 20px; height: 20px; border-radius: 50%; background: #f59e0b;
+      animation: wv 1.4s ease-in-out infinite; animation-delay: calc(var(--i) * 0.09s);
+    }
+    .wrow:last-child i { background: #b96bff; }
+    @keyframes wv { 0%, 100% { transform: translateY(9px); opacity: 0.5; } 50% { transform: translateY(-9px); opacity: 1; } }
+
+    /* ---------- 12. Tumbling Block ---------- */
+    .tumble {
+      width: 108px; height: 108px; border-radius: 20px;
+      background: linear-gradient(135deg, #f59e0b, #b96bff);
+      border: 3px solid #000; display: grid; place-items: center; font-size: 52px;
+      animation: tumb 3s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+    }
+    @keyframes tumb {
+      0% { transform: rotate(0) scale(1); } 25% { transform: rotate(90deg) scale(0.85); }
+      50% { transform: rotate(180deg) scale(1); } 75% { transform: rotate(270deg) scale(0.85); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    /* ---------- 13. Open Book ---------- */
+    .book { position: relative; width: 190px; height: 130px; perspective: 600px; }
+    .bk-base {
+      position: absolute; inset: 0; border: 3px solid #000; border-radius: 8px;
+      background: linear-gradient(90deg, #b96bff 0 48%, #111 48% 52%, #ffd97a 52% 100%);
+    }
+    .bk-page {
+      position: absolute; left: 50%; top: 6px; bottom: 6px; width: calc(50% - 8px);
+      background: #f3ead7; border: 2px solid #000; border-radius: 0 6px 6px 0;
+      transform-origin: left center; animation: pageflip 3s ease-in-out infinite;
+    }
+    .bk-page.p2 { animation-delay: 1.5s; }
+    @keyframes pageflip { 0% { transform: rotateY(0); } 45%, 100% { transform: rotateY(-180deg); } }
+
+    /* ---------- 14. Rocket ---------- */
+    .rocket { position: relative; font-size: 64px; animation: rk-bob 2s ease-in-out infinite; }
+    @keyframes rk-bob { 50% { transform: translateY(-14px); } }
+    .rflame { position: absolute; left: 50%; bottom: -26px; font-size: 30px; animation: rk-fl 0.3s ease-in-out infinite alternate; }
+    @keyframes rk-fl { from { transform: translateX(-50%) scale(1); opacity: 1; } to { transform: translateX(-50%) scale(1.3); opacity: 0.75; } }
+    .rstars span { position: absolute; color: #ffd97a; animation: blink 1.2s steps(1) infinite; }
+    .rstars span:nth-child(1) { left: 18%; top: 22%; }
+    .rstars span:nth-child(2) { right: 16%; top: 34%; animation-delay: 0.4s; }
+    .rstars span:nth-child(3) { left: 30%; bottom: 18%; animation-delay: 0.8s; }
+
+    /* ---------- 15. Compass ---------- */
+    .compass {
+      position: relative; width: 150px; height: 150px; border-radius: 50%;
+      border: 4px solid #f59e0b; background: #1e1b17;
+    }
+    .compass b { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); color: #ffd97a; font-size: 18px; }
+    .needle {
+      position: absolute; left: 50%; top: 50%; width: 8px; height: 110px; margin: -55px 0 0 -4px;
+      background: linear-gradient(to bottom, #ef4444 50%, #f3ead7 50%); border-radius: 4px;
+      animation: seek 4s ease-in-out infinite;
+    }
+    @keyframes seek { 0% { transform: rotate(-40deg); } 30% { transform: rotate(30deg); } 60% { transform: rotate(-15deg); } 80%, 100% { transform: rotate(0deg); } }
+    .pin { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px; border-radius: 50%; background: #f59e0b; }
+
+    /* ---------- 16. Dice ---------- */
+    .dice { position: relative; width: 110px; height: 110px; font-size: 96px; line-height: 110px; text-align: center; filter: drop-shadow(0 0 8px #f59e0b); }
+    .dice span { position: absolute; inset: 0; opacity: 0; animation: dice-cy 3s ease-in-out infinite; }
+    .dice span:nth-child(2) { animation-delay: 1s; }
+    .dice span:nth-child(3) { animation-delay: 2s; }
+    @keyframes dice-cy { 0% { opacity: 0; transform: rotate(-20deg) scale(0.7); } 10%, 30% { opacity: 1; transform: none; } 40%, 100% { opacity: 0; } }
+
+    /* ---------- 17. Slot Reels ---------- */
+    .slots { display: flex; gap: 10px; background: #000; border: 3px solid #f59e0b; border-radius: 14px; padding: 12px 16px; }
+    .reel { height: 60px; overflow: hidden; font-size: 42px; line-height: 60px; }
+    .reel span { display: block; }
+    .reel.r1 span { animation: reel 1.6s linear infinite; }
+    .reel.r2 span { animation: reel 2.2s linear infinite; }
+    .reel.r3 span { animation: reel 2.8s linear infinite; }
+    @keyframes reel { to { transform: translateY(-50%); } }
+
+    /* ---------- 18. Radar ---------- */
+    .radar {
+      position: relative; width: 180px; height: 180px; border-radius: 50%;
+      border: 3px solid #4ade80; overflow: hidden;
+      background: radial-gradient(circle, rgba(74, 222, 128, 0.15), transparent 70%);
+    }
+    .sweep {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: conic-gradient(from 0deg, rgba(74, 222, 128, 0.9), transparent 25%);
+      animation: orbit-spin 2.5s linear infinite;
+    }
+    .radar i { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #4ade80; animation: blip 2.5s ease-in-out infinite; }
+    .radar .b1 { left: 30%; top: 30%; }
+    .radar .b2 { left: 62%; top: 58%; animation-delay: 0.8s; }
+    .radar .b3 { left: 45%; top: 72%; animation-delay: 1.6s; }
+    @keyframes blip { 0%, 100% { opacity: 0.1; } 12% { opacity: 1; } 35% { opacity: 0.2; } }
+
+    /* ---------- 19. Battery ---------- */
+    .batt { position: relative; width: 170px; height: 80px; border: 4px solid #f59e0b; border-radius: 12px; padding: 8px; }
+    .batt::after {
+      content: ""; position: absolute; right: -17px; top: 50%; width: 10px; height: 30px;
+      margin-top: -15px; background: #f59e0b; border-radius: 0 4px 4px 0;
+    }
+    .blevel { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #f59e0b, #ffd97a); animation: batt 4s ease-in-out infinite; }
+    @keyframes batt { 0% { width: 4%; } 70% { width: 100%; } 85% { width: 100%; } 100% { width: 4%; } }
+    .batt span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 30px; }
+
+    /* ---------- 20. Puzzle Snap ---------- */
+    .puz { font-size: 64px; display: flex; }
+    .puz span:first-child { animation: puzL 2.4s ease-in-out infinite; }
+    .puz span:last-child { animation: puzR 2.4s ease-in-out infinite; filter: hue-rotate(140deg); }
+    @keyframes puzL { 0%, 100% { transform: translateX(14px); } 50% { transform: translateX(-5px); } }
+    @keyframes puzR { 0%, 100% { transform: translateX(-14px); } 50% { transform: translateX(5px); } }
+
+    /* ---------- 21. Magnet ---------- */
+    .mag { position: relative; font-size: 72px; }
+    .mag i {
+      position: absolute; left: 50%; top: 55%; width: 9px; height: 9px; margin: -4px;
+      border-radius: 50%; background: #ffd97a; opacity: 0;
+      animation: magfly 2s ease-in infinite; animation-delay: calc(var(--i) * 0.5s);
+    }
+    .mag i:nth-child(1) { --fx: -90px; --fy: -50px; }
+    .mag i:nth-child(2) { --fx: 90px; --fy: -60px; }
+    .mag i:nth-child(3) { --fx: -70px; --fy: 60px; }
+    .mag i:nth-child(4) { --fx: 80px; --fy: 55px; }
+    @keyframes magfly {
+      0% { opacity: 0; transform: translate(var(--fx), var(--fy)) scale(1); }
+      30% { opacity: 1; }
+      80% { opacity: 1; transform: translate(0, 0) scale(0.6); }
+      100% { opacity: 0; transform: translate(0, 0) scale(0.4); }
+    }
+
+    /* ---------- 22. Lighthouse ---------- */
+    .light { position: relative; width: 200px; height: 200px; }
+    .beam {
+      position: absolute; bottom: 63px; left: 50%; width: 175px; height: 26px;
+      transform-origin: 0 50%; z-index: 0;
+      background: linear-gradient(90deg, rgba(255, 217, 122, 0.85), transparent);
+      clip-path: polygon(0 35%, 100% 0, 100% 100%, 0 65%);
+      animation: beamrot 4s linear infinite;
+    }
+    @keyframes beamrot { to { transform: rotate(360deg); } }
+    .tower {
+      position: absolute; bottom: 14px; left: 50%; width: 34px; height: 112px; margin-left: -17px; z-index: 1;
+      background: repeating-linear-gradient(to bottom, #f3ead7 0 14px, #ef4444 14px 28px);
+      clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+    }
+    .lamp {
+      position: absolute; bottom: 122px; left: 50%; width: 20px; height: 20px; margin-left: -10px;
+      border-radius: 50%; background: #ffd97a; box-shadow: 0 0 18px #ffd97a; z-index: 2;
+    }
+
+    /* ---------- 23. Flame ---------- */
+    .flame { position: relative; width: 110px; height: 150px; }
+    .flame i {
+      position: absolute; bottom: 0; left: 50%;
+      border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+      transform-origin: 50% 100%;
+    }
+    .flame .f1 { width: 90px; height: 120px; margin-left: -45px; background: linear-gradient(#ef4444, #b91c1c); animation: fl 0.9s ease-in-out infinite; }
+    .flame .f2 { width: 60px; height: 84px; margin-left: -30px; background: linear-gradient(#f59e0b, #ea580c); animation: fl 0.7s ease-in-out 0.1s infinite; }
+    .flame .f3 { width: 34px; height: 50px; margin-left: -17px; background: linear-gradient(#fef3c7, #fde68a); animation: fl 0.5s ease-in-out 0.2s infinite; }
+    @keyframes fl { 0%, 100% { transform: scaleY(1) skewX(0); } 30% { transform: scaleY(1.08) skewX(4deg); } 60% { transform: scaleY(0.94) skewX(-4deg); } }
+
+    /* ---------- 24. Dominoes ---------- */
+    .doms { display: flex; gap: 14px; align-items: flex-end; height: 120px; }
+    .doms i {
+      width: 22px; height: 64px; background: #f3ead7; border: 3px solid #000; border-radius: 6px;
+      transform-origin: 50% 100%; animation: dom 2.5s ease-in infinite;
+    }
+    .doms i:nth-child(1) { animation-delay: 0s; }
+    .doms i:nth-child(2) { animation-delay: 0.2s; }
+    .doms i:nth-child(3) { animation-delay: 0.4s; }
+    .doms i:nth-child(4) { animation-delay: 0.6s; }
+    .doms i:nth-child(5) { animation-delay: 0.8s; }
+    @keyframes dom { 0%, 15% { transform: rotate(0); } 55%, 82% { transform: rotate(68deg); } 95%, 100% { transform: rotate(0); } }
+
+    /* ---------- 25. Pac Chomp ---------- */
+    .pacwrap { position: relative; width: 280px; max-width: 92%; height: 80px; }
+    .pac { position: absolute; left: 6px; top: 10px; width: 60px; height: 60px; border-radius: 50%; background: #ffd97a; z-index: 2; }
+    .pac::after {
+      content: ""; position: absolute; inset: 0; background: #101010;
+      clip-path: polygon(50% 50%, 100% 18%, 100% 82%);
+      animation: chompw 0.45s linear infinite;
+    }
+    @keyframes chompw { 0%, 100% { clip-path: polygon(50% 50%, 100% 8%, 100% 92%); } 50% { clip-path: polygon(50% 50%, 100% 38%, 100% 62%); } }
+    .pacwrap > i {
+      position: absolute; top: 50%; width: 12px; height: 12px; margin-top: -6px;
+      border-radius: 50%; background: #ffd97a; animation: dotmv 1.5s linear infinite;
+    }
+    .pacwrap > i:nth-of-type(1) { left: 120px; }
+    .pacwrap > i:nth-of-type(2) { left: 180px; animation-delay: 0.5s; }
+    .pacwrap > i:nth-of-type(3) { left: 240px; animation-delay: 1s; }
+    @keyframes dotmv { 0% { transform: translateX(0); opacity: 1; } 70% { opacity: 1; } 100% { transform: translateX(-70px); opacity: 0; } }
+
+    /* ---------- 26. Morph Blob ---------- */
+    .blob {
+      width: 150px; height: 150px; display: grid; place-items: center; font-size: 56px; color: #111;
+      background: linear-gradient(135deg, #f59e0b, #b96bff, #4ade80, #f59e0b);
+      background-size: 300% 300%;
+      animation: blobm 5s ease-in-out infinite, blobg 4s ease-in-out infinite alternate;
+    }
+    @keyframes blobm {
+      0%, 100% { border-radius: 58% 42% 55% 45% / 48% 56% 44% 52%; }
+      33% { border-radius: 42% 58% 38% 62% / 58% 42% 58% 42%; }
+      66% { border-radius: 52% 48% 62% 38% / 42% 60% 40% 58%; }
+    }
+    @keyframes blobg { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
   </style>
 </head>
 <body>
@@ -181,7 +449,7 @@
     <div class="lab-hero">
       <h1>⚡ Flashcard Loader <span>Lab</span></h1>
       <p>Full-size contenders for the card-generation animation. Same size as the real thing.</p>
-      <span class="lab-rule">Reply with the option number (1–6) — winner ships app-wide</span>
+      <span class="lab-rule">Reply with the option number (1–26) — winner ships app-wide</span>
     </div>
     <div class="lab-grid">
 
@@ -260,6 +528,191 @@
           <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         </div>
         <p class="lab-cap">Twelve amber bars dance like a live AI brainwave. High energy, modern.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">7</span><h2>Neon Ring</h2></div>
+        <div class="lab-stage">
+          <div class="neon">
+            <svg width="170" height="170" viewBox="0 0 170 170">
+              <circle class="nr-bg" cx="85" cy="85" r="70"/>
+              <circle class="nr-fg" cx="85" cy="85" r="70"/>
+            </svg>
+            <span class="neon-core">⚡</span>
+          </div>
+        </div>
+        <p class="lab-cap">A comet of light orbits the spark, forever charging. Sleek, premium.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">8</span><h2>Shuffle Fan</h2></div>
+        <div class="lab-stage">
+          <div class="shuffle"><i>📄</i><i>📐</i><i>🧠</i></div>
+        </div>
+        <p class="lab-cap">The deck fans open and snaps shut — cards dealing themselves. Casino-smooth.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">9</span><h2>Terminal Typing</h2></div>
+        <div class="lab-stage">
+          <div class="term">
+            <p>&gt; forging card…</p>
+            <p>&gt; solving derivations…</p>
+            <p>&gt; planting traps…<span class="cur">▊</span></p>
+          </div>
+        </div>
+        <p class="lab-cap">Hacker terminal narrates the build live, line by line. PPS students will grin.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">10</span><h2>Newton's Cradle</h2></div>
+        <div class="lab-stage">
+          <div class="cradle">
+            <div class="cbar"></div>
+            <div class="cballs"><span class="swingL"><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span class="swingR"><i></i></span></div>
+          </div>
+        </div>
+        <p class="lab-cap">Click-clack momentum passing ball to ball — physics studying itself. Mesmerizing.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">11</span><h2>Wave Field</h2></div>
+        <div class="lab-stage">
+          <div>
+            <div class="wrow"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i></div>
+            <div class="wrow"><i style="--i:7"></i><i style="--i:6"></i><i style="--i:5"></i><i style="--i:4"></i><i style="--i:3"></i><i style="--i:2"></i><i style="--i:1"></i><i style="--i:0"></i></div>
+          </div>
+        </div>
+        <p class="lab-cap">Two rippling dot fields rolling against each other — waves, literally. Calm focus.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">12</span><h2>Tumbling Block</h2></div>
+        <div class="lab-stage">
+          <div class="tumble">⚡</div>
+        </div>
+        <p class="lab-cap">A gradient block tumbles end over end, squashing on impact. Bold, chunky, fun.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">13</span><h2>Open Book</h2></div>
+        <div class="lab-stage">
+          <div class="book">
+            <div class="bk-base"></div>
+            <div class="bk-page p1"></div>
+            <div class="bk-page p2"></div>
+          </div>
+        </div>
+        <p class="lab-cap">Pages turn by themselves, forever reading ahead of you. Pure study energy.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">14</span><h2>Rocket Lift</h2></div>
+        <div class="lab-stage">
+          <div class="rocket">🚀<span class="rflame">🔥</span></div>
+          <div class="rstars"><span>✦</span><span>✦</span><span>✦</span></div>
+        </div>
+        <p class="lab-cap">A rocket hovering on flickering flame under twinkling stars. Breaks the seriousness.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">15</span><h2>Seeking Compass</h2></div>
+        <div class="lab-stage">
+          <div class="compass"><b>N</b><div class="needle"></div><div class="pin"></div></div>
+        </div>
+        <p class="lab-cap">The needle hunts, wobbles, then locks north — "found your answer". Story in a spin.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">16</span><h2>Lucky Dice</h2></div>
+        <div class="lab-stage">
+          <div class="dice"><span>⚀</span><span>⚂</span><span>⚅</span></div>
+        </div>
+        <p class="lab-cap">Dice tumbling through faces — every generation a new roll. Luck of the draw.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">17</span><h2>Slot Reels</h2></div>
+        <div class="lab-stage">
+          <div class="slots">
+            <div class="reel r1"><span>7️⃣<br/>⭐<br/>💎<br/>7️⃣<br/>⭐<br/>💎</span></div>
+            <div class="reel r2"><span>⭐<br/>💎<br/>7️⃣<br/>⭐<br/>💎<br/>7️⃣</span></div>
+            <div class="reel r3"><span>💎<br/>7️⃣<br/>⭐<br/>💎<br/>7️⃣<br/>⭐</span></div>
+          </div>
+        </div>
+        <p class="lab-cap">Three jackpot reels spinning at different speeds — your deck always hits. Cha-ching.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">18</span><h2>Radar Sweep</h2></div>
+        <div class="lab-stage">
+          <div class="radar"><div class="sweep"></div><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+        </div>
+        <p class="lab-cap">Sonar sweep pinging hidden knowledge blips. "Scanning syllabus…" made visible.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">19</span><h2>Charging Battery</h2></div>
+        <div class="lab-stage">
+          <div class="batt"><div class="blevel"></div><span>⚡</span></div>
+        </div>
+        <p class="lab-cap">Your brain charging to 100%, then doing it all over again. Relatable.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">20</span><h2>Puzzle Snap</h2></div>
+        <div class="lab-stage">
+          <div class="puz"><span>🧩</span><span>🧩</span></div>
+        </div>
+        <p class="lab-cap">Two pieces sliding together, almost clicking — concepts snapping into place.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">21</span><h2>Magnet Pull</h2></div>
+        <div class="lab-stage">
+          <div class="mag">🧲<i></i><i></i><i></i><i></i></div>
+        </div>
+        <p class="lab-cap">Facts flying in from all sides, snapped up by the magnet. Knowledge attracts.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">22</span><h2>Lighthouse</h2></div>
+        <div class="lab-stage">
+          <div class="light"><div class="beam"></div><div class="tower"></div><div class="lamp"></div></div>
+        </div>
+        <p class="lab-cap">A beam sweeping the dark for answers — guidance you can watch. Cinematic.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">23</span><h2>Study Flame</h2></div>
+        <div class="lab-stage">
+          <div class="flame"><i class="f1"></i><i class="f2"></i><i class="f3"></i></div>
+        </div>
+        <p class="lab-cap">A triple-layered flame that never goes out — the grind, visualized. Streak energy.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">24</span><h2>Domino Rally</h2></div>
+        <div class="lab-stage">
+          <div class="doms"><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <p class="lab-cap">Five dominoes toppling in sequence, then standing back up. Chain-reaction learning.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">25</span><h2>Pac Scholar</h2></div>
+        <div class="lab-stage">
+          <div class="pacwrap"><div class="pac"></div><i></i><i></i><i></i></div>
+        </div>
+        <p class="lab-cap">Chomping through knowledge pellets one by one. Breakfast of toppers.</p>
+      </div>
+
+      <div class="lab-card">
+        <div class="lab-card-head"><span class="lab-num">26</span><h2>Morph Blob</h2></div>
+        <div class="lab-stage">
+          <div class="blob">⚡</div>
+        </div>
+        <p class="lab-cap">A living gradient blob, forever reshaping — premium, fluid, oddly calming.</p>
       </div>
 
     </div>
