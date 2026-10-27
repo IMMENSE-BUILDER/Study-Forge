@@ -7,10 +7,11 @@
 
 **StudyForge** is an offline-first, installable PWA study companion: goals/tasks/notes, XP + streaks,
 weekly sprints, calendar, AI flashcards, voice notes (STT/TTS), an AI study buddy, and a live
-Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** (login page is a
-local bypass flag). All user data lives in the browser's `localStorage` on the device.
+Sec-E class timetable with a Today agenda layer. **No backend, no database, no auth** — opening the app
+requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
+in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.44** [build 104]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.45** [build 105]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -26,11 +27,11 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 |---|---|---|
 | Language | Vanilla JS + HTML5 + CSS3, no bundler | `script.js` ~5.9k lines, `styles.css` ~2.8k lines, single files |
 | Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
-| Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme`, `isLoggedIn`, `userEmail` |
+| Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme` |
 | Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
 | AI & Voice | Dual-Provider: Token Harbor (`https://tokenharbor.ai/v1`, ACTIVE for 20-day plan) + Vercel AI Gateway (`https://ai-gateway.vercel.sh/v1`, STANDBY for Day 20) + Deepgram nova-2 STT + aura TTS | Universal keys (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal; default fallbacks remain in `script.js` for Satyam's private repo. |
 | Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
-| CDN (progressive enhancement only) | Tailwind (login page), KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
+| CDN (progressive enhancement only) | KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
 | Phone link | `adb reverse tcp:3000 tcp:3000` + `http://localhost:3000` on device | Campus/home Wi-Fi blocks phone↔PC; USB is the reliable pipe |
 | Hosting | Vercel (`https://studyforged.vercel.app`) via GitHub (`IMMENSE-BUILDER/Study-Forge`) + Netlify Drop backup | 100 free deploys/day on Vercel; git push triggers automatic instant deploy |
@@ -49,7 +50,6 @@ Desktop/study-forge-pwa/     # edit here
 ├── sw.js                    # network-first worker; CACHE_NAME bumped every release
 ├── manifest.json            # StudyForge identity + icons[]
 ├── icons/                   # generated from logo.png (book+flame brand); app.png/logo.jpg are unused leftovers
-├── login.html               # Tailwind bypass login → sets isLoggedIn
 ├── serve-pwa.js             # dev-only static server (never deployed)
 ├── _redirects               # SPA fallback (keep)
 └── cordova.js / cordova_plugins.js  # 0-byte legacy stubs, harmless
@@ -167,7 +167,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Sep 2026, now v0.6.44):
+Recent major changes (Oct 2026, now v0.6.45):
+- v0.6.45 (Build 105):
+  - Login gate removed (hackathon demo demand): the fake `isLoggedIn` redirect blocked every fresh visitor on a Tailwind page whose only real control was "One-Click Login (Bypass)", next to dead Sign-up / Terms / Privacy links. `index.html` now opens straight to the timetable.
+  - `login.html` deleted from the app (kept in git history) and removed from `sw.js` ASSETS; `isLoggedIn` / `userEmail` keys retired; Tailwind is no longer used anywhere (loader-lab uses no Tailwind).
+  - Triple bump `v0.6.45` / `versionCode: 105` / `CACHE_NAME: study-forge-v0.6.45`.
 - v0.6.44 (Build 104):
   - Loader Lab: Domino Rally five pieces sized up (~28×82px) per user pick.
   - Triple bump `v0.6.44` / `versionCode: 104` / `CACHE_NAME: study-forge-v0.6.44`.
