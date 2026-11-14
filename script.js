@@ -2401,6 +2401,19 @@ function healDeadModel() {
     if (mi) mi.value = DEFAULT_VERCEL_MODEL;
   } catch (e) {}
   updateAIModelBadge();
+  // ── Vercel AI Gateway Key Button ──
+  const keyBtn = document.getElementById('aiKeyBtn');
+  if (keyBtn) {
+    keyBtn.addEventListener('click', () => {
+      const current = getVercelApiKey();
+      const val = prompt('Enter your Vercel AI Gateway Key (vck_...):\n(Generate one at https://vercel.com/~/ai-gateway/api-keys)', current);
+      if (val !== null && val.trim()) {
+        localStorage.setItem('sf_vercel_ai_key', val.trim());
+        localStorage.setItem('sf_ai_api_key', val.trim());
+        showToast('Vercel API Key saved! ⚡');
+      }
+    });
+  }
   showToast(`"${cur}" not found — reset to ${DEFAULT_VERCEL_MODEL} ⚡`);
   return true;
 }
@@ -4087,6 +4100,22 @@ function initAskAI() {
   }
   // Verified Master Cheatsheets from cheatsheet-layout skill (pre-leveled, high-density print assets)
   const MASTER_CHEATSHEETS = {
+    'pps-u1': {
+      subject: 'PPS',
+      title: 'Programming for Problem Solving (ICT-101) · Unit 1',
+      subtitle: 'ANSI C, Data Types, Precedence, Control Flow, Branching & Loops',
+      pdf: './cheatsheets/pps/work/csl_u1.pdf',
+      faculty: 'Ms. Alka · ADGIPS IT Sem-1',
+      badge: '🌟 22 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'
+    },
+    'pps-u2': {
+      subject: 'PPS',
+      title: 'Programming for Problem Solving (ICT-101) · Unit 2',
+      subtitle: 'Arrays, 1D/2D, Functions, Strings, Recursion, Sorting & Searching',
+      pdf: './cheatsheets/pps/work/csl_u2.pdf',
+      faculty: 'Ms. Alka · ADGIPS IT Sem-1',
+      badge: '🌟 20 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'
+    },
     'pps-u1-u2': {
       subject: 'PPS',
       title: 'Programming for Problem Solving (ICT-101) · Units 1 & 2',
@@ -4094,7 +4123,24 @@ function initAskAI() {
       pdf: './cheatsheets/pps/pps-cheatsheet.pdf',
       page1: './cheatsheets/pps/page1.png',
       page2: './cheatsheets/pps/page2.png',
-      faculty: 'Ms. Alka · ADGIPS IT Sem-1'
+      faculty: 'Ms. Alka · ADGIPS IT Sem-1',
+      badge: '🌟 42 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE'
+    },
+    'em-u1': {
+      subject: 'EM',
+      title: 'Engineering Mechanics (ICT-119) · Unit 1',
+      subtitle: 'Force Systems, Varignon, Couples, FBDs, 2D/3D Equilibrium & Lami Theorem',
+      pdf: './cheatsheets/em/work/csl_u1.pdf',
+      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1',
+      badge: '🌟 22 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'
+    },
+    'em-u2': {
+      subject: 'EM',
+      title: 'Engineering Mechanics (ICT-119) · Unit 2',
+      subtitle: 'Trusses, Method of Joints/Sections, Beams, SFD/BMD & Cables',
+      pdf: './cheatsheets/em/work/csl_u2.pdf',
+      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1',
+      badge: '🌟 20 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'
     },
     'em-u1-u2': {
       subject: 'EM',
@@ -4103,7 +4149,24 @@ function initAskAI() {
       pdf: './cheatsheets/em/em-cheatsheet.pdf',
       page1: './cheatsheets/em/page1.png',
       page2: './cheatsheets/em/page2.png',
-      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1'
+      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1',
+      badge: '🌟 42 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE'
+    },
+    'em-u3': {
+      subject: 'EM',
+      title: 'Engineering Mechanics (ICT-119) · Unit 3',
+      subtitle: 'Centroids, Pappus-Guldinus, Area & Mass MOI, Parallel Axis Theorem',
+      pdf: './cheatsheets/em34/work/csl_u1.pdf',
+      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1',
+      badge: '🌟 22 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'
+    },
+    'em-u4': {
+      subject: 'EM',
+      title: 'Engineering Mechanics (ICT-119) · Unit 4',
+      subtitle: 'Friction, Belt Friction, Wedges, Kinematics & Virtual Work',
+      pdf: './cheatsheets/em34/work/csl_u2.pdf',
+      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1',
+      badge: '🌟 20 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'
     },
     'em-u3-u4': {
       subject: 'EM',
@@ -4112,7 +4175,24 @@ function initAskAI() {
       pdf: './cheatsheets/em34/em34-cheatsheet.pdf',
       page1: './cheatsheets/em34/page1.png',
       page2: './cheatsheets/em34/page2.png',
-      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1'
+      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1',
+      badge: '🌟 42 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE'
+    },
+    'phy-u1': {
+      subject: 'PHL',
+      title: 'Engineering Physics–I (ICT-111T) · Unit 1',
+      subtitle: 'Coordinates, Vectors, Newton Laws, Frames of Reference, Constrained Motion',
+      pdf: './cheatsheets/phy/work/csl_u1.pdf',
+      faculty: 'Dr. M. Gupta · ADGIPS IT Sem-1',
+      badge: '🌟 23 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'
+    },
+    'phy-u2': {
+      subject: 'PHL',
+      title: 'Engineering Physics–I (ICT-111T) · Unit 2',
+      subtitle: 'Work-Energy, Momentum, Central Forces, Kepler Laws, Orbits & Collisions',
+      pdf: './cheatsheets/phy/work/csl_u2.pdf',
+      faculty: 'Dr. M. Gupta · ADGIPS IT Sem-1',
+      badge: '🌟 23 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'
     },
     'phy-u1-u2': {
       subject: 'PHL',
@@ -4121,7 +4201,8 @@ function initAskAI() {
       pdf: './cheatsheets/phy/phy-cheatsheet.pdf',
       page1: './cheatsheets/phy/page1.png',
       page2: './cheatsheets/phy/page2.png',
-      faculty: 'Dr. M. Gupta · ADGIPS IT Sem-1'
+      faculty: 'Dr. M. Gupta · ADGIPS IT Sem-1',
+      badge: '🌟 46 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE'
     }
   };
 
@@ -5487,49 +5568,6 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
     if (!alias) {
       showToast('Pick a subject and unit first.');
       return;
-
-    // Intercept Master Cheatsheet selection (instant verified dense layout & vector PDF)
-    if (unitVal.startsWith('master-')) {
-      const masterKey = unitVal.replace(/^master-/, '');
-      const data = MASTER_CHEATSHEETS[masterKey] || MASTER_CHEATSHEETS[unitVal];
-      if (data) {
-        const userLine = '🌟 Master Duplex Cheatsheet: ' + data.subject + ' · ' + data.title;
-        const userBubble = document.createElement('div');
-        userBubble.className = 'ai-msg user';
-        const userText = document.createElement('div');
-        userText.textContent = userLine;
-        userBubble.appendChild(userText);
-        chatArea.appendChild(userBubble);
-
-        const botMsg = document.createElement('div');
-        botMsg.className = 'ai-msg bot cheatsheet-msg';
-        chatArea.appendChild(botMsg);
-
-        const exportCard = buildSheetExportCard({
-          title: data.title,
-          subtitle: data.subtitle,
-          faculty: data.faculty,
-          badge: '🌟 46 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE',
-          pdfUrl: data.pdf,
-          filename: data.pdf.split('/').pop(),
-          isMaster: true
-        });
-        botMsg.appendChild(exportCard);
-        chatArea.scrollTop = chatArea.scrollHeight;
-        if (sheetStatus) {
-          sheetStatus.style.display = 'inline-flex';
-          sheetStatus.innerHTML = '<span>🌟 Loaded Verified Master Cheatsheet (' + escapeHtml(data.subject) + ')</span>';
-          setTimeout(() => { if (sheetStatus) sheetStatus.style.display = 'none'; }, 4000);
-        }
-        return;
-      }
-    }
-
-    }
-    const apiKey = getActiveAiApiKey();
-    if (!apiKey) {
-      showToast('AI Gateway is momentarily unavailable.');
-      return;
     }
 
     const isDuplex = unitVal.startsWith('duplex-');
@@ -5538,8 +5576,69 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       const parts = unitVal.replace('duplex-', '').split('-');
       uA = parseInt(parts[0], 10) || 0;
       uB = parseInt(parts[1], 10) || 1;
-    } else {
+    } else if (!unitVal.startsWith('master-')) {
       uA = parseInt(unitVal, 10) || 0;
+    }
+
+    // Resolve master key from dropdown value or subject + unit selection
+    let masterKey = null;
+    if (unitVal.startsWith('master-')) {
+      masterKey = unitVal.replace(/^master-/, '');
+    } else if (isDuplex) {
+      if (alias === 'PPS' && uA === 0 && uB === 1) masterKey = 'pps-u1-u2';
+      else if (alias === 'EM' && uA === 0 && uB === 1) masterKey = 'em-u1-u2';
+      else if (alias === 'EM' && uA === 2 && uB === 3) masterKey = 'em-u3-u4';
+      else if ((alias === 'PHL' || alias === 'PHY') && uA === 0 && uB === 1) masterKey = 'phy-u1-u2';
+    } else {
+      if (alias === 'PPS' && uA === 0) masterKey = 'pps-u1';
+      else if (alias === 'PPS' && uA === 1) masterKey = 'pps-u2';
+      else if (alias === 'EM' && uA === 0) masterKey = 'em-u1';
+      else if (alias === 'EM' && uA === 1) masterKey = 'em-u2';
+      else if (alias === 'EM' && uA === 2) masterKey = 'em-u3';
+      else if (alias === 'EM' && uA === 3) masterKey = 'em-u4';
+      else if ((alias === 'PHL' || alias === 'PHY') && uA === 0) masterKey = 'phy-u1';
+      else if ((alias === 'PHL' || alias === 'PHY') && uA === 1) masterKey = 'phy-u2';
+    }
+
+    // Instant Master Cheatsheet (pre-compiled verified vector PDF from cheatsheet-layout skill)
+    if (masterKey && MASTER_CHEATSHEETS[masterKey]) {
+      const data = MASTER_CHEATSHEETS[masterKey];
+      const isMasterDuplex = !!(data.pdf && data.pdf.includes('-cheatsheet.pdf'));
+      const userLine = (isMasterDuplex ? '🌟 Master Duplex Cheatsheet: ' : '🌟 Master Cheatsheet: ') + data.subject + ' · ' + data.title;
+      const userBubble = document.createElement('div');
+      userBubble.className = 'ai-msg user';
+      const userText = document.createElement('div');
+      userText.textContent = userLine;
+      userBubble.appendChild(userText);
+      chatArea.appendChild(userBubble);
+
+      const botMsg = document.createElement('div');
+      botMsg.className = 'ai-msg bot cheatsheet-msg';
+      chatArea.appendChild(botMsg);
+
+      const exportCard = buildSheetExportCard({
+        title: data.title,
+        subtitle: data.subtitle,
+        faculty: data.faculty,
+        badge: data.badge || (isMasterDuplex ? '🌟 46 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE' : '🌟 22 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'),
+        pdfUrl: data.pdf,
+        filename: data.pdf.split('/').pop(),
+        isMaster: true
+      });
+      botMsg.appendChild(exportCard);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      if (sheetStatus) {
+        sheetStatus.style.display = 'inline-flex';
+        sheetStatus.innerHTML = '<span>🌟 Loaded Verified Master Cheatsheet (' + escapeHtml(data.subject) + ')</span>';
+        setTimeout(() => { if (sheetStatus) sheetStatus.style.display = 'none'; }, 4000);
+      }
+      return;
+    }
+
+    const apiKey = getActiveAiApiKey();
+    if (!apiKey) {
+      showToast('AI Gateway is momentarily unavailable.');
+      return;
     }
 
     sheetBusy = true;

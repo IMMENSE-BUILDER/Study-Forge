@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.54** [build 114]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.55** [build 115]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -166,7 +166,14 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.54):
+Recent major changes (Nov 2026, now v0.6.55):
+- v0.6.55 (Build 115):
+  - Fixed 'Authentication failed. Check that your Vercel credential is valid' error:
+    - Root cause: Vercel AI Gateway key (DEFAULT_VERCEL_KEY) expired/invalidated (HTTP 401 on https://ai-gateway.vercel.sh/v1).
+    - Resolved single-unit fallback issue: Previously only duplex selections hit MASTER_CHEATSHEETS; selecting individual units (e.g. 'EM · Unit 1') fell through to live AI generation.
+    - Wired all 12 pre-compiled master vector PDFs (EM Units 1-4, PPS Units 1-2, PHY Units 1-2, and duplex variants) directly to instant Launch cards with 0ms latency and zero AI dependency.
+    - Added UI key management button (🔑) in Ask AI mode bar and interactive in-chat recovery button when 401 auth errors occur.
+  - Triple bump v0.6.55 / versionCode: 115 / CACHE_NAME: study-forge-v0.6.55.
 - v0.6.54 (Build 114):
   - Direct External Viewer & Hand-off Architecture for Cheatsheets:
     - User requested eliminating the hassle of rendering dense 297mm x 210mm A4 landscape DOM sheets inside the chat window.

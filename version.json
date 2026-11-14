@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 114,
-  "latest": "v0.6.54",
-  "notes": "Direct External Viewer & Hand-off Card for Cheatsheets: eliminated in-app DOM clutter and layout scaling issues by generating clean download & launch cards (Download Print-Ready Vector PDF/HTML, Open in External Viewer / Drive / Adobe, Direct Print A4 Duplex). Deeply embedded cheatsheet-layout skill rules (22-24 dense cards per unit, zero advice fluff, numerical results directly, formulas and tables). Added Physics (ICT-111T) Units 1 & 2 master vector cheatsheet (46 cards duplex).",
+  "versionCode": 115,
+  "latest": "v0.6.55",
+  "notes": "Single-Unit Master Cheatsheets & AI Gateway Auth Resilience: Added verified master vector PDF coverage for all individual units (EM Units 1-4, PPS Units 1-2, Physics Units 1-2) bypassing dead AI Gateway calls with instant 0ms hand-off. Added UI key configuration button (🔑) and in-chat 401 recovery prompt for Vercel AI Gateway credentials.",
   "apkUrl": ""
 }
