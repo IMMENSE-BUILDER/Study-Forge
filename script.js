@@ -4467,7 +4467,10 @@ function initAskAI() {
     badge.className = 'n';
     badge.textContent = String(cardIndex != null ? cardIndex : 1);
     h3.appendChild(badge);
-    h3.appendChild(document.createTextNode(b.title));
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'card-title-text';
+    titleSpan.textContent = ' ' + b.title;
+    h3.appendChild(titleSpan);
     card.appendChild(h3);
 
     if (b.desc) {
@@ -4654,7 +4657,7 @@ function initAskAI() {
     const palB = getUnitPaletteClass(uB);
 
     const root = document.createElement('div');
-    root.className = 'duplex-sheet';
+    root.className = 'cheatsheet-sheet duplex-sheet';
 
     const tabs = document.createElement('div');
     tabs.className = 'duplex-tabs';
@@ -4701,6 +4704,7 @@ function initAskAI() {
     function createHalfUnit(unitClass, title, subtitle, colCards1, colCards2) {
       const half = document.createElement('div');
       half.className = `half-unit ${unitClass}`;
+      half.setAttribute('data-unit', unitClass);
       const banner = document.createElement('div');
       banner.className = 'banner';
       const bTitle = document.createElement('div');

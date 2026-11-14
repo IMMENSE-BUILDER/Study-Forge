@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":110,"latest":"v0.6.50","notes":"Integrated master cheatsheet-layout skill: authentic 4-column balanced A4 landscape grid, 2-page duplex blueprint (Unit 1 & 2 reversed back-to-back), greedy+2-opt bin packing, and print-ready zero-margin PDF export."}
+{"apkUrl":"","app":"StudyForged","versionCode":111,"latest":"v0.6.51","notes":"Fixed CSS selector scoping in cheatsheet engine: restored full card borders, unit-colored accent ribbons, header gradient banners, badge pill styling, and 2-column duplex alignment."}

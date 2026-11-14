@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.50** [build 110]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.51** [build 111]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -165,6 +165,16 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 ```
 
 ## 7. Current Status / Important Notes
+
+Recent major changes (Nov 2026, now v0.6.51):
+- v0.6.51 (Build 111):
+  - Fixed CSS selector scoping causing unstyled cards, missing borders, and broken duplex column grids:
+    - Root cause: CSS rules were strictly prefixed with `.cheatsheet-sheet [selector]`, failing to match `.duplex-sheet`, `.duplex-page`, and `.half-unit` containers.
+    - Expanded all component selectors to universally match `.cheatsheet-sheet`, `.duplex-sheet`, `.duplex-page`, `.half-unit`, and direct class names (`.card`, `.banner`, `.cols`, `.col`, `.n`, `.eq`, `.ex`, `.flow`, `.chip`, `.arr`, `table`, `th`, `td`).
+    - Added `data-unit` and explicit `.cheatsheet-sheet` classes to duplex containers so CSS palette variables (`--ac`, `--ac2`, `--soft`, `--line`, `--hd`, `--g1`, `--g2`) propagate reliably across both Unit 1 and Unit 2 halves.
+    - Enforced `.card-title-text` separation inside `<h3>` to prevent card badge numbers from ever concatenating into topic titles (e.g. `6` and `1D & 2D ARRAYS` merging into `61D & 2D ARRAYS`).
+    - Set explicit card borders (`0.5pt solid var(--line)` + `2.5pt solid var(--ac2)` left ribbon) and soft card background (`var(--soft)`).
+  - Triple bump v0.6.51 / versionCode: 111 / CACHE_NAME: study-forge-v0.6.51.
 
 Recent major changes (Nov 2026, now v0.6.50):
 - v0.6.50 (Build 110):
