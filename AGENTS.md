@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.52** [build 112]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.53** [build 113]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -166,7 +166,16 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.52):
+Recent major changes (Nov 2026, now v0.6.53):
+- v0.6.53 (Build 113):
+  - Fixed 'Cheatsheet came back garbled — try again' error in live cheatsheet generation:
+    - Root cause: AI models (especially large JSON outputs with 20+ cards) occasionally generate minor syntax defects such as double closing braces (`}}` before `,`) or trailing commas, causing standard `JSON.parse()` to reject the entire 9KB payload despite all cards being complete.
+    - Implemented a 3-tier resilient JSON parsing engine in `sheetParseDoc()`:
+      1. Tier 1: Direct `JSON.parse()` fast path.
+      2. Tier 2: LLM syntax repair using targeted regex to normalize double braces (`}}` -> `}`) and strip trailing commas before array/object brackets.
+      3. Tier 3: Resilient element-by-element array scanner that brace-matches and parses each box object independently so no individual formatting slip can fail the cheatsheet.
+    - Successfully verified live parsing of 29 dense topic cards across all layouts (table, code, flow, compare, values).
+  - Triple bump v0.6.53 / versionCode: 113 / CACHE_NAME: study-forge-v0.6.53.
 - v0.6.52 (Build 112):
   - Integrated Verified Master Duplex Cheatsheets directly from the cheatsheet-layout skill (pre-leveled, verified 200+ DPI print assets):
     - Added instant-load master cheatsheets for core subjects:

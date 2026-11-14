@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 112,
-  "latest": "v0.6.52",
-  "notes": "Integrated Verified Master Duplex Cheatsheets (PPS, EM, EM34, PHY) from cheatsheet-layout skill with 200+ DPI duplex previews, interactive 100%-350% fullscreen zoom modal, and direct print-ready vector PDF downloads. Upgraded live AI generator to 18-22 dense boxes with max 30 parser capacity.",
+  "versionCode": 113,
+  "latest": "v0.6.53",
+  "notes": "Fixed cheatsheet JSON parser resilience: resolved 'Cheatsheet came back garbled' error caused by minor LLM syntax glitches (e.g. double closing braces or trailing commas). Added 3-tier parsing with regex syntax sanitizer and element-by-element array fallback.",
   "apkUrl": ""
 }

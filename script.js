@@ -4590,44 +4590,91 @@ function initAskAI() {
     return t;
   }
   function sheetParseDoc(raw) {
-    let cleaned = String(raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    let cleaned = String(raw || '').trim().replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`$/i, '').trim();
     const fb = cleaned.indexOf('{');
     const lb = cleaned.lastIndexOf('}');
     if (fb !== -1 && lb !== -1 && lb > fb) cleaned = cleaned.substring(fb, lb + 1);
+
     let doc = null;
-    try { doc = JSON.parse(cleaned); }
-    catch (e1) {
-      const m = e1.message && e1.message.match(/position (\d+)/i);
-      if (m) {
-        try { doc = JSON.parse(cleaned.slice(0, parseInt(m[1], 10)).trim()); } catch (eSub) {}
-      }
-      if (!doc) {
-        let depth = 0, inStr = false, esc = false, endIdx = -1;
-        for (let i = 0; i < cleaned.length; i++) {
-          const c = cleaned[i];
-          if (inStr) {
-            if (esc) esc = false;
-            else if (c === '\\') esc = true;
-            else if (c === '"') inStr = false;
-          } else {
-            if (c === '"') inStr = true;
-            else if (c === '{') depth++;
-            else if (c === '}') {
-              depth--;
-              if (depth === 0) { endIdx = i; break; }
-            }
-          }
-        }
-        if (endIdx !== -1) {
-          try { doc = JSON.parse(cleaned.slice(0, endIdx + 1)); } catch (eBal) {}
-        }
-      }
-      if (!doc) {
-        try { doc = JSON.parse(sheetBalance(cleaned)); }
-        catch (e2) { doc = null; }
+
+    // Tier 1: Direct JSON parse
+    try {
+      doc = JSON.parse(cleaned);
+    } catch (e1) {
+      // Tier 2: LLM syntax repair for trailing commas, unescaped double closing braces (}} before , { or ])
+      try {
+        const sanitized = cleaned
+          .replace(/,\s*([\]}])/g, '$1')
+          .replace(/\}\}\s*(?=,\s*\{)/g, '}')
+          .replace(/\}\}\s*\]/g, '}]');
+        doc = JSON.parse(sanitized);
+      } catch (e2) {
+        doc = null;
       }
     }
-    if (!doc || typeof doc !== 'object') return null;
+
+    // Tier 3: Element-by-element array extraction fallback
+    if (!doc || typeof doc !== 'object' || !Array.isArray(doc.boxes || doc)) {
+      const titleMatch = cleaned.match(/"title"\s*:\s*"([^"]+)"/);
+      const title = titleMatch ? sheetClip(titleMatch[1], 90) : 'UNIT CHEATSHEET';
+
+      const boxesIdx = cleaned.indexOf('"boxes"');
+      const searchStr = boxesIdx !== -1 ? cleaned.slice(boxesIdx) : cleaned;
+      const arrStart = searchStr.indexOf('[');
+
+      const validBoxes = [];
+      if (arrStart !== -1) {
+        let i = arrStart + 1;
+        while (i < searchStr.length) {
+          const start = searchStr.indexOf('{', i);
+          if (start === -1) break;
+
+          let depth = 0, inStr = false, esc = false, end = -1;
+          for (let j = start; j < searchStr.length; j++) {
+            const c = searchStr[j];
+            if (inStr) {
+              if (esc) esc = false;
+              else if (c === '\\') esc = true;
+              else if (c === '"') inStr = false;
+            } else {
+              if (c === '"') inStr = true;
+              else if (c === '{') depth++;
+              else if (c === '}') {
+                depth--;
+                if (depth === 0) { end = j; break; }
+              }
+            }
+          }
+
+          if (end !== -1) {
+            let chunk = searchStr.slice(start, end + 1).replace(/,\s*([\]}])/g, '$1');
+            let box = null;
+            try { box = JSON.parse(chunk); }
+            catch (eChunk) {
+              if (chunk.endsWith('}}')) {
+                try { box = JSON.parse(chunk.slice(0, -1)); } catch (eRetry) {}
+              }
+            }
+            if (box) {
+              try {
+                const norm = normalizeSheetBox(box);
+                if (norm) validBoxes.push(norm);
+              } catch (eNorm) {}
+            }
+            if (validBoxes.length >= 30) break;
+            i = end + 1;
+          } else {
+            break;
+          }
+        }
+      }
+
+      if (validBoxes.length >= 3) {
+        return { title, boxes: validBoxes };
+      }
+      return null;
+    }
+
     const boxes = Array.isArray(doc) ? doc : doc.boxes;
     if (!Array.isArray(boxes)) return null;
     const title = sheetClip(doc.title || '', 90);
