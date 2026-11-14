@@ -5,7 +5,7 @@
 
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=flat&logo=vercel)](https://vercel.com)
 [![PWA](https://img.shields.io/badge/PWA-Installable-blue?style=flat&logo=pwa)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
-[![Version](https://img.shields.io/badge/Release-v48-emerald?style=flat)]()
+[![Version](https://img.shields.io/badge/Release-v0.6.46-emerald?style=flat)]()
 
 ---
 
@@ -26,7 +26,7 @@
 - **Frontend**: Vanilla JavaScript (ES6+), HTML5, Neo-Brutalist CSS3.
 - **Math & Markdown**: KaTeX math rendering, native SVG diagram parsing.
 - **PWA**: Service Worker (`sw.js`) with network-first offline strategy and Web App Manifest.
-- **AI Integration**: Token Harbor Unified Gateway with streaming Server-Sent Events (SSE).
+- **AI Integration**: Vercel AI Gateway with streaming Server-Sent Events (SSE) (default model: `meta/muse-ember`).
 - **Deployment**: Vercel (`vercel.json`) with SPA fallback routing and proxy rewrites.
 
 ---

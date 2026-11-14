@@ -8,10 +8,8 @@
   <link rel="icon" href="logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preconnect" href="https://tokenharbor.ai" />
   <link rel="preconnect" href="https://ai-gateway.vercel.sh" />
   <link rel="preconnect" href="https://api.deepgram.com" />
-  <link rel="dns-prefetch" href="https://tokenharbor.ai" />
   <link rel="dns-prefetch" href="https://ai-gateway.vercel.sh" />
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
@@ -166,12 +164,12 @@
       <button type="button" class="ai-mode-btn active" id="aiModeChatBtn" role="tab" aria-selected="true">💬 Chat</button>
       <button type="button" class="ai-mode-btn" id="aiModeSheetBtn" role="tab" aria-selected="false">📄 Cheatsheet</button>
       <select id="aiModelSelect" class="ai-model-select" title="AI model — applies app-wide (chat, flashcards, quiz, sheets)">
-        <option value="glm-5.3-flash">glm-5.3-flash</option>
-        <option value="gemini-3.8-flash">gemini-3.8-flash</option>
-        <option value="qwen3.8-flash">qwen3.8-flash</option>
-        <option value="gpt-6-luna-fast">gpt-6-luna-fast</option>
-        <option value="gpt-6-luna">gpt-6-luna</option>
-        <option value="deepseek-v4.1-flash">deepseek-v4.1-flash</option>
+        <option value="meta/muse-ember" selected>meta/muse-ember</option>
+        <option value="meta/llama-3.3-70b-instruct">meta/llama-3.3-70b-instruct</option>
+        <option value="google/gemini-2.0-flash">google/gemini-2.0-flash</option>
+        <option value="openai/gpt-4o-mini">openai/gpt-4o-mini</option>
+        <option value="anthropic/claude-3-5-sonnet">anthropic/claude-3-5-sonnet</option>
+        <option value="deepseek/deepseek-chat">deepseek/deepseek-chat</option>
       </select>
     </div>
     <div class="ai-sheet-bar" id="aiSheetBar" style="display:none;">
@@ -917,57 +915,19 @@
   <dialog id="tokenharborKeyDialog" class="dialog">
     <form class="dialog-card" id="tokenharborKeyForm" novalidate>
       <h3>AI Settings</h3>
-      <p style="font-size: 13px; opacity: 0.8; margin: 4px 0 12px;">Unified multi-model API configuration &amp; credentials.</p>
+      <p style="font-size: 13px; opacity: 0.8; margin: 4px 0 12px;">Vercel AI Gateway configuration &amp; credentials.</p>
       
-      <label>
-        AI Gateway Provider
-        <select id="aiProviderSelect" style="margin-top: 4px; font-weight: 700; width: 100%;">
-          <option value="tokenharbor" selected>Token Harbor (Active Default — 20-Day Plan)</option>
-          <option value="vercel">Vercel AI Gateway (Standby — Ready for Day 20)</option>
-        </select>
-      </label>
-      
-      <!-- Token Harbor Settings Block (Active) -->
-      <div id="tokenharborSettingsBlock" style="display: grid; gap: 10px;">
-        <label>
-          Token Harbor Model ID
-          <input id="tokenharborModelInput" list="tokenharborModelList" placeholder="glm-5.3-flash" autocomplete="off" />
-          <datalist id="tokenharborModelList">
-            <option value="glm-5.3-flash">GLM 5.3 Flash (Active Default — Fast & Multimodal Vision)</option>
-            <option value="deepseek-v4.1-flash">DeepSeek V4.1 Flash (Deep Reasoning)</option>
-            <option value="qwen3.8-flash">Qwen 3.8 Flash (Value Vision)</option>
-            <option value="gpt-6-luna-fast">GPT-6 Luna Fast (Speed)</option>
-            <option value="gpt-6-luna">GPT-6 Luna (Flagship)</option>
-            <option value="mimo-v2.5">MiMo V2.5 (Xiaomi 1M Context — ⚡ Blazing Fast ~1s)</option>
-            <option value="deepseek-v4-flash:free">DeepSeek V4 Flash (Free Tier)</option>
-            <option value="mimo-v2.5:free">MiMo V2.5 (Free Tier — Fast ~3s)</option>
-            <option value="deepseek-v4-flash">DeepSeek V4 Flash (Alibaba Cloud)</option>
-            <option value="th-orchestra">TH Orchestra (Smart Auto-Router)</option>
-            <option value="claude-opus-5">Claude Opus 5 (Frontier)</option>
-            <option value="claude-fable-5.1">Claude Fable 5.1 (Frontier)</option>
-            <option value="gpt-6-astra">GPT-6 Astra (Frontier)</option>
-            <option value="gemini-3.8-flash">Gemini 3.8 Flash (Multimodal)</option>
-          </datalist>
-        </label>
-        
-        <label>
-          AI Gateway Key (Token Harbor)
-          <input id="tokenharborKeyInput" type="password" placeholder="thk_live_..." autocomplete="off" />
-        </label>
-      </div>
-
-      <!-- Vercel AI Gateway Settings Block (Standby) -->
-      <div id="vercelSettingsBlock" style="display: none; gap: 10px;">
+      <div id="vercelSettingsBlock" style="display: grid; gap: 10px;">
         <label>
           Vercel AI Model ID
-          <input id="vercelModelInput" list="vercelModelList" placeholder="google/gemini-2.0-flash" autocomplete="off" />
+          <input id="vercelModelInput" list="vercelModelList" placeholder="meta/muse-ember" autocomplete="off" />
           <datalist id="vercelModelList">
-            <option value="google/gemini-2.0-flash">Google Gemini 2.0 Flash (Recommended — ⚡ Fast & Multimodal)</option>
-            <option value="openai/gpt-4o-mini">OpenAI GPT-4o Mini (Fast & Cost-Efficient)</option>
-            <option value="anthropic/claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet (Frontier STEM)</option>
-            <option value="anthropic/claude-3-5-haiku">Anthropic Claude 3.5 Haiku (Lightning Fast)</option>
-            <option value="deepseek/deepseek-chat">DeepSeek V3 (Deep Reasoning)</option>
+            <option value="meta/muse-ember">Meta Muse Ember (Active Default — ⚡ Fast STEM & Vision)</option>
             <option value="meta/llama-3.3-70b-instruct">Meta Llama 3.3 70B Instruct</option>
+            <option value="google/gemini-2.0-flash">Google Gemini 2.0 Flash (Multimodal)</option>
+            <option value="openai/gpt-4o-mini">OpenAI GPT-4o Mini (Cost-Efficient)</option>
+            <option value="anthropic/claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet (Frontier STEM)</option>
+            <option value="deepseek/deepseek-chat">DeepSeek V3 (Deep Reasoning)</option>
           </datalist>
         </label>
         
@@ -982,7 +942,7 @@
         <input id="deepgramKeyInput" type="password" placeholder="Deepgram key for Voice STT/TTS..." autocomplete="off" />
       </label>
       <p style="font-size: 11.5px; opacity: 0.75; margin: 4px 0 14px; line-height: 1.4;">
-        Get keys at <a href="https://tokenharbor.ai/dashboard/api-keys" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">tokenharbor.ai</a>, <a href="https://vercel.com" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">vercel.com</a>, and <a href="https://console.deepgram.com" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">deepgram.com</a>. All credentials are saved strictly in your local device storage (<code>localStorage</code>) and are never committed or uploaded.
+        Get keys at <a href="https://vercel.com" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">vercel.com</a> and <a href="https://console.deepgram.com" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: underline;">deepgram.com</a>. All credentials are saved strictly in your local device storage (<code>localStorage</code>) and are never committed or uploaded.
       </p>
       <div class="dialog-actions">
         <button type="button" class="ghost" data-close>Cancel</button>

@@ -24,8 +24,8 @@ const MIME = {
 const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 16, keepAliveMsecs: 60000 });
 
 const server = http.createServer((req, res) => {
-  // Handle Token Harbor API reverse proxy to bypass browser CORS with high speed
-  if (req.url && req.url.startsWith("/th-api/")) {
+  // Handle Vercel AI Gateway API reverse proxy to bypass browser CORS with high speed
+  if (req.url && req.url.startsWith("/api/ai/")) {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
@@ -35,9 +35,9 @@ const server = http.createServer((req, res) => {
       res.writeHead(204, corsHeaders);
       return res.end();
     }
-    const targetPath = req.url.replace(/^\/th-api/, "");
+    const targetPath = req.url.replace(/^\/api\/ai/, "/v1");
     const proxyHeaders = { ...req.headers };
-    proxyHeaders.host = "tokenharbor.ai";
+    proxyHeaders.host = "ai-gateway.vercel.sh";
     delete proxyHeaders.referer;
     delete proxyHeaders.origin;
     proxyHeaders["accept-encoding"] = "identity";
@@ -59,7 +59,7 @@ const server = http.createServer((req, res) => {
 
       const proxyReq = https.request(
         {
-          hostname: "tokenharbor.ai",
+          hostname: "ai-gateway.vercel.sh",
           port: 443,
           path: targetPath,
           method: req.method,
@@ -89,7 +89,7 @@ const server = http.createServer((req, res) => {
       );
 
       proxyReq.on("error", (err) => {
-        console.error("Token Harbor proxy error:", err.message);
+        console.error("Vercel AI Gateway proxy error:", err.message);
         res.writeHead(502, { ...corsHeaders, "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: { message: "Proxy error: " + err.message } }));
       });

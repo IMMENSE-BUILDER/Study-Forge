@@ -4,10 +4,6 @@
     {
       "source": "/api/ai/:path*",
       "destination": "https://ai-gateway.vercel.sh/v1/:path*"
-    },
-    {
-      "source": "/th-api/:path*",
-      "destination": "https://tokenharbor.ai/:path*"
     }
   ]
 }

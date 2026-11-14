@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":105,"latest":"v0.6.45","notes":"Login gate removed: the app now opens straight to the timetable. Fake 'One-Click Login (Bypass)' page deleted from the app and the offline cache."}
+{"apkUrl":"","app":"StudyForged","versionCode":106,"latest":"v0.6.46","notes":"Removed Token Harbor integration and migrated app-wide to Vercel AI Gateway with meta/muse-ember default model."}

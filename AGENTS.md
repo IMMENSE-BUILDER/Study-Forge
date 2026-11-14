@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.45** [build 105]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.46** [build 106]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -29,7 +29,7 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 | Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
 | Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme` |
 | Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
-| AI & Voice | Dual-Provider: Token Harbor (`https://tokenharbor.ai/v1`, ACTIVE for 20-day plan) + Vercel AI Gateway (`https://ai-gateway.vercel.sh/v1`, STANDBY for Day 20) + Deepgram nova-2 STT + aura TTS | Universal keys (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal; default fallbacks remain in `script.js` for Satyam's private repo. |
+| AI & Voice | Vercel AI Gateway (`https://ai-gateway.vercel.sh/v1`, ACTIVE) with default model `meta/muse-ember` + Deepgram nova-2 STT + aura TTS | Universal keys (`sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal; default fallbacks remain in `script.js` for Satyam's private repo. |
 | Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
 | CDN (progressive enhancement only) | KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
@@ -77,11 +77,10 @@ Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state 
   Timetable aliases resolve via `ttResolve`/`ttInfo`; labs never show Room 2310 (lab halls differ).
 - **Today engine is the hub.** `getTodayAgenda(state, now)` (pure, injectable date — always unit-test it)
   feeds greeting, today's subjects, focus-task matching (goal title prefix `ALIAS · …`), sprint-staleness.
-- **AI Layer (Dual-Provider Architecture — Token Harbor Active & Vercel AI Gateway Standby):**
-  - **Active Provider (MANDATORY for 20-Day Plan):** Token Harbor with default model `glm-5.3-flash`. Satyam has an active paid plan running for 20 more days (until ~Oct 10, 2026). All chat completions, vision OCR, and flashcard generations MUST default to Token Harbor to fully utilize this plan without wasting tokens.
-  - **Standby Provider (Vercel AI Gateway):** Fully plumbed and integrated via `vercel.json` edge rewrites (`/api/ai/:path*` ➔ `https://ai-gateway.vercel.sh/v1/:path*`). Zero-code activation on Day 20 via the in-app 🔑 Settings modal (`#aiProviderSelect`). Supports `google/gemini-2.0-flash`, `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet`, `deepseek/deepseek-chat`.
-  - **Same-Origin Reverse Proxy:** Routes `/th-api/v1/chat/completions` and `/api/ai/chat/completions` via `vercel.json` to bypass browser CORS blocks natively.
-  - **API Credentials & Private Repo Policy:** Universal keys (`sf_tokenharbor_api_key`, `sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal (priority 1). Satyam confirmed the GitHub repository is kept strictly PRIVATE, so default keys in `script.js` remain intact as convenience fallbacks. Never sanitize or wipe keys without explicit user request.
+- **AI Layer (Vercel AI Gateway Engine · meta/muse-ember Active):**
+  - **Active Provider:** Vercel AI Gateway with default model `meta/muse-ember`.
+  - **Same-Origin Reverse Proxy:** Routes `/api/ai/chat/completions` via `serve-pwa.js` locally and `vercel.json` in production to `https://ai-gateway.vercel.sh/v1/chat/completions`, eliminating browser CORS issues natively.
+  - **API Credentials:** Universal keys (`sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal.
   - **Academic Grounding:** `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Always maintains "StudyForged" tutor identity.
 - **Hold-to-select, not native selection.** Global `user-select:none`; 2s press-and-hold (`HOLD_SELECT_MS`)
   unlocks + auto-selects; inputs stay native. A post-hold click is consumed so holds never trigger tap actions.
@@ -116,7 +115,7 @@ Things to NEVER do:
 - Never paste API keys into chat/outputs; never commit new secrets; flag key rotation before any public share.
 - Never present 2025-scheme syllabus content as current — user gathers official 2026 syllabi first (syllabus viewer was removed for exactly this; restore only on their data).
 - Never invent timetable/faculty/subject facts — Sec-E PDF + photo legend are ground truth; mark anything uncertain.
-- NEVER switch default AI provider away from Token Harbor (`glm-5.3-flash`) until the 20-day plan expires (~Oct 10, 2026). Vercel AI Gateway is in standby mode.
+- Active AI provider is Vercel AI Gateway (`meta/muse-ember`). Token Harbor integration has been retired.
 - Never remove or wipe fallback API keys from `script.js` without explicit user instruction — the repository is strictly private and the user relies on default fallbacks alongside `localStorage`.
 
 Project constraints:
@@ -166,6 +165,14 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 ```
 
 ## 7. Current Status / Important Notes
+
+Recent major changes (Nov 2026, now v0.6.46):
+- v0.6.46 (Build 106):
+  - Retired Token Harbor integration completely; migrated whole-app AI integration to Vercel AI Gateway (https://ai-gateway.vercel.sh/v1).
+  - Active default model set to meta/muse-ember across Ask AI, AI Visual Flashcards, AI Quiz Arena, and Cheatsheets.
+  - Reverse proxy in serve-pwa.js updated to forward /api/ai/* to https://ai-gateway.vercel.sh/v1/* with warm keep-alive socket connection pooling and CORS bypass.
+  - Production edge routing in vercel.json and _redirects updated to route /api/ai/*.
+  - Triple bump v0.6.46 / versionCode: 106 / CACHE_NAME: study-forge-v0.6.46.
 
 Recent major changes (Oct 2026, now v0.6.45):
 - v0.6.45 (Build 105):

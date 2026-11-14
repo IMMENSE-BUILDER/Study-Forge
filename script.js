@@ -2325,50 +2325,18 @@ function initBottomNav() {
   localStorage.setItem('activeTab', 'timetable');
 }
 
-// ─── Dual-Provider AI Gateway Architecture ───
-// Providers: 'tokenharbor' (ACTIVE DEFAULT - 20-Day Plan) | 'vercel' (STANDBY - Next-Gen Gateway)
-const DEFAULT_AI_PROVIDER = 'tokenharbor';
+// ─── AI Gateway Architecture (Vercel AI Gateway) ───
+const DEFAULT_AI_PROVIDER = 'vercel';
 
 function getActiveAiProvider() {
-  return localStorage.getItem('sf_ai_provider') || DEFAULT_AI_PROVIDER;
+  return 'vercel';
 }
 
 function setActiveAiProvider(provider) {
-  if (provider === 'vercel' || provider === 'tokenharbor') {
-    localStorage.setItem('sf_ai_provider', provider);
-  } else {
-    localStorage.removeItem('sf_ai_provider');
-  }
+  localStorage.setItem('sf_ai_provider', 'vercel');
 }
 
-// ── 1. Token Harbor Unified Gateway (Active Engine · GLM 5.3 Flash) ──
-function getTokenHarborApiUrl() {
-  if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
-    return '/th-api/v1/chat/completions';
-  }
-  return 'https://tokenharbor.ai/v1/chat/completions';
-}
-const TOKENHARBOR_API_URL = getTokenHarborApiUrl();
-const DEFAULT_TOKENHARBOR_MODEL = 'glm-5.3-flash';
-const DEFAULT_TOKENHARBOR_KEY = 'thk_live_0MzAXxjcM_nhh5XgNbkbP12LnBJoSGjhtDgT381vd4KTTo43Sl1nB-0IqWfRwidS';
-
-function getTokenHarborApiKey() {
-  return localStorage.getItem('sf_tokenharbor_api_key') ||
-         localStorage.getItem('sf_ai_api_key') ||
-         DEFAULT_TOKENHARBOR_KEY ||
-         '';
-}
-
-function getTokenHarborModel() {
-  const stored = localStorage.getItem('sf_tokenharbor_model');
-  // v0.6.31: deepseek-v4.1-flash is user-selectable now — no longer force-migrated.
-  if (!stored || stored === 'deepseek-v4-flash' || stored === 'deepseek-v4.1-flash:free' || stored === 'deepseek-v4-flash:free' || stored === 'mimo-v2.5' || stored === 'mimo-v2.5:free' || stored === 'glm-5.3') {
-    return DEFAULT_TOKENHARBOR_MODEL;
-  }
-  return stored;
-}
-
-// ── 2. Vercel AI Gateway (Standby Engine · Day 20 Migration) ──
+// ── Vercel AI Gateway (Active Engine · meta/muse-ember) ──
 function getVercelApiUrl() {
   if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
     return '/api/ai/chat/completions';
@@ -2376,88 +2344,90 @@ function getVercelApiUrl() {
   return 'https://ai-gateway.vercel.sh/v1/chat/completions';
 }
 const VERCEL_API_URL = getVercelApiUrl();
-const DEFAULT_VERCEL_MODEL = 'google/gemini-2.0-flash';
+const DEFAULT_VERCEL_MODEL = 'meta/muse-ember';
 
 function getVercelApiKey() {
-  return localStorage.getItem('sf_vercel_ai_key') || '';
+  return localStorage.getItem('sf_vercel_ai_key') ||
+         localStorage.getItem('sf_ai_api_key') ||
+         '';
 }
 
 function getVercelModel() {
-  return localStorage.getItem('sf_vercel_ai_model') || DEFAULT_VERCEL_MODEL;
+  const stored = localStorage.getItem('sf_vercel_ai_model') || localStorage.getItem('sf_ai_model');
+  // Auto-migrate old Token Harbor models to meta/muse-ember
+  if (!stored || stored === 'glm-5.3-flash' || stored.startsWith('deepseek-') || stored.startsWith('mimo-') || stored.startsWith('qwen') || stored.startsWith('gpt-6')) {
+    return DEFAULT_VERCEL_MODEL;
+  }
+  return stored;
 }
 
 // ── Unified Active Provider Resolvers ──
 function getActiveAiApiUrl() {
-  return getActiveAiProvider() === 'vercel' ? VERCEL_API_URL : TOKENHARBOR_API_URL;
+  return VERCEL_API_URL;
 }
 
 function getActiveAiApiKey() {
-  return getActiveAiProvider() === 'vercel' ? getVercelApiKey() : getTokenHarborApiKey();
+  return getVercelApiKey();
 }
 
 function getActiveAiModel() {
-  return getActiveAiProvider() === 'vercel' ? getVercelModel() : getTokenHarborModel();
+  return getVercelModel();
 }
 
 function getActiveAiApiFallbackUrl() {
-  if (getActiveAiProvider() === 'vercel') {
-    return VERCEL_API_URL.startsWith('/api/ai')
-      ? 'https://ai-gateway.vercel.sh/v1/chat/completions'
-      : '/api/ai/chat/completions';
-  }
-  return TOKENHARBOR_API_URL.startsWith('/th-api')
-    ? 'https://tokenharbor.ai/v1/chat/completions'
-    : '/th-api/v1/chat/completions';
+  return VERCEL_API_URL.startsWith('/api/ai')
+    ? 'https://ai-gateway.vercel.sh/v1/chat/completions'
+    : '/api/ai/chat/completions';
 }
 
-// v0.6.32: dead/plan-gated model IDs fail in every tool at once — detect, tell, heal to default.
+// Dead/plan-gated model IDs fail in every tool at once — detect, tell, heal to default.
 function isModelMissingError(msg) {
   const m = String(msg || '').toLowerCase();
   return /model[^.]{0,60}(not found|does not exist|doesn.?t exist|invalid|unsupported|unknown|no such)/i.test(m) || /(^|[^0-9])404([^0-9]|$)/.test(m);
 }
 function healDeadModel() {
-  if (getActiveAiProvider() === 'vercel') return false;
-  const cur = getTokenHarborModel();
-  if (cur === DEFAULT_TOKENHARBOR_MODEL) return false;
-  try { localStorage.setItem('sf_tokenharbor_model', DEFAULT_TOKENHARBOR_MODEL); } catch (e) {}
+  const cur = getActiveAiModel();
+  if (cur === DEFAULT_VERCEL_MODEL) return false;
+  try {
+    localStorage.setItem('sf_vercel_ai_model', DEFAULT_VERCEL_MODEL);
+    localStorage.setItem('sf_ai_model', DEFAULT_VERCEL_MODEL);
+  } catch (e) {}
   try {
     const sel = document.getElementById('aiModelSelect');
-    if (sel) sel.value = DEFAULT_TOKENHARBOR_MODEL;
-    const mi = document.getElementById('tokenharborModelInput');
-    if (mi) mi.value = DEFAULT_TOKENHARBOR_MODEL;
+    if (sel) sel.value = DEFAULT_VERCEL_MODEL;
+    const mi = document.getElementById('vercelModelInput');
+    if (mi) mi.value = DEFAULT_VERCEL_MODEL;
   } catch (e) {}
   updateAIModelBadge();
-  showToast(`"${cur}" isn't serving on your plan — back on ${DEFAULT_TOKENHARBOR_MODEL} ⚡`);
+  showToast(`"${cur}" not found — reset to ${DEFAULT_VERCEL_MODEL} ⚡`);
   return true;
 }
 
 // Backward-compatibility aliases
 const getOpenRouterApiKey = getActiveAiApiKey;
 const getOpenRouterModel = getActiveAiModel;
-const OPENROUTER_API_URL = TOKENHARBOR_API_URL;
+const OPENROUTER_API_URL = VERCEL_API_URL;
 
 function updateAIModelBadge() {
   const badge = document.getElementById('aiModelBadge');
   if (badge) {
-    const provider = getActiveAiProvider();
     const model = getActiveAiModel();
     let label = model;
-    if (label.startsWith('tokenharbor/')) label = label.replace('tokenharbor/', '');
+    if (label.startsWith('meta/')) label = label.replace('meta/', '');
     if (label.startsWith('google/')) label = label.replace('google/', '');
     if (label.startsWith('openai/')) label = label.replace('openai/', '');
     if (label.startsWith('anthropic/')) label = label.replace('anthropic/', '');
+    if (label.startsWith('deepseek/')) label = label.replace('deepseek/', '');
     label = label.replace(':free', ' (FREE)');
     badge.textContent = label.toUpperCase();
-    const providerLabel = provider === 'vercel' ? 'Vercel AI' : 'Token Harbor';
-    badge.title = `${providerLabel} Model: ${model}`;
+    badge.title = `Vercel AI Gateway: ${model}`;
   }
-  // v0.6.31: keep the global model dropdown in sync (init + settings save flow through here).
   try {
     const sel = document.getElementById('aiModelSelect');
     if (sel) {
-      const thModel = getTokenHarborModel();
-      const has = Array.prototype.some.call(sel.options, (o) => o.value === thModel);
-      sel.value = has ? thModel : 'glm-5.3-flash';
+      const curModel = getActiveAiModel();
+      const has = Array.prototype.some.call(sel.options, (o) => o.value === curModel);
+      sel.value = has ? curModel : 'meta/muse-ember';
     }
   } catch (e) {}
 }
@@ -2691,44 +2661,18 @@ function initAskAI() {
   const thinkToggle = document.getElementById('aiThinkToggle');
   if (thinkToggle) thinkToggle.style.display = 'none';
 
-  // ── AI & Voice Settings Dialog (Dual-Provider: Token Harbor & Vercel AI) ──
+  // ── AI & Voice Settings Dialog (Vercel AI Gateway) ──
   const keyBtn = document.getElementById('aiKeyBtn');
   const keyDialog = document.getElementById('tokenharborKeyDialog') || document.getElementById('openrouterKeyDialog');
-  const providerSelect = document.getElementById('aiProviderSelect');
-  const thBlock = document.getElementById('tokenharborSettingsBlock');
-  const vcBlock = document.getElementById('vercelSettingsBlock');
-  const keyInput = document.getElementById('tokenharborKeyInput') || document.getElementById('openrouterKeyInput');
-  const dgKeyInput = document.getElementById('deepgramKeyInput');
-  const modelInput = document.getElementById('tokenharborModelInput') || document.getElementById('openrouterModelInput');
   const vcKeyInput = document.getElementById('vercelKeyInput');
   const vcModelInput = document.getElementById('vercelModelInput');
+  const dgKeyInput = document.getElementById('deepgramKeyInput');
   const keyForm = document.getElementById('tokenharborKeyForm') || document.getElementById('openrouterKeyForm');
-
-  function syncProviderBlockVisibility() {
-    const selectedProvider = providerSelect ? providerSelect.value : getActiveAiProvider();
-    if (thBlock) thBlock.style.display = selectedProvider === 'tokenharbor' ? 'grid' : 'none';
-    if (vcBlock) vcBlock.style.display = selectedProvider === 'vercel' ? 'grid' : 'none';
-  }
-
-  if (providerSelect) {
-    providerSelect.addEventListener('change', syncProviderBlockVisibility);
-  }
 
   updateAIModelBadge();
 
   if (keyBtn && keyDialog) {
     keyBtn.addEventListener('click', () => {
-      if (providerSelect) {
-        providerSelect.value = getActiveAiProvider();
-      }
-      syncProviderBlockVisibility();
-
-      if (keyInput) {
-        keyInput.value = getTokenHarborApiKey();
-      }
-      if (modelInput) {
-        modelInput.value = getTokenHarborModel();
-      }
       if (vcKeyInput) {
         vcKeyInput.value = getVercelApiKey();
       }
@@ -2745,48 +2689,27 @@ function initAskAI() {
   if (keyForm && keyDialog) {
     keyForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      // 1. Save Active Provider
-      if (providerSelect) {
-        const prov = providerSelect.value;
-        setActiveAiProvider(prov);
-      }
-      // 2. Save Token Harbor Credentials
-      if (keyInput) {
-        const val = keyInput.value.trim();
-        if (val) {
-          localStorage.setItem('sf_tokenharbor_api_key', val);
-          localStorage.setItem('sf_ai_api_key', val);
-        } else {
-          localStorage.removeItem('sf_tokenharbor_api_key');
-          localStorage.removeItem('sf_ai_api_key');
-        }
-      }
-      if (modelInput) {
-        const mVal = modelInput.value.trim();
-        if (mVal) {
-          localStorage.setItem('sf_tokenharbor_model', mVal);
-        } else {
-          localStorage.removeItem('sf_tokenharbor_model');
-        }
-      }
-      // 3. Save Vercel AI Gateway Credentials (Standby)
+      // 1. Save Vercel AI Gateway Credentials
       if (vcKeyInput) {
         const vcVal = vcKeyInput.value.trim();
         if (vcVal) {
           localStorage.setItem('sf_vercel_ai_key', vcVal);
+          localStorage.setItem('sf_ai_api_key', vcVal);
         } else {
           localStorage.removeItem('sf_vercel_ai_key');
+          localStorage.removeItem('sf_ai_api_key');
         }
       }
       if (vcModelInput) {
         const vcMVal = vcModelInput.value.trim();
         if (vcMVal) {
           localStorage.setItem('sf_vercel_ai_model', vcMVal);
+          localStorage.setItem('sf_ai_model', vcMVal);
         } else {
           localStorage.removeItem('sf_vercel_ai_model');
         }
       }
-      // 4. Save Voice Key (Deepgram)
+      // 2. Save Voice Key (Deepgram)
       if (dgKeyInput) {
         const dgVal = dgKeyInput.value.trim();
         if (dgVal) {
@@ -2795,15 +2718,15 @@ function initAskAI() {
           localStorage.removeItem('sf_deepgram_api_key');
         }
       }
-      // Purge legacy provider keys if present
+      // Purge legacy provider keys
+      localStorage.removeItem('sf_tokenharbor_api_key');
+      localStorage.removeItem('sf_tokenharbor_model');
       localStorage.removeItem('sf_openrouter_api_key');
       localStorage.removeItem('sf_openrouter_model');
       localStorage.removeItem('sf_deepseek_api_key');
 
       updateAIModelBadge();
-      const currentProv = getActiveAiProvider();
-      const provName = currentProv === 'vercel' ? 'Vercel AI Gateway' : 'Token Harbor';
-      showToast(`Saved! Active Engine: ${provName}`);
+      showToast(`Saved! Engine: Vercel AI Gateway (${getActiveAiModel()})`);
       closeDialog(keyDialog);
     });
   }
@@ -3630,7 +3553,7 @@ function initAskAI() {
     return parts.join('\n');
   }
 
-// Call Token Harbor Multi-Model Unified API (Default: glm-5.3-flash)
+// Call Vercel AI Gateway API (Default: meta/muse-ember)
   async function callAI(userText, imageBase64, signal, isRetry = false, onChunk = null) {
     let userMsgContent;
     if (imageBase64) {
@@ -3679,8 +3602,8 @@ function initAskAI() {
     const model = getActiveAiModel();
     const activeApiUrl = getActiveAiApiUrl();
 
-    if (!apiKey && getActiveAiProvider() !== 'vercel') {
-      const hintMsg = "API Key required. Please click the 🔑 key icon in the header to enter your API key.";
+    if (!apiKey) {
+      const hintMsg = "Vercel AI Gateway Key required. Please click the 🔑 key icon in the header to enter your API key.";
       chatHistory.push({ role: 'assistant', content: hintMsg });
       if (typeof onChunk === 'function') {
         onChunk({ delta: hintMsg, text: hintMsg, isFirst: true });
@@ -3802,7 +3725,7 @@ function initAskAI() {
       if (err.name === 'AbortError') {
         throw err;
       }
-      console.error('Token Harbor API Error:', err);
+      console.error('Vercel AI Gateway API Error:', err);
       if (err && isModelMissingError(err.message)) healDeadModel();
       // Remove unanswered user prompt from chatHistory so context stays clean
       if (!isRetry && chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
@@ -4245,23 +4168,23 @@ function initAskAI() {
   }
   if (modeChatBtn) modeChatBtn.addEventListener('click', () => setSheetMode(false));
   if (modeSheetBtn) modeSheetBtn.addEventListener('click', () => setSheetMode(true));
-  // v0.6.31: global model picker — one dropdown ruling chat, flashcards, quiz, sheets, buddy.
-  const AI_MODEL_IDS = ['glm-5.3-flash', 'gemini-3.8-flash', 'qwen3.8-flash', 'gpt-6-luna-fast', 'gpt-6-luna', 'deepseek-v4.1-flash'];
+  // Global model picker — applies app-wide across chat, flashcards, quiz, sheets.
+  const AI_MODEL_IDS = [
+    'meta/muse-ember',
+    'meta/llama-3.3-70b-instruct',
+    'google/gemini-2.0-flash',
+    'openai/gpt-4o-mini',
+    'anthropic/claude-3-5-sonnet',
+    'deepseek/deepseek-chat'
+  ];
   const modelSelect = document.getElementById('aiModelSelect');
   if (modelSelect) {
     modelSelect.addEventListener('change', () => {
       const id = modelSelect.value;
       if (!AI_MODEL_IDS.includes(id)) return;
-      localStorage.setItem('sf_tokenharbor_model', id);
-      // These IDs live on Token Harbor — flip back to it if the standby was active.
-      if (getActiveAiProvider() !== 'tokenharbor') {
-        setActiveAiProvider('tokenharbor');
-        if (providerSelect) {
-          providerSelect.value = 'tokenharbor';
-          syncProviderBlockVisibility();
-        }
-      }
-      if (modelInput) modelInput.value = id;
+      localStorage.setItem('sf_vercel_ai_model', id);
+      localStorage.setItem('sf_ai_model', id);
+      if (vcModelInput) vcModelInput.value = id;
       updateAIModelBadge();
       showToast(`Model: ${id} — app-wide ⚡`);
     });
@@ -4799,7 +4722,7 @@ FORBIDDEN STRINGS ANYWHERE (instant rejection): trap, tip, trick, hack, warning,
   });
 }
 
-// ─── AI Flashcards (Token Harbor GLM-5.3-Flash) ───
+// ─── AI Flashcards (Vercel AI Gateway · meta/muse-ember) ───
 function initFlashcards() {
   const topicInput = document.getElementById('fcTopicInput');
   const generateBtn = document.getElementById('fcGenerateBtn');
@@ -6091,10 +6014,10 @@ function initFlashcards() {
     const apiKey = getActiveAiApiKey();
     const model = getActiveAiModel();
 
-    if (!apiKey && getActiveAiProvider() !== 'vercel') {
+    if (!apiKey) {
       stopMockStages();
-      showToast('Please set your API key in 🔑 Ask AI settings first');
-      deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">🔑</span><p>Please enter your API key in the Ask AI 🔑 settings to enable flashcards.</p></div>`;
+      showToast('Please set your Vercel AI Gateway key in 🔑 Ask AI settings first');
+      deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">🔑</span><p>Please enter your Vercel AI Gateway key in the Ask AI 🔑 settings to enable flashcards.</p></div>`;
       generateBtn.disabled = false;
       generateBtn.textContent = '🔥 Generate Cards';
       return;
@@ -6798,8 +6721,8 @@ ${getJsonSchemaInstructions(batchSize)}`;
     const apiKey = getActiveAiApiKey();
     const model = getActiveAiModel();
     const activeApiUrl = getActiveAiApiUrl();
-    if (!apiKey && getActiveAiProvider() !== 'vercel') {
-      throw new Error('Please set your API key in 🔑 Ask AI settings first');
+    if (!apiKey) {
+      throw new Error('Please set your Vercel AI Gateway key in 🔑 Ask AI settings first');
     }
     const schema = `CRITICAL: Return ONLY a valid JSON array of exactly ${qCount} objects with these exact keys:
 - "q": The question (one crisp line; KaTeX \\( ... \\) for math, ANSI C in \`\`\`c fences for PPS code).

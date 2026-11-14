@@ -1,3 +1,3 @@
 /.well-known/assetlinks.json /.well-known/assetlinks.json 200
-/th-api/* https://tokenharbor.ai/:splat 200!
+/api/ai/* https://ai-gateway.vercel.sh/v1/:splat 200!
 /* /index.html 200
