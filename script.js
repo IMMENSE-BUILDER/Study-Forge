@@ -3570,7 +3570,8 @@ function initAskAI() {
       messages,
       temperature: 0.6,
       max_tokens: maxTokens,
-      stream: true
+      stream: true,
+      reasoning_effort: 'low'
     });
 
     try {
@@ -4264,8 +4265,35 @@ function initAskAI() {
     let doc = null;
     try { doc = JSON.parse(cleaned); }
     catch (e1) {
-      try { doc = JSON.parse(sheetBalance(cleaned)); }
-      catch (e2) { doc = null; }
+      const m = e1.message && e1.message.match(/position (\d+)/i);
+      if (m) {
+        try { doc = JSON.parse(cleaned.slice(0, parseInt(m[1], 10)).trim()); } catch (eSub) {}
+      }
+      if (!doc) {
+        let depth = 0, inStr = false, esc = false, endIdx = -1;
+        for (let i = 0; i < cleaned.length; i++) {
+          const c = cleaned[i];
+          if (inStr) {
+            if (esc) esc = false;
+            else if (c === '\\') esc = true;
+            else if (c === '"') inStr = false;
+          } else {
+            if (c === '"') inStr = true;
+            else if (c === '{') depth++;
+            else if (c === '}') {
+              depth--;
+              if (depth === 0) { endIdx = i; break; }
+            }
+          }
+        }
+        if (endIdx !== -1) {
+          try { doc = JSON.parse(cleaned.slice(0, endIdx + 1)); } catch (eBal) {}
+        }
+      }
+      if (!doc) {
+        try { doc = JSON.parse(sheetBalance(cleaned)); }
+        catch (e2) { doc = null; }
+      }
     }
     if (!doc || typeof doc !== 'object') return null;
     const boxes = Array.isArray(doc) ? doc : doc.boxes;
@@ -4541,7 +4569,8 @@ BOX TYPES — mix freely to fit the content (numbering automatic, do NOT number 
 MICRO-NOTE STYLE: fragments, never sentences. Abbreviations encouraged (w/, thru, b/w, →, ↑ ↓, Δ, ∴, ∵, ≈, ∝, ≤ ≥ ≠). Prefix max 2 highest-yield lines per box with "★ ".
 HARD TYPOGRAPHY RULES (violations get cut): no unbroken string longer than 22 characters — insert spaces or split across rows; real ANSI C / textbook terms only, never placeholders like $var or FooBar; each table row must fit its two cells without running on.
 FORBIDDEN STRINGS ANYWHERE (instant rejection): trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful, avoid. ZERO advice.
-~550-700 words of pure content. Fit one A4 page — compress, never cut subtopics.`;
+~550-700 words of pure content. Fit one A4 page — compress, never cut subtopics.
+REASONING: Keep reasoning concise and output the JSON directly.`;
     const payload = {
       model: getActiveAiModel(),
       messages: [
@@ -4549,8 +4578,9 @@ FORBIDDEN STRINGS ANYWHERE (instant rejection): trap, tip, trick, hack, warning,
         { role: 'user', content: `Generate the 1-page cheatsheet HTML for ${alias} Unit ${unitIdx + 1}. Full unit coverage, print-dense.` }
       ],
       stream: false,
-      temperature: 0.5,
-      max_tokens: 8000
+      temperature: 0.3,
+      max_tokens: 8000,
+      reasoning_effort: 'low'
     };
     try {
       const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
@@ -4583,8 +4613,13 @@ FORBIDDEN STRINGS ANYWHERE (instant rejection): trap, tip, trick, hack, warning,
         throw new Error(sheetErr);
       }
       const data = await resp.json();
-      const raw = (data.choices?.[0]?.message?.content || '').trim();
-      if (!raw) throw new Error('Empty cheatsheet response — try again');
+      const raw = (data.choices?.[0]?.message?.content || data.choices?.[0]?.text || '').trim();
+      if (!raw) {
+        if (data.choices?.[0]?.finish_reason === 'length') {
+          throw new Error('Cheatsheet exceeded token capacity — please tap Regenerate');
+        }
+        throw new Error('Empty cheatsheet response — try again');
+      }
       const doc = sheetParseDoc(raw);
       if (!doc) throw new Error('Cheatsheet came back garbled — try again');
       botMsg.innerHTML = '';
@@ -6315,8 +6350,8 @@ ${getJsonSchemaInstructions(1)}`;
         ],
         stream: true,
         temperature: 0.6,
-        // v0.6.8 fix: restored 4500 (v0.6.7 3500 truncated GLM CoT → blank Card 1). Tail cost worth correctness.
-        max_tokens: 4500
+        max_tokens: 4500,
+        reasoning_effort: 'low'
       };
 
       // v0.6.8 blank-card guard: never render/count a shell with no readable content.
@@ -6395,8 +6430,8 @@ ${getJsonSchemaInstructions(batchSize)}`;
             ],
             stream: true,
             temperature: 0.6,
-            // Single-card budget matches proven Phase-1 4500 — CoT + full JSON without truncation.
-            max_tokens: 4500
+            max_tokens: 4500,
+            reasoning_effort: 'low'
           };
 
           const lenBefore = currentCards.length;
@@ -6678,7 +6713,8 @@ CRITICAL JSON RULES: raw JSON array only, no fences; double-escape LaTeX backsla
     const system = `You are StudyForged Quiz Engine, elite engineering exam tutor for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS).
 TARGET SUBJECT: ${subjData.name} (${subjData.alias}, ${subjData.code}) · Faculty: ${subjData.faculty} · Units: ${subjData.units}
 Ground every question STRICTLY in ${subjData.alias} conventions.${subjData.alias.startsWith('PPS') ? ' ALL code in ANSI C (C99/C11) — never Python/JS.' : ''}
-${schema}`;
+${schema}
+REASONING: Keep reasoning concise and output the JSON directly.`;
     const payload = {
       model,
       messages: [
@@ -6686,9 +6722,9 @@ ${schema}`;
         { role: 'user', content: `Write a ${qCount}-question MCQ quiz on "${cleanTopic}" for ${subjData.alias}. Mix recall + application + one viva-trap question.` }
       ],
       stream: false,
-      temperature: 0.7,
-      // v0.6.15: 5-Q 6000 (4500 truncated under CoT load) / 10-Q 8000 ceiling.
-      max_tokens: qCount <= 5 ? 6000 : 8000
+      temperature: 0.5,
+      max_tokens: qCount <= 5 ? 6000 : 8000,
+      reasoning_effort: 'low'
     };
     const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
@@ -6718,8 +6754,13 @@ ${schema}`;
       throw new Error(quizErr);
     }
     const data = await resp.json();
-    const raw = (data.choices?.[0]?.message?.content || '').trim();
-    if (!raw) throw new Error('Empty quiz response — tap Start to retry');
+    const raw = (data.choices?.[0]?.message?.content || data.choices?.[0]?.text || '').trim();
+    if (!raw) {
+      if (data.choices?.[0]?.finish_reason === 'length') {
+        throw new Error('Quiz exceeded token capacity — tap Start to retry');
+      }
+      throw new Error('Empty quiz response — tap Start to retry');
+    }
     let valid = [];
     try {
       const parsed = parseQuizJson(raw);
@@ -6998,8 +7039,9 @@ HARD RULES: NEVER state the correct option letter/text or the final numeric answ
           ...quizHelpHistory.slice(-6)
         ],
         stream: false,
-        temperature: 0.7,
-        max_tokens: 2000
+        temperature: 0.5,
+        max_tokens: 2000,
+        reasoning_effort: 'low'
       };
       let resp = await fetch(getActiveAiApiUrl(), { method: 'POST', headers, body: JSON.stringify(payload) });
       if (!resp.ok && getActiveAiApiFallbackUrl()) {
@@ -7017,7 +7059,7 @@ HARD RULES: NEVER state the correct option letter/text or the final numeric answ
     } catch (err) {
       thinking.remove();
       addQuizHelpMsg('bot', err && err.message === 'key'
-        ? 'Add your API key in 🔑 Ask AI settings first, then ask away!'
+        ? 'AI Gateway is momentarily unavailable. Please try again shortly.'
         : 'Brain glitch — try that question again in a few seconds. ⚡');
     } finally {
       quizHelpBusy = false;

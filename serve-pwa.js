@@ -43,7 +43,9 @@ const server = http.createServer((req, res) => {
     delete proxyHeaders.origin;
     proxyHeaders["accept-encoding"] = "identity";
     if (targetPath.includes("chat/completions")) {
-      proxyHeaders["accept"] = "text/event-stream";
+      if (req.headers["accept"]) {
+        proxyHeaders["accept"] = req.headers["accept"];
+      }
       proxyHeaders["cache-control"] = "no-cache";
     }
     if (!proxyHeaders["authorization"] && DEFAULT_VERCEL_KEY) {

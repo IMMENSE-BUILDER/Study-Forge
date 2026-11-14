@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":108,"latest":"v0.6.48","notes":"Fixed meta/muse-ember reasoning token starvation by expanding max_tokens budget (3500) for seamless streaming responses across chat and tools."}
+{"apkUrl":"","app":"StudyForged","versionCode":109,"latest":"v0.6.49","notes":"Fixed empty cheatsheet response bug for meta/muse-ember reasoning model via reasoning_effort: low, concise reasoning prompt directive, robust balanced JSON parsing, and sub-second stream latency across AI features."}

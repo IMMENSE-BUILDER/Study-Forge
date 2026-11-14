@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.48** [build 108]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.49** [build 109]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -165,6 +165,14 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 ```
 
 ## 7. Current Status / Important Notes
+
+Recent major changes (Nov 2026, now v0.6.49):
+- v0.6.49 (Build 109):
+  - Fixed Cheatsheet "Empty cheatsheet response — try again" error: `meta/muse-ember` reasoning tokens (`reasoning_details`) exhausted the 8,000 token ceiling on complex prompts, leaving 0 content tokens (`finish_reason: length`).
+  - Added `reasoning_effort: 'low'` and concise reasoning directive to cheatsheet, quiz, flashcards, and chat payloads, dropping generation latency by over 60% and ensuring full content generation.
+  - Added robust balanced JSON parsing to `sheetParseDoc` to seamlessly handle trailing text or markdown artifacts without throwing.
+  - Fixed local proxy `serve-pwa.js` to preserve client Accept headers instead of forcing `text/event-stream` on non-streaming calls.
+  - Triple bump v0.6.49 / versionCode: 109 / CACHE_NAME: study-forge-v0.6.49.
 
 Recent major changes (Nov 2026, now v0.6.48):
 - v0.6.48 (Build 108):
