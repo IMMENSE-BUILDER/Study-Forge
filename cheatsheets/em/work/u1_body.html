@@ -1,0 +1,114 @@
+<div class="page"><div class="wrap" style="--z:1.12"><div class="banner">UNIT I · EM: Force Systems &amp; Equilibrium<span>ICT 119 · 3C · L-P 3-0 · N. Bajpai</span></div><div class="cols"><div class="col" id="a0"><div class="card"><h3><span class="n">1</span>Varignon's theorem</h3>
+<p><b>Varignon:</b> the moment of a resultant about a point equals the sum of the moments of its components about the same point.</p>
+<div class="eq">M<sub>O</sub> = Σ M<sub>i</sub> = Σ (r<sub>i</sub> × F<sub>i</sub>)<br/>2D:   M<sub>O</sub> = x F<sub>y</sub> − y F<sub>x</sub></div>
+<p>Use components when the perpendicular distance is awkward. The coordinates <b>(x, y)</b> are measured from the moment point O, and each term carries its own sign.</p>
+<div class="ex"><span class="t">Eg.</span> <b>F = 50 N at 30°</b> applied at <b>(2, 1) m</b>: <b>M<sub>O</sub> = 2(25) − 1(43.3) = +6.7 N·m</b> (CCW).</div>
+<p><b>Proof:</b> write <b>F = F<sub>1</sub> + F<sub>2</sub></b>. Then <b>M<sub>O</sub> = r × F = r × F<sub>1</sub> + r × F<sub>2</sub> = M<sub>1</sub> + M<sub>2</sub></b>; extend by induction to any number of components.</p>
+<div class="ex"><span class="t">Eg.</span> <b>F = (30, 40) N</b> at <b>(2, 1) m</b>: <b>M<sub>O</sub> = 2(40) − 1(30) = 50 N·m</b> CCW.</div></div><div class="card"><h3><span class="n">2</span>Force-system reduction</h3>
+<p>Any force system can be replaced at a chosen point O by a <b>resultant force</b> and a <b>couple</b>:</p>
+<div class="eq">R = ΣF,   M<sub>O</sub> = ΣM<sub>O</sub> = Σ(r × F)</div>
+<p>Moving a force from A to O adds the moment <b>r × F</b>; do not forget it.</p>
+<table><tr><th>Case</th><th>Equivalent system</th></tr>
+<tr><td><b>R ≠ 0, M = 0</b></td><td>single force through O</td></tr>
+<tr><td><b>R ≠ 0, M ≠ 0</b></td><td>force + couple; if <b>R ⊥ M</b>, a single force at <b>d = M/R</b></td></tr>
+<tr><td><b>R = 0, M ≠ 0</b></td><td>pure couple</td></tr>
+<tr><td><b>R ≠ 0, M ∥ R</b></td><td>wrench (3D)</td></tr></table>
+<div class="ex"><span class="t">Eg.</span> At O, <b>R = 50 N</b> to the right and <b>M<sub>O</sub> = 20 N·m</b> CCW. Since R ⊥ M, replace by a single <b>50 N</b> force at <b>d = 20/50 = 0.4 m</b> above O.</div>
+<p><b>Equivalent systems:</b> same <b>R</b> and same <b>M<sub>O</sub></b>; verify by taking moments about a second point.</p></div><div class="card"><h3><span class="n">3</span>Free-body diagrams</h3>
+<p>An <b>FBD</b> isolates one body and shows every <b>external</b> force on it: applied loads, weight at the centroid, support reactions and friction. Never show internal forces or forces the body exerts on something else.</p>
+<svg style="display:block;width:100%;height:auto" viewbox="0 13 230 81"><defs><marker id="emB" markerheight="6" markerwidth="6" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker><marker id="emR" markerheight="6" markerwidth="6" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="7"><rect fill="#dbe5f1" height="5" stroke="#1a59a6" stroke-width="1" width="170" x="30" y="50"></rect><polygon fill="#eef" points="30,55 20,75 40,75" stroke="#1a59a6" stroke-width="1"></polygon><line stroke="#1a59a6" stroke-width="0.8" x1="22" x2="38" y1="77" y2="77"></line><polygon fill="#eef" points="200,55 190,72 210,72" stroke="#1a59a6" stroke-width="1"></polygon><circle cx="195" cy="76" fill="none" r="2" stroke="#1a59a6" stroke-width="0.8"></circle><circle cx="205" cy="76" fill="none" r="2" stroke="#1a59a6" stroke-width="0.8"></circle><line marker-end="url(#emB)" stroke="#1a59a6" stroke-width="1.5" x1="30" x2="30" y1="50" y2="20"></line><line marker-end="url(#emB)" stroke="#1a59a6" stroke-width="1.5" x1="30" x2="65" y1="45" y2="45"></line><line marker-end="url(#emB)" stroke="#1a59a6" stroke-width="1.5" x1="200" x2="200" y1="50" y2="20"></line><line marker-end="url(#emR)" stroke="#c0392b" stroke-width="1.5" x1="150" x2="150" y1="18" y2="48"></line><line marker-end="url(#emR)" stroke="#c0392b" stroke-width="1.5" x1="115" x2="115" y1="18" y2="48"></line><text x="18" y="88">A</text><text x="196" y="88">B</text><text fill="#1a59a6" x="14" y="30">Ay</text><text fill="#1a59a6" x="48" y="40">Ax</text><text fill="#1a59a6" x="206" y="30">By</text><text fill="#c0392b" x="155" y="28">P</text><text fill="#c0392b" x="120" y="28">W</text></g></svg>
+<div class="flow"><span class="chip">isolate</span><span class="arr">→</span><span class="chip">axes</span><span class="arr">→</span><span class="chip">all external forces</span><span class="arr">→</span><span class="chip">label unknowns</span></div>
+<p><b>Procedure:</b> (1) choose the body; (2) draw its outline; (3) add applied loads and weight at the centroid; (4) replace supports by reactions; (5) add friction opposite impending motion; (6) label unknowns and axes.</p>
+<div class="ex"><span class="t">Eg.</span> A beam on a pin at A and a roller at B has reactions <b>A<sub>x</sub>, A<sub>y</sub>, B<sub>y</sub></b>; the roller reaction is normal to the surface.</div></div><div class="card"><h3><span class="n">4</span>3D equilibrium</h3>
+<div class="eq">ΣF<sub>x</sub> = ΣF<sub>y</sub> = ΣF<sub>z</sub> = 0<br/>ΣM<sub>x</sub> = ΣM<sub>y</sub> = ΣM<sub>z</sub> = 0</div>
+<p>Vector form: <b>ΣF = 0</b> and <b>ΣM<sub>O</sub> = 0</b>. Six independent equations allow up to six unknown reactions. Draw a 3D FBD and use unit vectors or direction cosines.</p>
+<p><b>Common 3D supports:</b> roller 1, ball-and-socket 3, 3D hinge 5, fixed 6.</p>
+<p><b>Vector equations:</b> <b>ΣF = 0</b> gives three scalar equations; <b>ΣM<sub>O</sub> = 0</b> gives three. A 3D couple is a free vector with components <b>M<sub>x</sub>, M<sub>y</sub>, M<sub>z</sub></b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>F = (2, −3, 4) N</b> at <b>r = (1, 2, 0) m</b>: <b>M<sub>O</sub> = r × F = (8, −4, −7) N·m</b>.</div></div></div><div class="col" id="b0"><div class="card"><h3><span class="n">5</span>2D equilibrium</h3>
+<div class="eq">ΣF<sub>x</sub> = 0,   ΣF<sub>y</sub> = 0,   ΣM<sub>A</sub> = 0</div>
+<p>These are three independent equations. Alternatives: <b>ΣM<sub>A</sub> = ΣM<sub>B</sub> = 0</b> plus <b>ΣF<sub>x</sub> = 0</b> if AB is not perpendicular to x; or <b>ΣM<sub>A</sub> = ΣM<sub>B</sub> = ΣM<sub>C</sub> = 0</b> if A, B, C are not collinear.</p>
+<p><b>Determinacy:</b> 3 unknowns → statically determinate; more than 3 → statically indeterminate; fewer than 3 → unstable or a mechanism.</p>
+<div class="ex"><span class="t">Eg.</span> Simply supported beam with load <b>P</b> at midspan: <b>A<sub>x</sub> = 0</b>, <b>A<sub>y</sub> = B<sub>y</sub> = P/2</b>.</div>
+<div class="ex"><span class="t">Eg.</span> Beam AB = 4 m, pin at A, roller at B, <b>10 N</b> load 1 m from A. <b>ΣM<sub>B</sub> = 0</b>: <b>−A<sub>y</sub>(4) + 10(3) = 0</b> → <b>A<sub>y</sub> = 7.5 N</b>; <b>B<sub>y</sub> = 2.5 N</b>.</div>
+<p><b>Independent equations:</b> three in 2D; any fourth is a linear combination and adds no information.</p></div><div class="card"><h3><span class="n">6</span>Choosing equilibrium equations</h3>
+<div class="flow"><span class="chip">isolate</span><span class="arr">→</span><span class="chip">FBD</span><span class="arr">→</span><span class="chip">reactions</span><span class="arr">→</span><span class="chip">equilibrium</span><span class="arr">→</span><span class="chip">check</span></div>
+<ul><li>Choose axes along unknown reactions; choose a moment point where unknowns intersect.</li><li>Assume a direction for an unknown; a negative answer simply reverses it.</li><li>Use two-force members to reduce the number of unknowns before solving.</li><li>Check units, signs and the number of independent equations at the end.</li></ul>
+<table><tr><th>System</th><th>Independent equations</th><th>Typical method</th></tr>
+<tr><td>Concurrent coplanar</td><td>2</td><td>force triangle or Lami</td></tr>
+<tr><td>Parallel coplanar</td><td>2</td><td>ΣF along forces + ΣM</td></tr>
+<tr><td>General coplanar</td><td>3</td><td>ΣF<sub>x</sub>, ΣF<sub>y</sub>, ΣM<sub>A</sub></td></tr>
+<tr><td>General 3D</td><td>6</td><td>ΣF and ΣM about three axes</td></tr></table>
+<div class="ex"><span class="t">Eg.</span> Three concurrent forces → Lami; non-concurrent coplanar → three equilibrium equations.</div></div><div class="card"><h3><span class="n">7</span>Lami's theorem</h3>
+<p>For a particle in equilibrium under <b>three concurrent coplanar forces</b>, each force is proportional to the sine of the angle between the other two:</p>
+<div class="eq">F<sub>1</sub> / sin α = F<sub>2</sub> / sin β = F<sub>3</sub> / sin γ</div>
+<p><b>α</b> is the angle between F<sub>2</sub> and F<sub>3</sub> (opposite F<sub>1</sub>), and similarly for β and γ. The three lines of action must meet at the particle.</p>
+<div class="ex"><span class="t">Eg.</span> Three forces at 120° with <b>F<sub>1</sub> = 100 N</b> → <b>F<sub>2</sub> = F<sub>3</sub> = 100 N</b>, because all three sines are equal.</div>
+<p><b>Derivation:</b> the three forces form a closed triangle. By the sine rule, each force is proportional to the sine of the opposite angle: <b>F<sub>1</sub>/sin α = F<sub>2</sub>/sin β = F<sub>3</sub>/sin γ</b>.</p>
+<div class="ex"><span class="t">Eg.</span> A <b>100 N</b> weight is held by two ropes at <b>30°</b> and <b>60°</b> to the horizontal; the force triangle gives both tensions directly.</div></div><div class="card"><h3><span class="n">8</span>Location of the resultant</h3>
+<p>After finding <b>R = ΣF</b> and <b>M<sub>O</sub> = ΣM<sub>O</sub></b>, the resultant line of action is at perpendicular distance <b>d = M<sub>O</sub>/R</b> from O, when <b>R ≠ 0</b>.</p>
+<p>For parallel forces, the resultant acts at the <b>centre of parallel forces</b>:</p>
+<div class="eq">x̄ = Σ x<sub>i</sub>F<sub>i</sub> / ΣF<sub>i</sub>,   ȳ = Σ y<sub>i</sub>F<sub>i</sub> / ΣF<sub>i</sub></div>
+<div class="ex"><span class="t">Eg.</span> Downward forces <b>10 N at x = 0</b> and <b>20 N at x = 3 m</b> → <b>R = 30 N</b> at <b>x = 2 m</b>.</div>
+<p><b>Derivation:</b> for a single resultant, <b>M<sub>O</sub> = R d</b> (R and M perpendicular), so <b>d = M<sub>O</sub>/R</b>. For parallel forces, taking moments about the origin gives <b>x̄ ΣF = Σ x F</b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>R = 30 N</b> at <b>x = 2 m</b> gives <b>M<sub>O</sub> = 60 N·m</b>; check <b>d = M/R = 2 m</b>.</div></div></div></div></div></div>
+<div class="page"><div class="wrap" style="--z:1.12"><div class="banner">UNIT I · EM: Force Systems &amp; Equilibrium (contd.)</div><div class="cols"><div class="col" id="a1"><div class="card"><h3><span class="n">9</span>Force systems: the vocabulary</h3>
+<p><b>Force</b> is a vector: magnitude in N, direction, and point of application. A <b>particle</b> has negligible size; a <b>rigid body</b> does not deform.</p>
+<p><b>Systems:</b> collinear (same line), concurrent (meet at one point), coplanar (same plane), parallel, non-coplanar. Forces are <b>external</b> (applied loads and reactions) or <b>internal</b> (cancel within the body).</p>
+<p>The <b>resultant</b> replaces the system; the <b>equilibrant</b> is equal and opposite to the resultant. Equilibrium requires <b>R = 0</b> and <b>M = 0</b>.</p>
+<table><tr><th>Newton's law</th><th>Content</th></tr>
+<tr><td>I</td><td>A body remains at rest or in uniform motion unless a resultant force acts.</td></tr>
+<tr><td>II</td><td><b>F = ma</b>; in statics <b>a = 0</b>, so <b>ΣF = 0</b>.</td></tr>
+<tr><td>III</td><td>Action and reaction are equal, opposite and collinear.</td></tr></table>
+<p><b>Units:</b> 1 kgf = 9.81 N; 1 kN = 10<sup>3</sup> N; moment in N·m. A force's line of action is part of its specification.</p>
+<div class="ex"><span class="t">Eg.</span> A <b>10 N</b> force at 30° and a <b>10 N</b> force at 120° have the same magnitude but different components and lines of action; both must be specified.</div></div><div class="card"><h3><span class="n">10</span>Supports and reactions</h3>
+<table><tr><th>Support</th><th>2D reaction</th><th>Unknowns</th></tr>
+<tr><td>Roller / smooth contact</td><td>normal to the surface</td><td>1</td></tr>
+<tr><td>Cable / short link</td><td>along the cable/link</td><td>1</td></tr>
+<tr><td>Pin / hinge</td><td><b>R<sub>x</sub></b> and <b>R<sub>y</sub></b></td><td>2</td></tr>
+<tr><td>Fixed (cantilever)</td><td><b>R<sub>x</sub></b>, <b>R<sub>y</sub></b>, <b>M</b></td><td>3</td></tr>
+<tr><td>Rough surface</td><td>normal + friction</td><td>2</td></tr></table>
+<p><b>3D:</b> roller 1, ball-and-socket 3, 3D hinge 5 (3 forces + 2 moments), fixed 6.</p>
+<table><tr><th>3D support</th><th>Reactions</th></tr>
+<tr><td>Roller</td><td>1 (normal)</td></tr>
+<tr><td>Ball-and-socket</td><td>3 forces</td></tr>
+<tr><td>3D hinge</td><td>3 forces + 2 moments</td></tr>
+<tr><td>Fixed</td><td>3 forces + 3 moments</td></tr></table>
+<div class="ex"><span class="t">Eg.</span> A 2D beam with a pin and a roller has <b>3</b> unknowns and <b>3</b> equations → determinate. A fixed-fixed beam has <b>6</b> unknowns → statically indeterminate to degree 3.</div></div><div class="card"><h3><span class="n">11</span>Distributed loads</h3>
+<p>The resultant of a distributed load is the <b>area</b> under the load diagram and acts at its <b>centroid</b>.</p>
+<div class="eq">W = ∫ w(x) dx,   x̄ = ∫ x w(x) dx / W</div>
+<p><b>UDL</b> <b>w</b> over length <b>L</b>: <b>W = wL</b> at <b>L/2</b>. <b>Triangular</b> load from 0 to <b>w</b>: <b>W = wL/2</b> at <b>2L/3</b> from the zero end (L/3 from the heavy end).</p>
+<p><b>Derivation:</b> <b>dW = w(x) dx</b>; <b>W = ∫<sub>0</sub><sup>L</sup> w dx</b>; <b>x̄ = (1/W)∫<sub>0</sub><sup>L</sup> x w dx</b>. For <b>w(x) = w x/L</b>: <b>W = wL/2</b> and <b>x̄ = 2L/3</b> from the zero end.</p>
+<div class="ex"><span class="t">Eg.</span> A triangular load rising from 0 to <b>6 kN/m</b> over <b>3 m</b>: <b>W = 9 kN</b> at <b>2 m</b> from the zero end.</div></div><div class="card"><h3><span class="n">12</span>Beams and support reactions</h3>
+<table><tr><th>Beam / load</th><th>Reactions</th></tr>
+<tr><td>Simply supported, central point load <b>P</b></td><td><b>A<sub>x</sub> = 0</b>, <b>A<sub>y</sub> = B<sub>y</sub> = P/2</b></td></tr>
+<tr><td>Simply supported, UDL <b>w</b> over <b>L</b></td><td><b>A<sub>y</sub> = B<sub>y</sub> = wL/2</b></td></tr>
+<tr><td>Cantilever, end load <b>P</b></td><td><b>R = P</b>, <b>M = PL</b> at the fixed end</td></tr>
+<tr><td>Overhanging beam</td><td>Use equilibrium; a reaction may be opposite in sense</td></tr></table>
+<p>A fixed end carries a reaction <b>moment</b> as well as force. For a cantilever, take moments about the fixed end to find <b>M</b>.</p>
+<div class="ex"><span class="t">Eg.</span> Beam 6 m: pin at A (x=0), roller at B (x=4 m), <b>12 N</b> load at x=6 m. <b>ΣM<sub>A</sub> = 0</b>: <b>4B<sub>y</sub> − 12(6) = 0</b> → <b>B<sub>y</sub> = 18 N</b>; <b>A<sub>y</sub> = −6 N</b> (downward).</div>
+<p><b>Check:</b> <b>−6 + 18 − 12 = 0</b>. The negative reaction means the assumed upward direction was wrong.</p></div></div><div class="col" id="b1"><div class="card"><h3><span class="n">13</span>Components and resultant</h3>
+<p><b>2D components:</b> resolve along perpendicular axes.</p>
+<div class="eq">F<sub>x</sub> = F cos θ,   F<sub>y</sub> = F sin θ<br/>F = √(F<sub>x</sub><sup>2</sup> + F<sub>y</sub><sup>2</sup>),   θ = tan<sup>−1</sup>(F<sub>y</sub>/F<sub>x</sub>)</div>
+<p><b>3D:</b> use direction angles α, β, γ from the positive axes. The direction cosines satisfy <b>cos<sup>2</sup>α + cos<sup>2</sup>β + cos<sup>2</sup>γ = 1</b>.</p>
+<div class="eq">F<sub>x</sub> = F cos α,   F<sub>y</sub> = F cos β,   F<sub>z</sub> = F cos γ</div>
+<p><b>Concurrent resultant:</b> <b>R<sub>x</sub> = ΣF<sub>x</sub></b>, <b>R<sub>y</sub> = ΣF<sub>y</sub></b> (and <b>R<sub>z</sub></b>); then find magnitude and direction.</p>
+<div class="ex"><span class="t">Eg.</span> <b>F = 100 N at 30°</b> → <b>F<sub>x</sub> = 86.6 N</b>, <b>F<sub>y</sub> = 50 N</b>.</div>
+<p><b>Two-force resultant:</b> <b>R = √(P<sup>2</sup> + Q<sup>2</sup> + 2PQ cos α)</b>, where α is the angle between P and Q; direction <b>tan θ = Q sin α / (P + Q cos α)</b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>80 N at 210°</b> → <b>F<sub>x</sub> = −69.3 N</b>, <b>F<sub>y</sub> = −40 N</b> (third quadrant).</div></div><div class="card"><h3><span class="n">14</span>Moment of a force</h3>
+<p><b>Moment about O:</b> <b>M<sub>O</sub> = F d</b>, where <b>d</b> is the perpendicular distance from O to the line of action. Unit: <b>N·m</b>. Counter-clockwise is positive.</p>
+<p><b>Vector form:</b> <b>M<sub>O</sub> = r × F</b>; the direction follows the right-hand rule. If the line of action passes through O, <b>d = 0</b> and <b>M<sub>O</sub> = 0</b>.</p>
+<svg style="display:block;width:100%;height:auto" viewbox="0 17 200 62"><defs><marker id="emM" markerheight="6" markerwidth="6" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="7"><line stroke="#8a9aad" stroke-width="0.8" x1="25" x2="188" y1="30" y2="30"></line><line marker-end="url(#emM)" stroke="#1a59a6" stroke-width="2" x1="112" x2="178" y1="30" y2="30"></line><circle cx="60" cy="65" fill="#14202e" r="2.5"></circle><line stroke="#c0392b" stroke-dasharray="3 2" stroke-width="1.1" x1="60" x2="60" y1="65" y2="30"></line><path d="M60,30 h6 v6" fill="none" stroke="#c0392b" stroke-width="0.8"></path><text fill="#c0392b" font-style="italic" x="66" y="52">d</text><text x="47" y="74">O</text><text fill="#1a59a6" font-weight="bold" x="145" y="24">F</text><text fill="#8a9aad" x="25" y="24">line of action</text></g></svg>
+<p><b>Derivation (2D):</b> with <b>r = (x, y)</b> and <b>F = (F<sub>x</sub>, F<sub>y</sub>)</b>, <b>r × F = (x F<sub>y</sub> − y F<sub>x</sub>) k</b>. The sign gives the sense about the z-axis.</p>
+<div class="ex"><span class="t">Eg.</span> A vertical <b>30 N</b> force at <b>x = 2 m</b> gives <b>M = 60 N·m</b>; at <b>x = 0</b>, <b>M = 0</b>.</div></div><div class="card"><h3><span class="n">15</span>Couples</h3>
+<p>A <b>couple</b> is two equal, opposite, parallel forces separated by a perpendicular distance <b>d</b>. Its resultant force is zero, but its moment is <b>M = F d</b>.</p>
+<svg style="display:block;width:100%;height:auto" viewbox="0 10 190 66"><defs><marker id="emC" markerheight="6" markerwidth="6" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="7"><line marker-end="url(#emC)" stroke="#1a59a6" stroke-width="2" x1="45" x2="45" y1="15" y2="55"></line><line marker-end="url(#emC)" stroke="#1a59a6" stroke-width="2" x1="145" x2="145" y1="55" y2="15"></line><text fill="#1a59a6" font-weight="bold" x="30" y="38">F</text><text fill="#1a59a6" font-weight="bold" x="150" y="38">F</text><line stroke="#8a9aad" stroke-dasharray="3 2" stroke-width="0.8" x1="45" x2="145" y1="63" y2="63"></line><text fill="#8a9aad" font-style="italic" x="92" y="72">d</text><path d="M 75,22 A 30,30 0 0 1 115,22" fill="none" stroke="#c0392b" stroke-dasharray="2 2" stroke-width="1"></path><text fill="#c0392b" font-style="italic" x="88" y="16">M</text></g></svg>
+<p>A couple is a <b>free vector</b>: it has the same moment about every point and can be moved anywhere on the rigid body. Equivalent couples have the same <b>M</b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>F = 20 N</b>, <b>d = 0.5 m</b> → <b>M = 10 N·m</b>.</div>
+<p><b>Derivation:</b> <b>M<sub>O</sub> = r<sub>1</sub> × F + r<sub>2</sub> × (−F) = (r<sub>1</sub> − r<sub>2</sub>) × F = d × F</b>. Only the separation <b>d</b> matters, so the moment is independent of O.</p>
+<div class="ex"><span class="t">Eg.</span> Two <b>15 N</b> forces <b>0.4 m</b> apart give <b>M = 6 N·m</b>; moving the couple elsewhere does not change M.</div></div><div class="card"><h3><span class="n">16</span>Moment about an axis (3D)</h3>
+<p>The moment of a force about an axis through O with unit direction <b>u</b> is the projection of <b>M<sub>O</sub> = r × F</b> onto that axis:</p>
+<div class="eq">M<sub>axis</sub> = u · (r × F)</div>
+<p><b>r</b> runs from any point on the axis to the point of application; <b>u</b> is a unit vector along the axis. The result is a signed scalar.</p>
+<div class="ex"><span class="t">Eg.</span> <b>u = k</b>, <b>r = (2, 1, 0)</b>, <b>F = (3, 4, 0)</b> → <b>M<sub>z</sub> = 2(4) − 1(3) = 5 N·m</b>.</div>
+<p><b>Derivation:</b> <b>M<sub>O</sub> = r × F</b>; its component along <b>u</b> is <b>M<sub>O</sub> · u = u · (r × F)</b>, the scalar triple product.</p>
+<div class="ex"><span class="t">Eg.</span> <b>M<sub>O</sub> = (8, −4, −7) N·m</b>, <b>u = (0, 0, 1)</b> → <b>M<sub>z</sub> = −7 N·m</b>.</div></div></div></div></div></div>

@@ -1,0 +1,97 @@
+<div class="page"><div class="wrap" style="--z:1.17"><div class="banner">UNIT IV · EM: Rigid Body Motion<span>ICT 119 · 3C · L-P 3-0 · N. Bajpai</span></div><div class="cols"><div class="col" id="a0"><div class="card"><h3><span class="n">1</span>Fixed-axis rotation: kinematics</h3>
+<div class="eq">θ,   ω = dθ/dt,   α = dω/dt = ω dω/dθ<br/>ω = ω<sub>0</sub> + αt,   θ = ω<sub>0</sub>t + ½αt²<br/>ω² = ω<sub>0</sub>² + 2αθ</div>
+<table><tr><th>Linear</th><th>Angular</th></tr>
+<tr><td>s</td><td>θ</td></tr>
+<tr><td>v = ds/dt</td><td>ω = dθ/dt</td></tr>
+<tr><td>a = dv/dt</td><td>α = dω/dt</td></tr>
+<tr><td>v = u + at</td><td>ω = ω<sub>0</sub> + αt</td></tr>
+<tr><td>s = ut + ½at²</td><td>θ = ω<sub>0</sub>t + ½αt²</td></tr></table>
+<div class="ex"><span class="t">Eg.</span> Wheel <b>ω<sub>0</sub> = 10 rad/s</b>, <b>α = −2 rad/s²</b>, <b>t = 3 s</b> → <b>ω = 4 rad/s</b>, <b>θ = 21 rad</b>; at <b>r = 0.5 m</b>, <b>v = 2 m/s</b>, <b>a<sub>t</sub> = −1</b>, <b>a<sub>n</sub> = 8 m/s²</b>.</div></div><div class="card"><h3><span class="n">2</span>Gears, pulleys and belts</h3>
+<p>At a no-slip contact, the tangential velocity and tangential acceleration are equal:</p>
+<div class="eq">v = ω<sub>1</sub>r<sub>1</sub> = ω<sub>2</sub>r<sub>2</sub><br/>ω<sub>2</sub> = ω<sub>1</sub>r<sub>1</sub>/r<sub>2</sub>,   α<sub>2</sub> = α<sub>1</sub>r<sub>1</sub>/r<sub>2</sub></div>
+<p>For a belt drive, the same relation uses the pitch radii; the belt speed is <b>v = ωr</b>. A gear pair reverses the direction of rotation; an open belt keeps the same direction.</p>
+<div class="ex"><span class="t">Eg.</span> <b>r<sub>1</sub> = 0.2 m</b>, <b>r<sub>2</sub> = 0.5 m</b>, <b>ω<sub>1</sub> = 30 rad/s</b> → <b>ω<sub>2</sub> = 12 rad/s</b>; with <b>α<sub>1</sub> = 6 rad/s²</b>, <b>α<sub>2</sub> = 2.4 rad/s²</b>.</div></div><div class="card"><h3><span class="n">3</span>General plane motion</h3>
+<p>Any plane motion is a translation of the centre of mass G plus a rotation about G. For two points A and B:</p>
+<div class="eq">v<sub>B</sub> = v<sub>A</sub> + ω × r<sub>B/A</sub><br/>a<sub>B</sub> = a<sub>A</sub> + α × r<sub>B/A</sub> − ω²r<sub>B/A</sub></div>
+<p>Use <b>relative velocity</b> when velocities of two points are known; use the <b>IC</b> when the body has a simple instantaneous geometry; use <b>relative acceleration</b> for normal and tangential components.</p>
+<div class="ex"><span class="t">Eg.</span> A ladder sliding on a floor and wall is general plane motion: the IC is at the intersection of the perpendiculars to the end velocities.</div></div><div class="card"><h3><span class="n">4</span>Mass moment of inertia</h3>
+<div class="eq">I = ∫r²dm,   k = √(I/m),   I = mk²<br/>Parallel axis:   I = I<sub>G</sub> + md²</div>
+<table><tr><th>Body</th><th>I about centre</th></tr>
+<tr><td>Thin rod length L</td><td><b>mL²/12</b></td></tr>
+<tr><td>Rod about one end</td><td><b>mL²/3</b></td></tr>
+<tr><td>Disk / cylinder radius r</td><td><b>½mr²</b></td></tr>
+<tr><td>Thin hoop radius r</td><td><b>mr²</b></td></tr>
+<tr><td>Solid sphere radius r</td><td><b>⅖mr²</b></td></tr></table>
+<div class="ex"><span class="t">Eg.</span> Rod <b>m = 2 kg</b>, <b>L = 1 m</b>: <b>I<sub>G</sub> = 0.167 kg·m²</b>; about an end, <b>I = 0.167 + 2(0.5)² = 0.667 kg·m²</b>.</div></div><div class="card"><h3><span class="n">5</span>Rigid-body kinematics: summary</h3>
+<table><tr><th>Quantity</th><th>Translation</th><th>Fixed-axis rotation</th><th>General plane</th></tr>
+<tr><td>Velocity</td><td><b>v</b> same for all points</td><td><b>v = ωr</b></td><td><b>v<sub>B</sub> = v<sub>A</sub> + ω×r</b></td></tr>
+<tr><td>Acceleration</td><td><b>a</b> same</td><td><b>a<sub>t</sub> = αr</b>, <b>a<sub>n</sub> = ω²r</b></td><td><b>a<sub>A</sub> + α×r − ω²r</b></td></tr>
+<tr><td>IC</td><td>none (or at infinity)</td><td>on the axis</td><td>velocity zero at IC</td></tr>
+<tr><td>Kinetic energy</td><td><b>½mv²</b></td><td><b>½I<sub>O</sub>ω²</b></td><td><b>½mv<sub>G</sub>² + ½I<sub>G</sub>ω²</b></td></tr></table>
+<p>Choose the simplest point: the IC for velocity, the centre of mass for force equations, and the fixed axis for rotation.</p></div></div><div class="col" id="b0"><div class="card"><h3><span class="n">6</span>Types of rigid-body motion</h3>
+<table><tr><th>Motion</th><th>Velocity / acceleration</th><th>Degrees of freedom</th></tr>
+<tr><td><b>Translation</b></td><td>all points have the same <b>v</b> and <b>a</b></td><td>2D: 2 (x, y)</td></tr>
+<tr><td><b>Fixed-axis rotation</b></td><td><b>v = ωr</b>, <b>a<sub>t</sub> = αr</b>, <b>a<sub>n</sub> = ω²r</b></td><td>2D: 1 (θ)</td></tr>
+<tr><td><b>General plane motion</b></td><td>translation of G + rotation about G</td><td>2D: 3 (x, y, θ)</td></tr></table>
+<p>A rigid body has <b>6 degrees of freedom in 3D</b> (3 translations + 3 rotations), reduced by constraints such as a fixed axis or a roller.</p>
+<div class="ex"><span class="t">Eg.</span> A wheel rolling without slipping has one independent coordinate (θ); the centre moves <b>x = rθ</b>.</div></div><div class="card"><h3><span class="n">7</span>Instantaneous centre of zero velocity</h3>
+<p>The <b>instantaneous centre (IC)</b> is the point of the body (or its extension) with zero velocity at that instant. Locate it by drawing perpendiculars to the velocities of two points; their intersection is the IC.</p>
+<div class="eq">v<sub>A</sub> = ω · IA,   v<sub>B</sub> = ω · IB,   ω = v<sub>A</sub>/IA = v<sub>B</sub>/IB</div>
+<svg style="display:block;width:100%;height:auto" viewbox="0 5 180 78"><defs><marker id="emIC" markerheight="5" markerwidth="5" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="6.5"><line stroke="#8a9aad" stroke-width="1" x1="30" x2="30" y1="10" y2="75"></line><line stroke="#8a9aad" stroke-width="1" x1="20" x2="170" y1="75" y2="75"></line><line stroke="#1a59a6" stroke-width="2" x1="70" x2="30" y1="75" y2="25"></line><line stroke="#c0392b" stroke-dasharray="3 2" stroke-width="0.8" x1="70" x2="70" y1="75" y2="25"></line><line stroke="#c0392b" stroke-dasharray="3 2" stroke-width="0.8" x1="30" x2="70" y1="25" y2="25"></line><line marker-end="url(#emIC)" stroke="#1a59a6" stroke-width="1.2" x1="70" x2="100" y1="75" y2="75"></line><line marker-end="url(#emIC)" stroke="#1a59a6" stroke-width="1.2" x1="30" x2="30" y1="25" y2="55"></line><circle cx="70" cy="25" fill="#c0392b" r="2.5"></circle><text fill="#c0392b" x="74" y="23">I</text><text x="60" y="83">A</text><text x="18" y="23">B</text><text fill="#1a59a6" x="100" y="70">vA</text><text fill="#1a59a6" x="16" y="55">vB</text></g></svg>
+<div class="ex"><span class="t">Eg.</span> Bar length <b>L = 2 m</b>, end A on the floor with <b>v<sub>A</sub> = 3 m/s</b>, end B on the wall, <b>θ = 30°</b>: <b>ω = v<sub>A</sub>/(L sinθ) = 3 rad/s</b>; <b>v<sub>B</sub> = ωL cosθ = 5.2 m/s</b>.</div></div><div class="card"><h3><span class="n">8</span>Work-energy for rigid bodies</h3>
+<div class="eq">T = ½mv<sub>G</sub>² + ½I<sub>G</sub>ω²<br/>Fixed axis:   T = ½I<sub>O</sub>ω²<br/>P = Mω = Fv</div>
+<p>Work done by a couple is <b>U = ∫M dθ</b>; for a constant moment, <b>U = Mθ</b>. The work-energy equation is <b>U = ΔT</b>.</p>
+<div class="ex"><span class="t">Eg.</span> Disk <b>m = 10 kg</b>, <b>r = 0.5 m</b>, <b>ω = 4 rad/s</b>, rolling with <b>v<sub>G</sub> = 2 m/s</b>: <b>I = 1.25</b>, <b>T = 20 + 10 = 30 J</b>.</div></div><div class="card"><h3><span class="n">9</span>Composite bodies and parallel axis</h3>
+<p>For a composite body, add or subtract the moments of inertia of the parts about the same axis. Move each part from its own centroid to the required axis with <b>I = I<sub>G</sub> + md²</b>.</p>
+<div class="ex"><span class="t">Eg.</span> Two rods, each <b>m = 1 kg</b>, <b>L = 1 m</b>, joined at their ends: for each rod about the joint, <b>I = 1/3 kg·m²</b>; total <b>I = 2/3 kg·m²</b>.</div>
+<p><b>Radius of gyration:</b> <b>k = √(I/m)</b>; it is the distance at which the whole mass could be concentrated to give the same <b>I</b>.</p></div><div class="card"><h3><span class="n">10</span>Rolling with and without slipping</h3>
+<p><b>Pure rolling:</b> <b>v<sub>G</sub> = ωr</b>, contact point at rest. If <b>v<sub>G</sub> ≠ ωr</b>, the contact slips and kinetic friction acts.</p>
+<div class="eq">ΣF = ma<sub>G</sub>,   ΣM<sub>G</sub> = I<sub>G</sub>α,   f = μ<sub>k</sub>N</div>
+<p>Friction opposes the relative motion at the contact. A driven wheel can have friction forward; a freely rolling wheel has friction opposing slip.</p>
+<div class="ex"><span class="t">Eg.</span> <b>r = 0.4 m</b>, <b>v<sub>G</sub> = 6 m/s</b>, <b>ω = 10 rad/s</b> → <b>ωr = 4 m/s ≠ 6 m/s</b>; the contact slips with relative speed <b>2 m/s</b>.</div></div></div></div></div></div>
+<div class="page"><div class="wrap" style="--z:1.17"><div class="banner">UNIT IV · EM: Rigid Body Motion (contd.)</div><div class="cols"><div class="col" id="a1"><div class="card"><h3><span class="n">11</span>Relative acceleration of two points</h3>
+<div class="eq">a<sub>B</sub> = a<sub>A</sub> + α × r<sub>B/A</sub> + ω × (ω × r<sub>B/A</sub>)<br/>2D:   a<sub>B</sub> = a<sub>A</sub> + α × r − ω²r</div>
+<p>The two rotation terms are the <b>tangential</b> acceleration <b>αr</b> and the <b>normal</b> acceleration <b>ω²r</b> directed from B toward A.</p>
+<div class="ex"><span class="t">Eg.</span> <b>a<sub>A</sub> = 0</b>, <b>r = (0.3, 0.4) m</b>, <b>ω = 5</b>, <b>α = 2 rad/s²</b> → <b>a<sub>B</sub> = (−0.8, 0.6) + (−7.5, −10) = (−8.3, −9.4) m/s²</b>, <b>|a<sub>B</sub>| = 12.5 m/s²</b>.</div></div><div class="card"><h3><span class="n">12</span>Rigid-body equations of motion</h3>
+<div class="eq">ΣF = m a<sub>G</sub><br/>ΣM<sub>G</sub> = I<sub>G</sub>α<br/>Fixed axis through O:   ΣM<sub>O</sub> = I<sub>O</sub>α</div>
+<p>For general plane motion, the two force equations give <b>a<sub>Gx</sub>, a<sub>Gy</sub></b> and the moment equation gives <b>α</b>. For fixed-axis rotation, the axis reaction does not appear in the moment equation about O.</p>
+<div class="ex"><span class="t">Eg.</span> Disk <b>m = 10 kg</b>, <b>r = 0.5 m</b>, torque <b>5 N·m</b>: <b>I = ½mr² = 1.25 kg·m²</b>, <b>α = 5/1.25 = 4 rad/s²</b>; rim <b>a<sub>t</sub> = 2 m/s²</b>.</div></div><div class="card"><h3><span class="n">13</span>Angular impulse and momentum</h3>
+<div class="eq">H<sub>G</sub> = I<sub>G</sub>ω,   H<sub>O</sub> = I<sub>O</sub>ω<br/>∫M dt = ΔH = H<sub>2</sub> − H<sub>1</sub></div>
+<p>Angular momentum is conserved about a point when the external moment about that point is zero (e.g. a freely spinning flywheel).</p>
+<div class="ex"><span class="t">Eg.</span> Flywheel <b>I = 2 kg·m²</b>, <b>ω<sub>1</sub> = 10 rad/s</b>, constant torque <b>5 N·m</b> for <b>3 s</b>: <b>H<sub>2</sub> = 20 + 15 = 35 kg·m²/s</b>, <b>ω<sub>2</sub> = 17.5 rad/s</b>.</div></div><div class="card"><h3><span class="n">14</span>Conservation of angular momentum</h3>
+<p>If the external moment about an axis is zero, the angular momentum about that axis is conserved.</p>
+<div class="eq">I<sub>1</sub>ω<sub>1</sub> = (I<sub>1</sub> + I<sub>2</sub>)ω<sub>2</sub></div>
+<div class="ex"><span class="t">Eg.</span> Disk <b>I<sub>1</sub> = 2 kg·m²</b> at <b>ω<sub>1</sub> = 15 rad/s</b>; a second disk <b>I<sub>2</sub> = 3 kg·m²</b> is dropped on it → <b>ω<sub>2</sub> = 6 rad/s</b>; energy lost <b>= 225 − 90 = 135 J</b>.</div>
+<p>Angular momentum is a vector along the axis; the energy loss in a perfectly inelastic rotational collision is <b>½(I<sub>1</sub>I<sub>2</sub>/(I<sub>1</sub>+I<sub>2</sub>))(ω<sub>1</sub>−ω<sub>2</sub>)²</b>.</p></div><div class="card"><h3><span class="n">15</span>Rolling cylinder on an incline</h3>
+<p>For pure rolling down an incline θ, with no slipping:</p>
+<div class="eq">a = g sin θ/(1 + I<sub>G</sub>/mr²)</div>
+<table><tr><th>Body</th><th>a</th></tr>
+<tr><td>Disk / cylinder</td><td><b>⅔ g sin θ</b></td></tr>
+<tr><td>Thin hoop</td><td><b>½ g sin θ</b></td></tr>
+<tr><td>Solid sphere</td><td><b>5/7 g sin θ</b></td></tr></table>
+<div class="ex"><span class="t">Eg.</span> Disk on <b>θ = 30°</b> → <b>a = ⅔(9.81)(0.5) = 3.27 m/s²</b>; a hoop would have <b>a = 2.45 m/s²</b>.</div></div><div class="card"><h3><span class="n">16</span>Pulley with two masses: energy</h3>
+<p>For an Atwood machine with a pulley of inertia I and radius r, use work-energy with <b>v = ωr</b>:</p>
+<div class="eq">(m<sub>1</sub>−m<sub>2</sub>)gh = ½(m<sub>1</sub>+m<sub>2</sub>)v² + ½Iω²<br/>v = √(2(m<sub>1</sub>−m<sub>2</sub>)gh/(m<sub>1</sub>+m<sub>2</sub>+I/r²))</div>
+<div class="ex"><span class="t">Eg.</span> <b>m<sub>1</sub> = 5 kg</b>, <b>m<sub>2</sub> = 3 kg</b>, <b>h = 2 m</b>, <b>I = 0.5 kg·m²</b>, <b>r = 0.2 m</b> → <b>v = 1.96 m/s</b>.</div>
+<p>The pulley inertia appears as an effective mass <b>I/r²</b> in the denominator; a massless pulley gives the simple Atwood result.</p></div></div><div class="col" id="b1"><div class="card"><h3><span class="n">17</span>Relative velocity of two points</h3>
+<p>For points A and B on the same rigid body:</p>
+<div class="eq">v<sub>B</sub> = v<sub>A</sub> + ω × r<sub>B/A</sub><br/>2D:   ω × r = (−ω r<sub>y</sub>, ω r<sub>x</sub>)</div>
+<p><b>v<sub>B/A</sub></b> is perpendicular to AB and has magnitude <b>ω·AB</b>; it represents rotation about A.</p>
+<div class="ex"><span class="t">Eg.</span> <b>v<sub>A</sub> = (2, 0) m/s</b>, <b>ω = 5 rad/s</b>, <b>r<sub>B/A</sub> = (0.3, 0.4) m</b> → <b>v<sub>B</sub> = (2, 0) + (−2, 1.5) = (0, 1.5) m/s</b>.</div>
+<p>The velocity of A can be found from another point; choose the point whose velocity is known or whose direction is known.</p></div><div class="card"><h3><span class="n">18</span>Rolling motion</h3>
+<p>For rolling without slipping on a fixed surface, the contact point is the instantaneous centre:</p>
+<div class="eq">v<sub>G</sub> = ωr,   a<sub>G</sub> = αr<br/>v<sub>top</sub> = 2v<sub>G</sub>,   v<sub>contact</sub> = 0</div>
+<svg style="display:block;width:100%;height:auto" viewbox="0 5 160 68"><defs><marker id="emRoll" markerheight="5" markerwidth="5" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="6.5"><line stroke="#8a9aad" stroke-width="1" x1="10" x2="150" y1="62" y2="62"></line><circle cx="80" cy="37" fill="#eef" r="25" stroke="#1a59a6" stroke-width="1.2"></circle><circle cx="80" cy="37" fill="#14202e" r="2"></circle><line marker-end="url(#emRoll)" stroke="#1a59a6" stroke-width="1.2" x1="80" x2="120" y1="37" y2="37"></line><line marker-end="url(#emRoll)" stroke="#1a59a6" stroke-width="1.2" x1="80" x2="130" y1="14" y2="14"></line><circle cx="80" cy="62" fill="#c0392b" r="2.5"></circle><text x="84" y="34">G</text><text fill="#c0392b" x="84" y="66">C</text><text x="104" y="33">vG</text><text x="105" y="11">2vG</text><text fill="#c0392b" x="78" y="24">ω</text></g></svg>
+<div class="ex"><span class="t">Eg.</span> <b>r = 0.4 m</b>, <b>v<sub>G</sub> = 6 m/s</b> → <b>ω = 15 rad/s</b>; with <b>a<sub>G</sub> = 2 m/s²</b>, <b>α = 5 rad/s²</b>; top speed <b>12 m/s</b>.</div></div><div class="card"><h3><span class="n">19</span>Translation kinetics: block on an incline</h3>
+<p>For translation, every point has the same acceleration; use the centre of mass.</p>
+<div class="eq">N = mg cos θ,   f = μN<br/>a = g(sin θ − μ cos θ)   (sliding down)</div>
+<div class="ex"><span class="t">Eg.</span> <b>θ = 30°</b>, <b>μ = 0.2</b> → <b>a = 9.81(0.5 − 0.2×0.866) = 3.21 m/s²</b>; if <b>tan θ &lt; μ</b>, the block remains at rest.</div>
+<p>For a body pushed up the plane, friction reverses and <b>a = −g(sin θ + μ cos θ)</b>.</p></div><div class="card"><h3><span class="n">20</span>Fixed-axis rotation with a hanging mass</h3>
+<p>A pulley/disk of moment of inertia I and radius r carries a hanging mass m. Equations: <b>mg − T = ma</b>, <b>Tr = Iα</b>, <b>a = αr</b>.</p>
+<div class="eq">a = mg/(m + I/r²)<br/>T = Ia/r² = mgI/(mr² + I)</div>
+<div class="ex"><span class="t">Eg.</span> <b>m = 2 kg</b>, <b>I = 0.5 kg·m²</b>, <b>r = 0.2 m</b> → <b>a = 1.35 m/s²</b>, <b>T = 16.9 N</b>.</div>
+<p>The pulley reduces the acceleration compared with free fall; a massless pulley (<b>I = 0</b>) gives <b>a = g</b>.</p></div><div class="card"><h3><span class="n">21</span>Angular impulse on a rotating bar</h3>
+<div class="eq">∫M dt = ΔH = I(ω<sub>2</sub> − ω<sub>1</sub>),   M = Fd</div>
+<p>A force applied at distance d from the axis produces a moment; the angular impulse changes the angular momentum about that axis.</p>
+<div class="ex"><span class="t">Eg.</span> Bar <b>m = 2 kg</b>, <b>L = 1 m</b>, pivoted at one end: <b>I = mL²/3 = 0.667 kg·m²</b>. A <b>100 N</b> force at the free end for <b>0.01 s</b> gives angular impulse <b>1 N·m·s</b>, so <b>ω = 1.5 rad/s</b>.</div>
+<p>For a system with several rotating parts, add the angular impulses about the same axis; internal impulses cancel in pairs.</p></div></div></div></div></div>

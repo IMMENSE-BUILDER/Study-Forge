@@ -1,0 +1,123 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Cheatsheet Unit 1</title><style>@page{size:297mm 210mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#fff}
+:root{--ac:#1a59a6;--ac2:#2f78c4;--soft:#f4f8fd;--line:#dbe5f1;--hd:#e1ecf9;--dk:#0d2a4d;--g1:#17407a;--g2:#2b6cb8;--mut:#46607e}
+body.u2{--ac:#0f6b5f;--ac2:#1d9a86;--soft:#f2faf8;--line:#cfe8e3;--hd:#dcf1ec;--dk:#0b3b35;--g1:#0b4f47;--g2:#1b8f7b;--mut:#3f6b64}
+body{font-family:'Carlito','Calibri','Inter',sans-serif;font-size:6.5pt;line-height:1.18;color:#14202e}
+.page{width:297mm;height:210mm;position:relative;page-break-after:always;overflow:hidden}
+.wrap{position:absolute;left:3.5mm;top:3.5mm;width:calc(141.5mm / var(--z));height:calc(203mm / var(--z));zoom:var(--z)}
+.banner{background:linear-gradient(90deg,var(--g1),var(--g2));color:#fff;font-weight:700;font-size:8pt;padding:2.2pt 6pt;border-radius:2.5pt;margin-bottom:3pt;letter-spacing:.1pt;display:flex;justify-content:space-between}
+.banner span{font-weight:400;font-size:6pt;opacity:.9;align-self:center}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2.4mm;height:calc(100% - 15pt)}
+.col{overflow:hidden;min-height:0}
+.card{background:var(--soft);border:.4pt solid var(--line);border-left:2pt solid var(--ac2);border-radius:2pt;padding:1.4pt 3.2pt 1.6pt 3.8pt;margin-bottom:2.2pt}
+.card h3{font-size:7.3pt;color:var(--ac);font-weight:700;display:flex;align-items:center;gap:2pt;margin-bottom:1.2pt;line-height:1.15}
+.n{display:inline-block;background:var(--ac);color:#fff;border-radius:2pt;min-width:8pt;height:8pt;text-align:center;font-size:5.6pt;line-height:8pt;padding:0 1pt}
+b{font-weight:700;color:var(--dk)}
+ul{list-style:none}
+li{padding-left:6pt;position:relative;margin:.3pt 0}
+li:before{content:'';position:absolute;left:1.6pt;top:3pt;width:2pt;height:2pt;border-radius:50%;background:var(--ac2)}
+p{margin:.6pt 0}
+table{border-collapse:collapse;width:100%;margin:1pt 0;font-size:5.9pt;line-height:1.12}
+th,td{border:.35pt solid var(--line);padding:.6pt 2pt;text-align:left;vertical-align:top;background:#fff}
+th{background:var(--hd);color:var(--dk);font-weight:700}
+.eq{background:#fff;border:.4pt solid var(--line);border-left:1.4pt solid var(--ac);border-radius:2pt;padding:.8pt 3pt;margin:1pt 0;font-size:6.3pt;line-height:1.3}
+.d{border-left:1.4pt solid #e08a1e;padding-left:3pt;margin:1pt 0;background:#fff8ee}
+.d .t{font-weight:700;color:#9a5200}
+.ex{border-left:1.4pt solid #3f9a5a;padding-left:3pt;margin:1pt 0;background:#f0faf3}
+.ex .t{font-weight:700;color:#256b3c}
+.w{border-left:1.4pt solid #c0392b;padding-left:3pt;margin:1pt 0;background:#fff3f1}
+.w .t{font-weight:700;color:#a8321f}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:1pt 0;margin:1pt 0}
+.chip{background:#fff;border:.5pt solid var(--ac2);border-radius:2pt;padding:.4pt 2.5pt;font-weight:700;color:var(--dk);font-size:5.9pt;text-align:center;line-height:1.1}
+.arr{color:var(--ac2);font-weight:700;padding:0 1.2pt;font-size:7pt}
+sub,sup{font-size:70%;line-height:0}
+svg{display:block;margin:1pt auto}
+.c2{display:grid;grid-template-columns:1fr 1fr;gap:3pt}
+.tp{background:#e08a1e;color:#fff;border-radius:2pt;padding:0 2pt;font-size:5pt;font-weight:700;line-height:1.35;margin-left:1pt;white-space:nowrap}ol li:before{display:none}ol li{padding-left:0}ol{margin-left:9pt}.wrap{left:0;top:0;width:calc(146.5mm / var(--z));height:calc(210mm / var(--z));padding:0}.card{margin-bottom:1.6pt}.cols{grid-template-rows:minmax(0,1fr)}table{line-height:1.04}th,td{padding:.25pt 1.5pt}p{margin:.3pt 0}li{margin:0}.card{padding:1pt 3pt 1.2pt 3.6pt}.eq{margin:.6pt 0}.w,.d,.ex{margin:.6pt 0}</style></head><body class="u1"><div class="page"><div class="wrap" style="--z:1.19"><div class="banner">UNIT I · Physics: Coordinates &amp; Newtonian Motion<span>ICT 111 T/P · 4C · L-P 3-2 · Dr. M. Gupta</span></div><div class="cols"><div class="col" id="a0"><div class="card"><h3><span class="n">1</span>Polar coordinates</h3>
+<div class="eq">r = r r̂<br/>v = (dr/dt) r̂ + r(dθ/dt) θ̂<br/>a = [d²r/dt² − r(dθ/dt)²] r̂ + [r d²θ/dt² + 2(dr/dt)(dθ/dt)] θ̂</div>
+<svg style="display:block;width:100%;height:auto" viewbox="0 8 160 64"><defs><marker id="emPol" markerheight="5" markerwidth="5" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="6.5"><line stroke="#8a9aad" stroke-width="0.8" x1="25" x2="145" y1="65" y2="65"></line><line stroke="#8a9aad" stroke-width="0.8" x1="25" x2="25" y1="65" y2="15"></line><line marker-end="url(#emPol)" stroke="#1a59a6" stroke-width="1.4" x1="25" x2="115" y1="65" y2="25"></line><path d="M45,65 A20,20 0 0 0 40,52" fill="none" stroke="#c0392b" stroke-width="1"></path><text fill="#c0392b" x="68" y="55">θ</text><text fill="#1a59a6" x="118" y="22">P</text><text fill="#1a59a6" x="62" y="40">r</text><text x="27" y="76">O</text><text x="140" y="60">x</text><text x="28" y="14">y</text></g></svg>
+<div class="ex"><span class="t">Eg.</span> <b>r = 2t m</b>, <b>θ = t² rad</b>; at <b>t = 1 s</b>: <b>v<sub>r</sub> = 2 m/s</b>, <b>v<sub>θ</sub> = 4 m/s</b>; <b>a<sub>r</sub> = −8 m/s²</b>, <b>a<sub>θ</sub> = 12 m/s²</b>.</div></div><div class="card"><h3><span class="n">2</span>Friction and inclined planes</h3>
+<div class="eq">Static: f<sub>s</sub> ≤ μ<sub>s</sub>N; impending: f<sub>s</sub> = μ<sub>s</sub>N<br/>Kinetic: f<sub>k</sub> = μ<sub>k</sub>N,   μ<sub>s</sub> &gt; μ<sub>k</sub><br/>Friction angle: tan φ = μ; angle of repose: tan θ<sub>r</sub> = μ<sub>s</sub></div>
+<svg style="display:block;width:100%;height:auto" viewbox="0 8 180 64"><defs><marker id="emFri" markerheight="5" markerwidth="5" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="6.5"><line stroke="#8a9aad" stroke-width="0.8" x1="15" x2="165" y1="68" y2="68"></line><line stroke="#8a9aad" stroke-width="1" x1="15" x2="150" y1="68" y2="28"></line><rect fill="#dbe5f1" height="15" stroke="#1a59a6" transform="rotate(-17 98 44)" width="26" x="85" y="37"></rect><line marker-end="url(#emFri)" stroke="#1a59a6" stroke-width="1" x1="98" x2="85" y1="44" y2="20"></line><line marker-end="url(#emFri)" stroke="#1a59a6" stroke-width="1" x1="98" x2="130" y1="44" y2="35"></line><line marker-end="url(#emFri)" stroke="#c0392b" stroke-width="1" x1="98" x2="98" y1="44" y2="64"></line><text fill="#1a59a6" x="76" y="18">N</text><text fill="#1a59a6" x="115" y="34">f</text><text fill="#c0392b" x="101" y="62">mg</text><text fill="#c0392b" x="20" y="60">θ</text></g></svg>
+<div class="ex"><span class="t">Eg.</span> Block on <b>θ = 30°</b>, <b>μ = 0.2</b>: <b>a = g(sinθ − μcosθ) = 3.21 m/s²</b>; at rest, friction is <b>mg sinθ</b> up the plane.</div></div><div class="card"><h3><span class="n">3</span>Constraints and degrees of freedom</h3>
+<p>A <b>constraint</b> restricts the possible motion. <b>Holonomic</b> constraints depend on coordinates (and possibly time); <b>non-holonomic</b> involve velocities or inequalities. <b>Scleronomic</b> = time-independent; <b>rheonomic</b> = time-dependent.</p>
+<div class="eq">Pulley: x<sub>1</sub> + x<sub>2</sub> = L<br/>Incline: y = x tan θ<br/>Circle: x² + y² = R²<br/>DOF = 3n − k  (n particles, k constraints)</div>
+<div class="ex"><span class="t">Eg.</span> Two particles (6 coordinates) connected by a rigid rod (1 constraint) → <b>5 DOF</b>; a bead on a circle has <b>1 DOF</b> (θ).</div></div><div class="card"><h3><span class="n">4</span>Connected blocks on two inclines</h3>
+<p>Masses <b>m<sub>1</sub></b> and <b>m<sub>2</sub></b> on inclines <b>α</b> and <b>β</b>, connected over a pulley at the apex (frictionless):</p>
+<div class="eq">a = (m<sub>1</sub>sinα − m<sub>2</sub>sinβ)g/(m<sub>1</sub>+m<sub>2</sub>)<br/>T = m<sub>1</sub>(g sinα − a)</div>
+<div class="ex"><span class="t">Eg.</span> <b>m<sub>1</sub> = 5 kg</b>, <b>α = 30°</b>, <b>m<sub>2</sub> = 3 kg</b>, <b>β = 20°</b> → <b>a = 1.81 m/s²</b>, <b>T = 15.5 N</b>.</div></div><div class="card"><h3><span class="n">5</span>Relative motion: rain and walking</h3>
+<div class="eq">v<sub>rain/man</sub> = v<sub>rain</sub> − v<sub>man</sub></div>
+<p>For rain falling vertically at <b>v<sub>r</sub></b> and a person walking horizontally at <b>v<sub>m</sub></b>, the rain appears to come from an angle:</p>
+<div class="eq">tan θ = v<sub>r</sub>/v<sub>m</sub>,   |v<sub>rel</sub>| = √(v<sub>r</sub>² + v<sub>m</sub>²)</div>
+<div class="ex"><span class="t">Eg.</span> <b>v<sub>r</sub> = 10 m/s</b> down, <b>v<sub>m</sub> = 5 m/s</b> forward → relative rain <b>11.2 m/s</b> at <b>63.4°</b> from the horizontal; tilt the umbrella forward.</div></div></div><div class="col" id="b0"><div class="card"><h3><span class="n">6</span>Cylindrical coordinates</h3>
+<div class="eq">r = ρ ρ̂ + z ẑ<br/>v = (dρ/dt) ρ̂ + ρ(dφ/dt) φ̂ + (dz/dt) ẑ<br/>a = [d²ρ/dt² − ρ(dφ/dt)²] ρ̂<br/>  + [ρ d²φ/dt² + 2(dρ/dt)(dφ/dt)] φ̂ + (d²z/dt²) ẑ</div>
+<p><b>Transform:</b> <b>x = ρ cos φ</b>, <b>y = ρ sin φ</b>, <b>z = z</b>; <b>ρ² = x² + y²</b>, <b>tan φ = y/x</b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>ρ = 2 m</b>, <b>φ = 90°</b>, <b>z = 3 m</b> → <b>(x, y, z) = (0, 2, 3)</b>; a point on the y-axis has <b>ρ = |y|</b>.</div></div><div class="card"><h3><span class="n">7</span>Inertial and non-inertial frames</h3>
+<p>An <b>inertial frame</b> moves with constant velocity; Newton's laws hold. A frame accelerating with <b>a<sub>0</sub></b> is non-inertial; add a pseudo force <b>−ma<sub>0</sub></b>.</p>
+<div class="eq">Galilean: r' = r − Vt, v' = v − V, a' = a (V constant)<br/>Rotating frame: F<sub>pseudo</sub> = mω²r (outward) − 2mω×v (Coriolis)</div>
+<div class="ex"><span class="t">Eg.</span> Lift accelerating up at <b>a</b>: apparent weight <b>N = m(g+a)</b>; free fall: <b>N = 0</b>; accelerating down: <b>N = m(g−a)</b>.</div></div><div class="card"><h3><span class="n">8</span>2D motion: projectile and circular motion</h3>
+<div class="eq">x = u cosθ t,   y = u sinθ t − ½gt²<br/>T = 2u sinθ/g,   H = u²sin²θ/(2g),   R = u²sin2θ/g</div>
+<p><b>Circular motion:</b> <b>v = ωr</b>, <b>a<sub>t</sub> = αr</b>, <b>a<sub>n</sub> = v²/r = ω²r</b>. For uniform circular motion, speed is constant but velocity changes direction.</p>
+<div class="ex"><span class="t">Eg.</span> <b>u = 20 m/s</b>, <b>θ = 30°</b> → <b>R = 35.3 m</b>, <b>H = 5.1 m</b>, <b>T = 2.04 s</b>; a car on <b>r = 50 m</b> at <b>15 m/s</b> has <b>a<sub>n</sub> = 4.5 m/s²</b>.</div></div><div class="card"><h3><span class="n">9</span>3D motion and relative motion</h3>
+<div class="eq">r<sub>A</sub> = r<sub>B</sub> + r<sub>A/B</sub><br/>v<sub>A</sub> = v<sub>B</sub> + v<sub>A/B</sub><br/>a<sub>A</sub> = a<sub>B</sub> + a<sub>A/B</sub></div>
+<p>For a projectile in 3D, use <b>a = (0, 0, −g)</b> and integrate each component. For a frame moving with constant <b>V</b>, <b>a<sub>A/B</sub> = 0</b> and the relative velocity is constant.</p>
+<div class="ex"><span class="t">Eg.</span> A boat moves <b>5 m/s</b> across a river with current <b>3 m/s</b>: ground speed <b>√(5²+3²) = 5.83 m/s</b> at <b>31°</b> to the bank; crossing <b>100 m</b> takes <b>20 s</b>.</div></div><div class="card"><h3><span class="n">10</span>Circular motion dynamics</h3>
+<div class="eq">F<sub>c</sub> = mv²/r = mω²r<br/>Conical pendulum: T cosθ = mg, T sinθ = mv²/r<br/>v = √(gL sinθ tanθ),   T<sub>period</sub> = 2π√(L cosθ/g)</div>
+<p><b>Banked curve</b> with no friction: <b>tan θ = v²/(rg)</b>. The normal force provides the horizontal centripetal component; the vertical component balances weight.</p>
+<div class="ex"><span class="t">Eg.</span> Car on <b>r = 100 m</b> at <b>v = 20 m/s</b>: <b>tanθ = 400/(100×9.81) = 0.408</b> → <b>θ = 22.2°</b>; a conical pendulum <b>L = 1 m</b>, <b>θ = 30°</b> has <b>v = 1.68 m/s</b>.</div></div><div class="card"><h3><span class="n">11</span>Banked curve with friction</h3>
+<div class="eq">v<sub>max</sub>² = rg(tanθ + μ)/(1 − μ tanθ)<br/>v<sub>min</sub>² = rg(tanθ − μ)/(1 + μ tanθ)</div>
+<p>Friction acts down the slope at <b>v<sub>max</sub></b> (tendency to slide out) and up the slope at <b>v<sub>min</sub></b> (tendency to slide in). If the numerator of <b>v<sub>min</sub>²</b> is negative, no minimum speed is needed.</p>
+<div class="ex"><span class="t">Eg.</span> <b>r = 100 m</b>, <b>θ = 20°</b>, <b>μ = 0.2</b>: <b>v<sub>max</sub> = √[100(9.81)(0.364+0.2)/(1−0.0728)] = 24.4 m/s</b>.</div></div></div></div></div></div>
+<div class="page"><div class="wrap" style="--z:1.19"><div class="banner">UNIT I · Physics: Coordinates &amp; Newtonian Motion (contd.)</div><div class="cols"><div class="col" id="a1"><div class="card"><h3><span class="n">12</span>Spherical coordinates</h3>
+<div class="eq">r = r r̂<br/>v = (dr/dt) r̂ + r(dθ/dt) θ̂ + r sin θ (dφ/dt) φ̂<br/>a<sub>r</sub> = d²r/dt² − r(dθ/dt)² − r sin²θ (dφ/dt)²<br/>a<sub>θ</sub> = r d²θ/dt² + 2(dr/dt)(dθ/dt) − r sinθ cosθ (dφ/dt)²<br/>a<sub>φ</sub> = r sinθ d²φ/dt² + 2 sinθ (dr/dt)(dφ/dt) + 2r cosθ (dθ/dt)(dφ/dt)</div>
+<div class="ex"><span class="t">Eg.</span> <b>r = 2</b>, <b>θ = 60°</b>, <b>φ = 30°</b> → <b>x = 1.5</b>, <b>y = 0.866</b>, <b>z = 1</b>; <b>ρ = 1.732</b>.</div></div><div class="card"><h3><span class="n">13</span>Newton's laws of motion</h3>
+<table><tr><th>Law</th><th>Statement</th></tr>
+<tr><td><b>I</b></td><td>A body remains at rest or in uniform motion unless a net external force acts; this defines an <b>inertial frame</b>.</td></tr>
+<tr><td><b>II</b></td><td><b>F = dp/dt = ma</b> for constant mass; in components <b>F<sub>x</sub>=ma<sub>x</sub></b>, etc.</td></tr>
+<tr><td><b>III</b></td><td>Action and reaction are equal, opposite and along the same line; they act on different bodies.</td></tr></table>
+<div class="eq">F<sub>net</sub> = ΣF = ma,   F<sub>x</sub> = m d²x/dt²</div>
+<div class="ex"><span class="t">Eg.</span> <b>m = 2 kg</b>, <b>F = (4, 6) N</b> → <b>a = (2, 3) m/s²</b>; the acceleration is along the net force.</div></div><div class="card"><h3><span class="n">14</span>Newton's laws: connected bodies</h3>
+<p>For two masses <b>m<sub>1</sub> &gt; m<sub>2</sub></b> over a light frictionless pulley:</p>
+<div class="eq">m<sub>1</sub>g − T = m<sub>1</sub>a<br/>T − m<sub>2</sub>g = m<sub>2</sub>a<br/>a = (m<sub>1</sub>−m<sub>2</sub>)g/(m<sub>1</sub>+m<sub>2</sub>)<br/>T = 2m<sub>1</sub>m<sub>2</sub>g/(m<sub>1</sub>+m<sub>2</sub>)</div>
+<div class="ex"><span class="t">Eg.</span> <b>5 kg</b> and <b>3 kg</b> → <b>a = 2.45 m/s²</b>, <b>T = 36.8 N</b>; for a block on an incline, resolve along and perpendicular to the plane.</div></div><div class="card"><h3><span class="n">15</span>Worked coordinate conversion</h3>
+<p>Convert <b>(x, y, z) = (1, 1, √2)</b> to cylindrical and spherical coordinates, and write the position vector.</p>
+<div class="eq">ρ = √(1²+1²) = √2,   φ = tan<sup>−1</sup>(1/1) = 45°<br/>r = √(1²+1²+2) = 2<br/>θ = cos<sup>−1</sup>(z/r) = cos<sup>−1</sup>(√2/2) = 45°</div>
+<div class="ex"><span class="t">Eg.</span> <b>(ρ, φ, z) = (√2, 45°, √2)</b>; <b>(r, θ, φ) = (2, 45°, 45°)</b>; <b>r = i + j + √2 k</b>.</div></div><div class="card"><h3><span class="n">16</span>Constrained motion examples</h3>
+<table><tr><th>Constraint</th><th>Equation</th><th>DOF</th></tr>
+<tr><td>Movable pulley</td><td><b>s<sub>A</sub> + 2s<sub>B</sub> = L</b></td><td>1</td></tr>
+<tr><td>Block on wedge</td><td><b>y = x tan θ</b></td><td>1</td></tr>
+<tr><td>Bead on a hoop</td><td><b>x² + y² = R²</b></td><td>1</td></tr>
+<tr><td>Two particles, rigid rod</td><td><b>(x<sub>1</sub>−x<sub>2</sub>)² + (y<sub>1</sub>−y<sub>2</sub>)² = L²</b></td><td>5</td></tr></table>
+<p>Differentiate a constraint to relate velocities/accelerations: for the pulley, <b>v<sub>A</sub> + 2v<sub>B</sub> = 0</b> and <b>a<sub>A</sub> + 2a<sub>B</sub> = 0</b>.</p>
+<div class="ex"><span class="t">Eg.</span> If A moves down at <b>2 m/s</b>, B moves up at <b>1 m/s</b>; if A accelerates at <b>3 m/s²</b>, B accelerates at <b>1.5 m/s²</b>.</div></div><div class="card"><h3><span class="n">17</span>Vertical circular motion</h3>
+<div class="eq">Top: T + mg = mv²/r<br/>Bottom: T − mg = mv²/r<br/>Minimum at top: v<sub>top</sub> = √(gr), T = 0<br/>Energy: ½mv<sub>b</sub>² = ½mv<sub>t</sub>² + mg(2r)<br/>v<sub>b</sub> = √(5gr)</div>
+<div class="ex"><span class="t">Eg.</span> <b>r = 1.5 m</b> → <b>v<sub>top</sub> = 3.84 m/s</b>, <b>v<sub>bottom</sub> = 8.58 m/s</b>; the string must not go slack at the top.</div></div></div><div class="col" id="b1"><div class="card"><h3><span class="n">18</span>Coordinate systems and transformations</h3>
+<table><tr><th>System</th><th>Coordinates</th><th>Cartesian form</th></tr>
+<tr><td><b>Cartesian</b></td><td>(x, y, z)</td><td>x, y, z</td></tr>
+<tr><td><b>Polar</b> (2D)</td><td>(r, θ)</td><td>x = r cos θ, y = r sin θ</td></tr>
+<tr><td><b>Cylindrical</b></td><td>(ρ, φ, z)</td><td>x = ρ cos φ, y = ρ sin φ, z = z</td></tr>
+<tr><td><b>Spherical</b></td><td>(r, θ, φ)</td><td>x = r sin θ cos φ, y = r sin θ sin φ, z = r cos θ</td></tr></table>
+<p><b>Ranges:</b> polar/cylindrical <b>ρ ≥ 0</b>, <b>0 ≤ φ &lt; 2π</b>; spherical <b>r ≥ 0</b>, <b>0 ≤ θ ≤ π</b>, <b>0 ≤ φ &lt; 2π</b>; <b>ρ = r sin θ</b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>(x, y, z) = (1, 1, √2)</b> → <b>ρ = √2</b>, <b>φ = 45°</b>, <b>z = √2</b>; <b>r = 2</b>, <b>θ = 45°</b>, <b>φ = 45°</b>.</div></div><div class="card"><h3><span class="n">19</span>Cartesian kinematics in 2D and 3D</h3>
+<div class="eq">r = x i + y j + z k<br/>v = (dx/dt) i + (dy/dt) j + (dz/dt) k<br/>a = (d²x/dt²) i + (d²y/dt²) j + (d²z/dt²) k</div>
+<p>Each Cartesian component is independent; <b>x</b> motion does not affect <b>y</b> or <b>z</b>. In 2D, drop the z terms.</p>
+<div class="ex"><span class="t">Eg.</span> <b>r = (2t, t², 3) m</b> → <b>v = (2, 2t, 0) m/s</b>, <b>a = (0, 2, 0) m/s²</b>; at <b>t = 2 s</b>, <b>v = (2, 4, 0)</b>.</div></div><div class="card"><h3><span class="n">20</span>Unit-vector derivatives</h3>
+<p>The unit vectors change direction as the coordinates change; this produces the centripetal and Coriolis terms.</p>
+<div class="eq">dr̂/dt = (dθ/dt) θ̂ + sinθ (dφ/dt) φ̂<br/>dθ̂/dt = −(dθ/dt) r̂ + cosθ (dφ/dt) φ̂<br/>dφ̂/dt = −(dφ/dt)(sinθ r̂ + cosθ θ̂)</div>
+<p>Substituting these into <b>v = dr/dt</b> and <b>a = dv/dt</b> gives the polar, cylindrical and spherical acceleration formulas.</p></div><div class="card"><h3><span class="n">21</span>Unit I formula summary</h3>
+<table><tr><th>Quantity</th><th>Cartesian</th><th>Polar</th></tr>
+<tr><td>Position</td><td><b>x i + y j</b></td><td><b>r r̂</b></td></tr>
+<tr><td>Velocity</td><td><b>dx/dt i + dy/dt j</b></td><td><b>dr/dt r̂ + r dθ/dt θ̂</b></td></tr>
+<tr><td>Acceleration</td><td><b>d²x/dt² i + d²y/dt² j</b></td><td><b>a<sub>r</sub> r̂ + a<sub>θ</sub> θ̂</b></td></tr>
+<tr><td>Friction</td><td><b>f ≤ μN</b></td><td><b>tanφ = μ</b></td></tr></table>
+<div class="eq">a<sub>r</sub> = d²r/dt² − r(dθ/dt)²<br/>a<sub>θ</sub> = r d²θ/dt² + 2(dr/dt)(dθ/dt)</div>
+<p><b>Newton:</b> <b>ΣF = ma</b>; <b>constraints</b> reduce DOF; use the coordinate system that matches the symmetry.</p></div><div class="card"><h3><span class="n">22</span>Rotating frames and Coriolis</h3>
+<p>In a frame rotating with angular velocity <b>ω</b>, the extra inertial forces are:</p>
+<div class="eq">Centrifugal: mω²r (outward)<br/>Coriolis: −2mω × v</div>
+<p>The Coriolis acceleration is perpendicular to both <b>ω</b> and <b>v</b>; its horizontal component on Earth is <b>a<sub>c</sub> = 2ωv sin λ</b>, where λ is the latitude.</p>
+<div class="ex"><span class="t">Eg.</span> <b>ω = 7.29×10<sup>−5</sup> rad/s</b>, <b>v = 100 m/s</b>, <b>λ = 30°</b> → <b>a<sub>c</sub> = 2(7.29×10<sup>−5</sup>)(100)(0.5) = 7.29×10<sup>−3</sup> m/s²</b>.</div></div><div class="card"><h3><span class="n">23</span>Projectile from a height</h3>
+<div class="eq">x = u cosθ t<br/>y = h + u sinθ t − ½gt²</div>
+<p>Set <b>y = 0</b> to find the time of flight; the horizontal range is <b>R = u cosθ · t</b>. At impact, <b>v<sub>x</sub> = u cosθ</b>, <b>v<sub>y</sub> = u sinθ − gt</b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>h = 10 m</b>, <b>u = 20 m/s</b>, <b>θ = 30°</b>: <b>0 = 10 + 10t − 4.905t²</b> → <b>t = 2.77 s</b>, <b>R = 48.0 m</b>; impact speed <b>≈ 21.6 m/s</b>.</div></div></div></div></div></div>
+</body></html>

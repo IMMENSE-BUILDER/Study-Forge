@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.51** [build 111]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.52** [build 112]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -166,7 +166,18 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.51):
+Recent major changes (Nov 2026, now v0.6.52):
+- v0.6.52 (Build 112):
+  - Integrated Verified Master Duplex Cheatsheets directly from the cheatsheet-layout skill (pre-leveled, verified 200+ DPI print assets):
+    - Added instant-load master cheatsheets for core subjects:
+      1. PPS (ICT-101): Units 1 & 2 (22 cards Unit 1 + 20 cards Unit 2) with ANSI C types, precedence, loops, arrays, sorting/searching algorithms.
+      2. EM (ICT-119): Units 1 & 2 (18 cards Unit 1 + 16 cards Unit 2) with Varignon, couples, FBDs, trusses, beams & cables.
+      3. EM (ICT-119): Units 3 & 4 (16 cards Unit 3 + 16 cards Unit 4) with centroids, Pappus-Guldinus, MOI, friction, kinematics.
+      4. PHY (ICT-111T): Units 1 & 2 (15 cards Unit 1 + 14 cards Unit 2) with interference, thin films, diffraction, polarization, lasers & fibers.
+    - Integrated direct download button for the official print-ready duplex vector PDFs ('pps-cheatsheet.pdf', 'em-cheatsheet.pdf', etc.) for 100% crisp, zero-margin A4 landscape printing.
+    - Added high-resolution interactive fullscreen modal viewer ('openImageFullscreen') with 100% to 350% zoom controls, panning, keyboard shortcuts (+/-/0/Esc), and direct PDF download.
+    - Upgraded live AI cheatsheet engine: raised card parser limit from 14 to 30, and overhauled generation prompt to mandate 18–22 dense cards with 4–8 table rows, full subtopic coverage, complete code snippets, and micro-notes.
+  - Triple bump v0.6.52 / versionCode: 112 / CACHE_NAME: study-forge-v0.6.52.
 - v0.6.51 (Build 111):
   - Fixed CSS selector scoping causing unstyled cards, missing borders, and broken duplex column grids:
     - Root cause: CSS rules were strictly prefixed with `.cheatsheet-sheet [selector]`, failing to match `.duplex-sheet`, `.duplex-page`, and `.half-unit` containers.

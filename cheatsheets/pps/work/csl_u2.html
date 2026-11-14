@@ -1,0 +1,166 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Cheatsheet Unit 2</title><style>@page{size:297mm 210mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#fff}
+:root{--ac:#1a59a6;--ac2:#2f78c4;--soft:#f4f8fd;--line:#dbe5f1;--hd:#e1ecf9;--dk:#0d2a4d;--g1:#17407a;--g2:#2b6cb8;--mut:#46607e}
+body.u2{--ac:#0f6b5f;--ac2:#1d9a86;--soft:#f2faf8;--line:#cfe8e3;--hd:#dcf1ec;--dk:#0b3b35;--g1:#0b4f47;--g2:#1b8f7b;--mut:#3f6b64}
+body{font-family:'Carlito','Calibri','Inter',sans-serif;font-size:6.5pt;line-height:1.18;color:#14202e}
+.page{width:297mm;height:210mm;position:relative;page-break-after:always;overflow:hidden}
+.wrap{position:absolute;left:3.5mm;top:3.5mm;width:calc(141.5mm / var(--z));height:calc(203mm / var(--z));zoom:var(--z)}
+.banner{background:linear-gradient(90deg,var(--g1),var(--g2));color:#fff;font-weight:700;font-size:8pt;padding:2.2pt 6pt;border-radius:2.5pt;margin-bottom:3pt;letter-spacing:.1pt;display:flex;justify-content:space-between}
+.banner span{font-weight:400;font-size:6pt;opacity:.9;align-self:center}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2.4mm;height:calc(100% - 15pt)}
+.col{overflow:hidden;min-height:0}
+.card{background:var(--soft);border:.4pt solid var(--line);border-left:2pt solid var(--ac2);border-radius:2pt;padding:1.4pt 3.2pt 1.6pt 3.8pt;margin-bottom:2.2pt}
+.card h3{font-size:7.3pt;color:var(--ac);font-weight:700;display:flex;align-items:center;gap:2pt;margin-bottom:1.2pt;line-height:1.15}
+.n{display:inline-block;background:var(--ac);color:#fff;border-radius:2pt;min-width:8pt;height:8pt;text-align:center;font-size:5.6pt;line-height:8pt;padding:0 1pt}
+b{font-weight:700;color:var(--dk)}
+ul{list-style:none}
+li{padding-left:6pt;position:relative;margin:.3pt 0}
+li:before{content:'';position:absolute;left:1.6pt;top:3pt;width:2pt;height:2pt;border-radius:50%;background:var(--ac2)}
+p{margin:.6pt 0}
+table{border-collapse:collapse;width:100%;margin:1pt 0;font-size:5.9pt;line-height:1.12}
+th,td{border:.35pt solid var(--line);padding:.6pt 2pt;text-align:left;vertical-align:top;background:#fff}
+th{background:var(--hd);color:var(--dk);font-weight:700}
+.eq{background:#fff;border:.4pt solid var(--line);border-left:1.4pt solid var(--ac);border-radius:2pt;padding:.8pt 3pt;margin:1pt 0;font-size:6.3pt;line-height:1.3}
+.d{border-left:1.4pt solid #e08a1e;padding-left:3pt;margin:1pt 0;background:#fff8ee}
+.d .t{font-weight:700;color:#9a5200}
+.ex{border-left:1.4pt solid #3f9a5a;padding-left:3pt;margin:1pt 0;background:#f0faf3}
+.ex .t{font-weight:700;color:#256b3c}
+.w{border-left:1.4pt solid #c0392b;padding-left:3pt;margin:1pt 0;background:#fff3f1}
+.w .t{font-weight:700;color:#a8321f}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:1pt 0;margin:1pt 0}
+.chip{background:#fff;border:.5pt solid var(--ac2);border-radius:2pt;padding:.4pt 2.5pt;font-weight:700;color:var(--dk);font-size:5.9pt;text-align:center;line-height:1.1}
+.arr{color:var(--ac2);font-weight:700;padding:0 1.2pt;font-size:7pt}
+sub,sup{font-size:70%;line-height:0}
+svg{display:block;margin:1pt auto}
+.c2{display:grid;grid-template-columns:1fr 1fr;gap:3pt}
+.tp{background:#e08a1e;color:#fff;border-radius:2pt;padding:0 2pt;font-size:5pt;font-weight:700;line-height:1.35;margin-left:1pt;white-space:nowrap}ol li:before{display:none}ol li{padding-left:0}ol{margin-left:9pt}.wrap{left:0;top:0;width:calc(146.5mm / var(--z));height:calc(210mm / var(--z));padding:0}.card{margin-bottom:1.6pt}.cols{grid-template-rows:minmax(0,1fr)}table{line-height:1.04}th,td{padding:.25pt 1.5pt}p{margin:.3pt 0}li{margin:0}.card{padding:1pt 3pt 1.2pt 3.6pt}.eq{margin:.6pt 0}.w,.d,.ex{margin:.6pt 0}</style></head><body class="u2"><div class="page"><div class="wrap" style="--z:0.97"><div class="banner">UNIT II · PPS: Functions, Arrays &amp; Strings<span>ICT 101 · Programming for Problem Solving (C)</span></div><div class="cols"><div class="col" id="a0"><div class="card"><h3><span class="n">1</span>Storage Classes: auto &amp; register</h3>
+<table><tr><th>Class</th><th>Keyword</th><th>Scope</th><th>Lifetime</th><th>Location</th></tr>
+<tr><td><b>Automatic</b></td><td><b>auto</b></td><td>Local block</td><td>Block entry to exit</td><td>Stack</td></tr>
+<tr><td><b>Register</b></td><td><b>register</b></td><td>Local block</td><td>Block entry to exit</td><td>CPU register (hint)</td></tr></table>
+<div class="eq">void compute(void) {<br/>  auto int x = 10;         /* Default for all block locals */<br/>  register int loop_counter; /* Suggests register storage */<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> Address operator <b>&amp;loop_counter</b> is strictly illegal for <b>register</b> variables. C23 repurposes <b>auto</b> for type inference: <b>auto pi = 3.14;</b>.</div>
+</div><div class="card"><h3><span class="n">2</span>Storage Class: thread_local</h3>
+<p>Introduced in C11 as <b>_Thread_local</b> (and <b>thread_local</b> via <b>&lt;threads.h&gt;</b>; keyword in C23).</p>
+<div class="eq">#include &lt;threads.h&gt;<br/>thread_local int thread_specific_id = 0;</div>
+<div class="ex"><span class="t">Ex.</span> Each execution thread allocates an independent storage instance. Value changes in Thread A do not affect Thread B, preventing race conditions without mutex locking.</div>
+</div><div class="card"><h3><span class="n">3</span>1D Arrays &amp; Memory Layout</h3>
+<p>Contiguous block of homogeneous elements indexed <b>0</b> to <b>N-1</b>. Address formula: <b>&amp;a[i] = Base + i × sizeof(T)</b>.</p>
+<div class="eq">int a[5] = {10, 20, 30}; /* a[3]=0, a[4]=0 */<br/>int b[] = {1, 2, 3, 4};  /* size deduced as 4 */<br/>size_t count = sizeof(b) / sizeof(b[0]); /* count = 4 */</div>
+<div class="ex"><span class="t">Ex.</span> C99 designated initializers: <b>int arr[10] = {[0]=1, [5]=9, [9]=88};</b> fills specific indices; remaining elements are zeroed.</div>
+</div><div class="card"><h3><span class="n">4</span>Multi-Dimensional Arrays</h3>
+<p>2D array <b>T arr[R][C]</b> stores elements in <b>row-major order</b>: row 0, row 1, ..., row $R-1$. Contiguous in memory.</p>
+<div class="eq">int m[2][3] = {{1, 2, 3}, {4, 5, 6}};<br/>/* Offset formula: &amp;m[i][j] = Base + (i * C + j) * sizeof(T) */</div>
+<div class="ex"><span class="t">Ex.</span> When passing 2D arrays to functions, the column dimension <b>must</b> be specified: <b>void print_mat(int a[][3], int rows)</b> or <b>void print_mat(int (*a)[3], int rows)</b>.</div>
+</div><div class="card"><h3><span class="n">5</span>Binary Search Algorithm</h3>
+<p>Requires array to be <b>strictly sorted</b>. Compares key with middle element and halves the search space each step.</p>
+<div class="eq">int binary_search(const int a[], int n, int key) {<br/>  int low = 0, high = n - 1;<br/>  while (low &lt;= high) {<br/>    int mid = low + (high - low) / 2; /* prevents overflow */<br/>    if (a[mid] == key) return mid;<br/>    else if (a[mid] &lt; key) low = mid + 1;<br/>    else high = mid - 1;<br/>  }<br/>  return -1;<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>Complexity:</b> Best: $O(1)$, Worst/Avg: $O(\log_2 n)$. 1,000,000 items checked in $\le 20$ iterations. Iterative space: $O(1)$.</div>
+</div><div class="card"><h3><span class="n">6</span>Selection Sort Algorithm</h3>
+<p>Finds minimum element in unsorted subarray and swaps it to beginning of unsorted region. Exactly at most $n-1$ swaps.</p>
+<div class="eq">void selection_sort(int a[], int n) {<br/>  for (int i = 0; i &lt; n - 1; i++) {<br/>    int min_idx = i;<br/>    for (int j = i + 1; j &lt; n; j++) {<br/>      if (a[j] &lt; a[min_idx]) min_idx = j;<br/>    }<br/>    if (min_idx != i) {<br/>      int t = a[i]; a[i] = a[min_idx]; a[min_idx] = t;<br/>    }<br/>  }<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>Complexity:</b> $O(n^2)$ comparisons in all cases. Ideal when write operations to memory (e.g. Flash/EEPROM) are expensive. <b>Unstable</b>. In-place.</div>
+</div></div><div class="col" id="b0"><div class="card"><h3><span class="n">7</span>Inline Functions vs Function Macros</h3>
+<table><tr><th>Feature</th><th>inline function (C99)</th><th>Preprocessor #define macro</th></tr>
+<tr><td>Evaluation</td><td>Compiled code; inlined by optimizer</td><td>Pure text substitution</td></tr>
+<tr><td>Type Safety</td><td>Strict argument/return type check</td><td>Zero type validation</td></tr>
+<tr><td>Side Effects</td><td>Safe: arguments evaluated once</td><td>Hazard: <b>SQR(i++)</b> evaluates <b>i</b> twice</td></tr>
+<tr><td>Debugging</td><td>Generates symbols, step-traceable</td><td>Difficult to trace in debugger</td></tr></table>
+<div class="eq">static inline int max(int a, int b) { return (a &gt; b) ? a : b; }</div>
+<div class="ex"><span class="t">Ex.</span> <b>static inline</b> in headers prevents multiple definition linker errors across translation units.</div>
+</div><div class="card"><h3><span class="n">8</span>Scope, Visibility &amp; Lifetime Matrix</h3>
+<table><tr><th>Storage Category</th><th>Scope</th><th>Linkage</th><th>Lifetime</th><th>Default Init</th></tr>
+<tr><td>Block local (auto)</td><td>Block { }</td><td>None</td><td>Function block</td><td>Garbage</td></tr>
+<tr><td>Static local</td><td>Block { }</td><td>None</td><td>Entire program</td><td>Zero (0)</td></tr>
+<tr><td>Static global</td><td>File</td><td>Internal</td><td>Entire program</td><td>Zero (0)</td></tr>
+<tr><td>Extern global</td><td>Program</td><td>External</td><td>Entire program</td><td>Zero (0)</td></tr>
+<tr><td>Heap (malloc)</td><td>Pointer-bound</td><td>None</td><td>free() or exit</td><td>Garbage (calloc=0)</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> Global and <b>static</b> variables are automatically initialized to 0/NULL at load time by the OS loader.</div>
+</div><div class="card"><h3><span class="n">9</span>Linear Search Algorithm</h3>
+<p>Sequentially scans array from index 0 to $n-1$. Works on unsorted data.</p>
+<div class="eq">int linear_search(const int a[], int n, int key) {<br/>  for (int i = 0; i &lt; n; i++) {<br/>    if (a[i] == key) return i; /* index found */<br/>  }<br/>  return -1; /* not found */<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>Complexity:</b> Best case: $O(1)$ (found at index 0). Worst case: $O(n)$ (at index $n-1$ or absent). Average comparisons: $(n+1)/2 \sim O(n)$. Auxiliary space: $O(1)$.</div>
+</div><div class="card"><h3><span class="n">10</span>C Strings &amp; Memory Layout</h3>
+<p>A C string is a 1D array of <b>char</b> terminated by the null character <b>' '</b> (ASCII value 0). <b>"Hello"</b> occupies 6 bytes.</p>
+<div class="eq">char s1[] = "Hello";  /* Stack array: 6 bytes, modifiable */<br/>char *s2  = "Hello";  /* Pointer to literal in .rodata: READ ONLY */<br/>s1[0] = 'h';          /* OK: s1 becomes "hello" */<br/>/* s2[0] = 'h'; → Segmentation Fault / Undefined Behavior */</div>
+<div class="ex"><span class="t">Ex.</span> <b>sizeof(s1) == 6</b> (includes ' '), whereas <b>strlen(s1) == 5</b> (excludes ' ').</div>
+</div><div class="card"><h3><span class="n">11</span>String Tokenization: strtok</h3>
+<p>Splits string into tokens based on delimiter characters. Modifies the source string in place by inserting <b>' '</b> at delimiter locations.</p>
+<div class="eq">char str[] = "apple,banana,orange";<br/>char *tok = strtok(str, ",");<br/>while (tok != NULL) {<br/>  printf("Item: %s\n", tok);<br/>  tok = strtok(NULL, ","); /* pass NULL on subsequent calls */<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>strtok</b> maintains internal static state; it is not thread-safe and cannot be used on read-only string literals. Use POSIX <b>strtok_r</b> for multi-threaded code.</div>
+</div><div class="card"><h3><span class="n">12</span>Command-Line Arguments: argc &amp; argv</h3>
+<p>Syntax: <b>int main(int argc, char *argv[])</b>. Transmits execution arguments from the OS shell to the program.</p>
+<div class="flow"><span class="chip">./program</span><span class="arr">→</span><span class="chip">argv[0]</span> | <span class="chip">arg1</span><span class="arr">→</span><span class="chip">argv[1]</span> | <span class="chip">arg2</span><span class="arr">→</span><span class="chip">argv[2]</span> | <span class="chip">NULL</span><span class="arr">→</span><span class="chip">argv[argc]</span></div>
+<div class="eq">int main(int argc, char *argv[]) {<br/>  if (argc &lt; 2) { printf("Usage: %s &lt;num&gt;\n", argv[0]); return 1; }<br/>  char *endptr;<br/>  long val = strtol(argv[1], &amp;endptr, 10);<br/>  if (*endptr != '\0') { printf("Invalid numeric input!\n"); return 1; }<br/>  printf("Parsed: %ld\n", val);<br/>  return 0;<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> Prefer <b>strtol</b> over <b>atoi</b> because <b>strtol</b> validates non-numeric trailing garbage and detects integer overflow via <b>errno == ERANGE</b>.</div>
+</div></div></div></div></div>
+<div class="page"><div class="wrap" style="--z:0.97"><div class="banner">UNIT II · PPS: Functions, Arrays &amp; Strings (contd.)<span>ICT 101 · Programming for Problem Solving (C)</span></div><div class="cols"><div class="col" id="a1"><div class="card"><h3><span class="n">13</span>Storage Classes: static &amp; extern</h3>
+<p><b>static (block scope):</b> Retains value between function invocations. Initialized once at startup in BSS/Data segment.</p>
+<p><b>static (file scope):</b> Internal linkage. Limits visibility strictly to current <b>.c</b> translation unit.</p>
+<p><b>extern:</b> Declares a global variable/function defined in another file without creating storage.</p>
+<div class="eq">/* file1.c */ int global_score = 100;  static int secret_key = 42;<br/>/* file2.c */ extern int global_score; /* references file1.c */</div>
+<div class="ex"><span class="t">Ex.</span> Function call counter: <b>void count(void) { static int c = 0; printf("%d ", ++c); }</b> → prints 1, 2, 3 on successive calls.</div>
+</div><div class="card"><h3><span class="n">14</span>Array-Pointer Duality &amp; Decay</h3>
+<p>In expressions, array names <b>decay</b> to a pointer to their first element (<b>&amp;a[0]</b>). Pointer arithmetic scales by element byte size:</p>
+<div class="eq">a[i] == *(a + i) == *(i + a) == i[a]</div>
+<table><tr><th>Expression</th><th>Evaluates to Type</th><th>Meaning</th></tr>
+<tr><td><b>a</b> (decayed)</td><td><b>int *</b></td><td>Pointer to 1st element (address: Base)</td></tr>
+<tr><td><b>&amp;a</b></td><td><b>int (*)[5]</b></td><td>Pointer to whole array (address: Base)</td></tr>
+<tr><td><b>sizeof(a)</b></td><td><b>size_t</b></td><td>Total byte size of array (5 × 4 = 20)</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> Three exceptions to array decay: operand of <b>sizeof</b>, operand of address-of <b>&amp;</b>, and string literal in char array initialization.</div>
+</div><div class="card"><h3><span class="n">15</span>Insertion Sort Algorithm</h3>
+<p>Builds sorted array one element at a time by picking current key and shifting larger elements in sorted prefix rightward.</p>
+<div class="eq">void insertion_sort(int a[], int n) {<br/>  for (int i = 1; i &lt; n; i++) {<br/>    int key = a[i], j = i - 1;<br/>    while (j &gt;= 0 &amp;&amp; a[j] &gt; key) {<br/>      a[j + 1] = a[j];<br/>      j--;<br/>    }<br/>    a[j + 1] = key;<br/>  }<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>Complexity:</b> Best: $O(n)$ (already sorted), Worst/Avg: $O(n^2)$. <b>Stable</b>, in-place, adaptive. Preferred algorithm for small arrays ($n ≤ 16$).</div>
+</div><div class="card"><h3><span class="n">16</span>String Input: fgets vs scanf vs gets</h3>
+<table><tr><th>Function</th><th>Buffer Overflow Protection?</th><th>Reads Newline '
+'?</th><th>Status</th></tr>
+<tr><td><b>gets(buf)</b></td><td>None (writes past end)</td><td>Discards '
+'</td><td><b>Removed in C11</b></td></tr>
+<tr><td><b>scanf("%s", s)</b></td><td>No (unless %19s width specified)</td><td>Stops at whitespace</td><td>Standard</td></tr>
+<tr><td><b>fgets(s, n, stdin)</b></td><td><b>Yes (reads at most n-1)</b></td><td><b>Retains '
+'</b></td><td><b>Recommended</b></td></tr></table>
+<div class="eq">char line[100];<br/>if (fgets(line, sizeof(line), stdin) != NULL) {<br/>  line[strcspn(line, "\r\n")] = '\0'; /* clean newline */<br/>  fputs(line, stdout);<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>strcspn</b> locates index of first matching character (here '
+' or '
+') for instant termination.</div>
+</div><div class="card"><h3><span class="n">17</span>String Library: &lt;string.h&gt; Functions</h3>
+<table><tr><th>Function</th><th>Prototype &amp; Behavior</th><th>Safety Rule</th></tr>
+<tr><td><b>strlen(s)</b></td><td><b>size_t strlen(const char *s);</b> Returns char count before ' '</td><td>O(n) traversal</td></tr>
+<tr><td><b>strcpy(d, s)</b></td><td><b>char *strcpy(char *d, const char *s);</b> Copies string</td><td><b>dest</b> must hold len+1</td></tr>
+<tr><td><b>strncpy(d,s,n)</b></td><td>Copies up to n chars; pads zeros if s &lt; n</td><td>May omit ' ' if len ≥ n</td></tr>
+<tr><td><b>strcat(d, s)</b></td><td>Appends s to end of d; returns d</td><td><b>dest</b> capacity check</td></tr>
+<tr><td><b>strncat(d,s,n)</b></td><td>Appends at most n chars; always appends ' '</td><td>Safe concatenation</td></tr>
+<tr><td><b>strcmp(a, b)</b></td><td>Returns &lt;0 (a&lt;b), 0 (a==b), &gt;0 (a&gt;b) (unsigned char comparison)</td><td>Case sensitive</td></tr>
+<tr><td><b>strncmp(a,b,n)</b></td><td>Compares up to n characters</td><td>Prefix comparison</td></tr>
+<tr><td><b>strstr(h, n)</b></td><td>Finds first occurrence of needle in haystack; returns pointer</td><td>Returns NULL if absent</td></tr>
+<tr><td><b>strchr(s, c)</b></td><td>Finds first char c in s; <b>strrchr</b> finds last occurrence</td><td>Returns char* or NULL</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> Always prefer <b>snprintf(buf, sizeof(buf), "%s%s", s1, s2)</b> for robust string composition.</div>
+</div></div><div class="col" id="b1"><div class="card"><h3><span class="n">18</span>Functions: Prototypes &amp; Definitions</h3>
+<p><b>Function anatomy:</b> <b>return_type name(param_list) { body }</b>. Prototypes declare return and argument types to enable compiler validation before definition.</p>
+<div class="eq">double power(double base, int exp); /* prototype */<br/>int main(void) {<br/>  printf("%.2f\n", power(2.5, 3));<br/>  return 0;<br/>}<br/>double power(double base, int exp) {<br/>  double res = 1.0;<br/>  for (int i = 0; i &lt; exp; i++) res *= base;<br/>  return res;<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>void</b> functions take no return expression (<b>return;</b> exits early). C23 mandates <b>f()</b> is identical to <b>f(void)</b>.</div>
+</div><div class="card"><h3><span class="n">19</span>Parameter Passing: Value vs Address</h3>
+<p>C is strictly <b>pass-by-value</b>: arguments are copied onto stack frames. Modifying local parameter variables has zero effect on caller's variables.</p>
+<p><b>Pass-by-Address (Emulated Reference):</b> Pass pointer address <b>&amp;x</b>; callee dereferences with <b>*p</b> to mutate caller memory directly.</p>
+<div class="eq">void swap(int *a, int *b) {<br/>  int temp = *a;  *a = *b;  *b = temp;<br/>}<br/>/* In caller */: int x = 5, y = 10; swap(&amp;x, &amp;y); /* x=10, y=5 */</div>
+<div class="ex"><span class="t">Ex.</span> Pointers also enable functions to return multiple results (e.g. <b>void get_bounds(int *min, int *max)</b>).</div>
+</div><div class="card"><h3><span class="n">20</span>Recursion &amp; Stack Frame Mechanics</h3>
+<p>A recursive function calls itself. Requires: (1) <b>Base case</b> that terminates recursion; (2) <b>Recursive step</b> reducing problem towards base case.</p>
+<div class="eq">long long fact(int n) {<br/>  if (n &lt;= 1) return 1;          /* Base case */<br/>  return n * fact(n - 1);       /* Recursive call */<br/>}</div>
+<div class="flow"><span class="chip">fact(3)</span><span class="arr">→</span><span class="chip">3 × fact(2)</span><span class="arr">→</span><span class="chip">2 × fact(1)</span><span class="arr">→</span><span class="chip">Base: 1</span><span class="arr">→</span><span class="chip">Unwind: 2 → 6</span></div>
+<div class="ex"><span class="t">Ex.</span> Each call allocates a stack activation record. Unbounded recursion causes stack overflow. Time: $O(n)$, Space: $O(n)$ stack frames.</div>
+</div><div class="card"><h3><span class="n">21</span>Bubble Sort Algorithm</h3>
+<p>Repeatedly steps through list, compares adjacent elements, and swaps them if out of order. Largest unsorted element bubbles to end on each pass.</p>
+<div class="eq">void bubble_sort(int a[], int n) {<br/>  for (int i = 0; i &lt; n - 1; i++) {<br/>    int swapped = 0;<br/>    for (int j = 0; j &lt; n - 1 - i; j++) {<br/>      if (a[j] &gt; a[j + 1]) {<br/>        int t = a[j]; a[j] = a[j + 1]; a[j + 1] = t;<br/>        swapped = 1;<br/>      }<br/>    }<br/>    if (!swapped) break; /* early exit optimization */<br/>  }<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>Complexity:</b> Best: $O(n)$ (with swapped flag), Worst/Avg: $O(n^2)$. <b>Stable</b> (equal elements retain order). In-place ($O(1)$ space).</div>
+</div><div class="card"><h3><span class="n">22</span>Sorting Algorithms Summary Comparison</h3>
+<table><tr><th>Algorithm</th><th>Best Time</th><th>Avg Time</th><th>Worst Time</th><th>Space</th><th>Stable?</th><th>Key Advantage</th></tr>
+<tr><td><b>Bubble Sort</b></td><td>$O(n)$</td><td>$O(n^2)$</td><td>$O(n^2)$</td><td>$O(1)$</td><td>Yes</td><td>Detects sorted data fast</td></tr>
+<tr><td><b>Selection Sort</b></td><td>$O(n^2)$</td><td>$O(n^2)$</td><td>$O(n^2)$</td><td>$O(1)$</td><td>No</td><td>Minimal memory writes</td></tr>
+<tr><td><b>Insertion Sort</b></td><td>$O(n)$</td><td>$O(n^2)$</td><td>$O(n^2)$</td><td>$O(1)$</td><td>Yes</td><td>Fast on nearly-sorted data</td></tr>
+<tr><td><b>Merge Sort</b></td><td>$O(n\log n)$</td><td>$O(n\log n)$</td><td>$O(n\log n)$</td><td>$O(n)$</td><td>Yes</td><td>Guaranteed $O(n\log n)$</td></tr>
+<tr><td><b>Quick Sort</b></td><td>$O(n\log n)$</td><td>$O(n\log n)$</td><td>$O(n^2)$</td><td>$O(\log n)$</td><td>No</td><td>Fastest in-memory cache</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> Stability preserves original relative order of records with equal sorting keys.</div>
+</div></div></div></div></div>
+</body></html>

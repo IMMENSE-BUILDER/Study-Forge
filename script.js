@@ -4085,11 +4085,325 @@ function initAskAI() {
     });
     fillSheetUnits();
   }
+  // Verified Master Cheatsheets from cheatsheet-layout skill (pre-leveled, high-density print assets)
+  const MASTER_CHEATSHEETS = {
+    'pps-u1-u2': {
+      subject: 'PPS',
+      title: 'Programming for Problem Solving (ICT-101) · Units 1 & 2',
+      subtitle: 'ANSI C, Types, Precedence, Control Flow, Arrays, Functions, Sort/Search',
+      pdf: './cheatsheets/pps/pps-cheatsheet.pdf',
+      page1: './cheatsheets/pps/page1.png',
+      page2: './cheatsheets/pps/page2.png',
+      faculty: 'Ms. Alka · ADGIPS IT Sem-1'
+    },
+    'em-u1-u2': {
+      subject: 'EM',
+      title: 'Engineering Mechanics (ICT-119) · Units 1 & 2',
+      subtitle: 'Force Systems, Varignon, Couples, FBDs, Trusses, Beams & Cables',
+      pdf: './cheatsheets/em/em-cheatsheet.pdf',
+      page1: './cheatsheets/em/page1.png',
+      page2: './cheatsheets/em/page2.png',
+      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1'
+    },
+    'em-u3-u4': {
+      subject: 'EM',
+      title: 'Engineering Mechanics (ICT-119) · Units 3 & 4',
+      subtitle: 'Centroids, Pappus-Guldinus, MOI, Friction, Kinematics, Virtual Work',
+      pdf: './cheatsheets/em34/em34-cheatsheet.pdf',
+      page1: './cheatsheets/em34/page1.png',
+      page2: './cheatsheets/em34/page2.png',
+      faculty: 'Dr. Bajpai · ADGIPS IT Sem-1'
+    },
+    'phy-u1-u2': {
+      subject: 'PHL',
+      title: 'Engineering Physics–I (ICT-111T) · Units 1 & 2',
+      subtitle: 'Interference, Thin Films, Diffraction, Polarization, Lasers & Fibers',
+      pdf: './cheatsheets/phy/phy-cheatsheet.pdf',
+      page1: './cheatsheets/phy/page1.png',
+      page2: './cheatsheets/phy/page2.png',
+      faculty: 'ADGIPS IT Sem-1'
+    }
+  };
+
+
+  // Full-bleed modal viewer with multi-level zoom (100% - 350%)
+  function openImageFullscreen(imgSrc, title, pdfUrl) {
+    const existing = document.getElementById('masterModal');
+    if (existing) existing.remove();
+
+    let zoom = 1.0;
+    const modal = document.createElement('div');
+    modal.id = 'masterModal';
+    modal.className = 'master-img-modal';
+
+    const bar = document.createElement('div');
+    bar.className = 'master-modal-bar';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'master-modal-title';
+    titleEl.innerHTML = '<span>🔍</span> <span>' + escapeHtml(title || 'Master Cheatsheet View') + '</span>';
+
+    const tools = document.createElement('div');
+    tools.className = 'master-modal-tools';
+
+    const zoomLabel = document.createElement('span');
+    zoomLabel.style.cssText = 'font-size:12px; font-weight:700; color:#cbd5e1; min-width:48px; text-align:center;';
+    zoomLabel.textContent = '100%';
+
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.type = 'button';
+    zoomOutBtn.className = 'master-modal-btn';
+    zoomOutBtn.textContent = '➖ Zoom Out';
+
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.type = 'button';
+    zoomInBtn.className = 'master-modal-btn';
+    zoomInBtn.textContent = '➕ Zoom In';
+
+    const zoomFitBtn = document.createElement('button');
+    zoomFitBtn.type = 'button';
+    zoomFitBtn.className = 'master-modal-btn';
+    zoomFitBtn.textContent = '🔄 Fit';
+
+    const zoom200Btn = document.createElement('button');
+    zoom200Btn.type = 'button';
+    zoom200Btn.className = 'master-modal-btn';
+    zoom200Btn.textContent = '🔍 200% Detail';
+
+    let dlBtn = null;
+    if (pdfUrl) {
+      dlBtn = document.createElement('a');
+      dlBtn.className = 'master-modal-btn primary';
+      dlBtn.href = pdfUrl;
+      dlBtn.download = pdfUrl.split('/').pop();
+      dlBtn.target = '_blank';
+      dlBtn.innerHTML = '📥 Download PDF';
+    }
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'master-modal-btn';
+    closeBtn.textContent = '✕ Close';
+
+    tools.append(zoomOutBtn, zoomLabel, zoomInBtn, zoomFitBtn, zoom200Btn);
+    if (dlBtn) tools.appendChild(dlBtn);
+    tools.appendChild(closeBtn);
+
+    bar.append(titleEl, tools);
+    modal.appendChild(bar);
+
+    const body = document.createElement('div');
+    body.className = 'master-modal-body';
+
+    const img = document.createElement('img');
+    img.className = 'master-modal-img';
+    img.src = imgSrc;
+    img.alt = title || 'Cheatsheet';
+
+    body.appendChild(img);
+    modal.appendChild(body);
+    document.body.appendChild(modal);
+
+    function applyZoom(z) {
+      zoom = Math.max(0.5, Math.min(3.5, z));
+      img.style.transform = 'scale(' + zoom + ')';
+      zoomLabel.textContent = Math.round(zoom * 100) + '%';
+      if (zoom > 1.0) {
+        body.style.alignItems = 'flex-start';
+        body.style.justifyContent = 'flex-start';
+      } else {
+        body.style.alignItems = 'flex-start';
+        body.style.justifyContent = 'center';
+      }
+    }
+
+    zoomInBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(zoom + 0.35); });
+    zoomOutBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(zoom - 0.35); });
+    zoomFitBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(1.0); });
+    zoom200Btn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(2.0); });
+
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (zoom <= 1.1) applyZoom(2.0);
+      else applyZoom(1.0);
+    });
+
+    function closeModal() {
+      modal.remove();
+      window.removeEventListener('keydown', onKeyDown);
+    }
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') closeModal();
+      else if (e.key === '+' || e.key === '=') applyZoom(zoom + 0.35);
+      else if (e.key === '-' || e.key === '_') applyZoom(zoom - 0.35);
+      else if (e.key === '0') applyZoom(1.0);
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || e.target === body) closeModal();
+    });
+    window.addEventListener('keydown', onKeyDown);
+  }
+
+  // Builder for Verified Master Cheatsheets (exact high-density skill assets)
+  function buildMasterCheatsheetDOM(masterKey) {
+    const normKey = masterKey.replace(/^master-/, '');
+    const data = MASTER_CHEATSHEETS[normKey] || MASTER_CHEATSHEETS[masterKey];
+    if (!data) return null;
+
+    const root = document.createElement('div');
+    root.className = 'master-cheatsheet-wrap';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'master-sheet-header';
+
+    const badgeRow = document.createElement('div');
+    badgeRow.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;';
+
+    const badge = document.createElement('span');
+    badge.className = 'master-sheet-badge';
+    badge.textContent = '🌟 VERIFIED MASTER DUPLEX CHEATSHEET · 200+ DPI PRINT READY';
+
+    const actions = document.createElement('div');
+    actions.className = 'duplex-actions';
+    actions.style.marginTop = '0';
+
+    const dlPdfBtn = document.createElement('a');
+    dlPdfBtn.className = 'btn-sheet-act btn-sheet-pdf';
+    dlPdfBtn.href = data.pdf;
+    dlPdfBtn.download = data.pdf.split('/').pop();
+    dlPdfBtn.target = '_blank';
+    dlPdfBtn.innerHTML = '📥 Download Master PDF (Print-Ready)';
+
+    const printBtn = document.createElement('button');
+    printBtn.type = 'button';
+    printBtn.className = 'btn-sheet-act';
+    printBtn.innerHTML = '🖨️ Print';
+    printBtn.addEventListener('click', () => {
+      const win = window.open(data.pdf, '_blank');
+      if (win) win.focus();
+    });
+
+    actions.append(dlPdfBtn, printBtn);
+    badgeRow.append(badge, actions);
+
+    const title = document.createElement('div');
+    title.className = 'master-sheet-title';
+    title.textContent = data.title;
+
+    const sub = document.createElement('div');
+    sub.className = 'master-sheet-sub';
+    sub.innerHTML = '<span>Coverage:</span> ' + escapeHtml(data.subtitle) + ' · <span>Faculty / Exam:</span> ' + escapeHtml(data.faculty);
+
+    header.append(badgeRow, title, sub);
+    root.appendChild(header);
+
+    // Tabs
+    const tabs = document.createElement('div');
+    tabs.className = 'duplex-tabs';
+
+    const tab1 = document.createElement('button');
+    tab1.type = 'button';
+    tab1.className = 'duplex-tab active';
+    tab1.textContent = '📄 Page 1: Front (High Res)';
+
+    const tab2 = document.createElement('button');
+    tab2.type = 'button';
+    tab2.className = 'duplex-tab';
+    tab2.textContent = '📄 Page 2: Back (High Res)';
+
+    const tabBoth = document.createElement('button');
+    tabBoth.type = 'button';
+    tabBoth.className = 'duplex-tab';
+    tabBoth.textContent = '📑 Both Pages (Duplex View)';
+
+    tabs.append(tab1, tab2, tabBoth);
+    root.appendChild(tabs);
+
+    // Container
+    const container = document.createElement('div');
+    container.className = 'master-pages-container';
+
+    // Page 1 Box
+    const p1Wrap = document.createElement('div');
+    p1Wrap.className = 'master-page-box';
+    const p1Label = document.createElement('div');
+    p1Label.className = 'master-page-tag';
+    p1Label.innerHTML = '<strong>Page 1 (Front Side · Landscape Duplex)</strong> <span>🔍 Click / Tap to Zoom 200%</span>';
+    const img1 = document.createElement('img');
+    img1.className = 'master-sheet-img';
+    img1.src = data.page1;
+    img1.alt = data.title + ' - Page 1';
+    img1.loading = 'lazy';
+    img1.addEventListener('click', () => openImageFullscreen(data.page1, data.title + ' — Page 1 (Front)', data.pdf));
+    p1Wrap.append(p1Label, img1);
+
+    // Page 2 Box
+    const p2Wrap = document.createElement('div');
+    p2Wrap.className = 'master-page-box';
+    p2Wrap.style.display = 'none';
+    const p2Label = document.createElement('div');
+    p2Label.className = 'master-page-tag';
+    p2Label.innerHTML = '<strong>Page 2 (Back Side · Landscape Duplex)</strong> <span>🔍 Click / Tap to Zoom 200%</span>';
+    const img2 = document.createElement('img');
+    img2.className = 'master-sheet-img';
+    img2.src = data.page2;
+    img2.alt = data.title + ' - Page 2';
+    img2.loading = 'lazy';
+    img2.addEventListener('click', () => openImageFullscreen(data.page2, data.title + ' — Page 2 (Back)', data.pdf));
+    p2Wrap.append(p2Label, img2);
+
+    container.append(p1Wrap, p2Wrap);
+    root.appendChild(container);
+
+    // Tab Events
+    tab1.addEventListener('click', () => {
+      tab1.classList.add('active'); tab2.classList.remove('active'); tabBoth.classList.remove('active');
+      p1Wrap.style.display = ''; p2Wrap.style.display = 'none';
+    });
+    tab2.addEventListener('click', () => {
+      tab2.classList.add('active'); tab1.classList.remove('active'); tabBoth.classList.remove('active');
+      p1Wrap.style.display = 'none'; p2Wrap.style.display = '';
+    });
+    tabBoth.addEventListener('click', () => {
+      tabBoth.classList.add('active'); tab1.classList.remove('active'); tab2.classList.remove('active');
+      p1Wrap.style.display = ''; p2Wrap.style.display = '';
+    });
+
+    return root;
+  }
+
   function fillSheetUnits() {
     if (!sheetUnit || !sheetSubject) return;
-    const s = sheetSubjects().find(x => x.alias === sheetSubject.value);
+    const alias = sheetSubject.value;
+    const s = sheetSubjects().find(x => x.alias === alias);
     const units = (s && Array.isArray(s.units)) ? s.units : [];
     sheetUnit.innerHTML = '';
+
+    // Verified master cheatsheet options first (exact skill output)
+    if (alias === 'PPS') {
+      const m = document.createElement('option');
+      m.value = 'master-pps-u1-u2';
+      m.textContent = '🌟 Master Duplex Cheatsheet: Units 1 & 2 (Verified Dense)';
+      sheetUnit.appendChild(m);
+    } else if (alias === 'EM') {
+      const m1 = document.createElement('option');
+      m1.value = 'master-em-u1-u2';
+      m1.textContent = '🌟 Master Duplex Cheatsheet: Units 1 & 2 (Verified Dense)';
+      sheetUnit.appendChild(m1);
+      const m2 = document.createElement('option');
+      m2.value = 'master-em-u3-u4';
+      m2.textContent = '🌟 Master Duplex Cheatsheet: Units 3 & 4 (Verified Dense)';
+      sheetUnit.appendChild(m2);
+    } else if (alias === 'PHL' || alias === 'PHY') {
+      const m = document.createElement('option');
+      m.value = 'master-phy-u1-u2';
+      m.textContent = '🌟 Master Duplex Cheatsheet: Units 1 & 2 (Verified Dense)';
+      sheetUnit.appendChild(m);
+    }
 
     if (units.length >= 2) {
       const d1 = document.createElement('option');
@@ -4323,7 +4637,7 @@ function initAskAI() {
         const n = normalizeSheetBox(b);
         if (n) valid.push(n);
       } catch (e) {}
-      if (valid.length >= 14) break;
+      if (valid.length >= 30) break;
     }
     if (valid.length < 3) return null;
     return { title, boxes: valid };
@@ -4952,7 +5266,7 @@ ${unitCtx}
 
 TASK: Emit ONE dense single-unit revision cheatsheet as raw JSON (no fences, no commentary) covering the ENTIRE syllabus above.
 STRICT JSON SCHEMA:
-{"title": "UNIT N — NAME", "boxes": [ <10-12 box objects covering every subtopic in syllabus order> ]}
+{"title": "UNIT N — NAME", "boxes": [ <18-22 dense box objects covering every subtopic in syllabus order> ]}
 
 BOX STRUCTURE:
 Each box represents one topic card:
@@ -4961,9 +5275,9 @@ Each box represents one topic card:
 - Optional "desc": "1-2 concise definition lines with key terms"
 - Optional "eq": "key raw LaTeX formula without delimiters, e.g. V_{th} = V_{oc}"
 - Optional "example": "worked numerical or conceptual example starting with context, e.g. F = 100 N at 30° -> Fx = 86.6 N, Fy = 50 N"
-- For "table": "rows": [["label", "raw LaTeX formula or concise rule"], ...max 5]
-- For "flow": "steps": ["step 1", "step 2", "step 3", ...max 5] (derivations/process chips)
-- For "compare": "left": "Topic A", "right": "Topic B", "rows": [["feature A", "feature B"], ...max 5]
+- For "table": "rows": [["label", "raw LaTeX formula or concise rule"], ...4 to 8 rows]
+- For "flow": "steps": ["step 1", "step 2", "step 3", ...4 to 8 rows] (derivations/process chips)
+- For "compare": "left": "Topic A", "right": "Topic B", "rows": [["feature A", "feature B"], ...4 to 8 rows]
 - For "values": "items": ["constant / condition 1", "unit 2", ...max 6]
 - For "code": "code": "ANSI C snippet (max 6 lines)", "notes": ["key observation"]
 
@@ -5035,6 +5349,36 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
     if (!alias) {
       showToast('Pick a subject and unit first.');
       return;
+
+    // Intercept Master Cheatsheet selection (instant verified dense layout & vector PDF)
+    if (unitVal.startsWith('master-')) {
+      const masterKey = unitVal.replace(/^master-/, '');
+      const data = MASTER_CHEATSHEETS[masterKey] || MASTER_CHEATSHEETS[unitVal];
+      if (data) {
+        const userLine = '🌟 Master Duplex Cheatsheet: ' + data.subject + ' · ' + data.title;
+        const userBubble = document.createElement('div');
+        userBubble.className = 'ai-msg user';
+        const userText = document.createElement('div');
+        userText.textContent = userLine;
+        userBubble.appendChild(userText);
+        chatArea.appendChild(userBubble);
+
+        const botMsg = document.createElement('div');
+        botMsg.className = 'ai-msg bot cheatsheet-msg';
+        chatArea.appendChild(botMsg);
+
+        const sheetDOM = buildMasterCheatsheetDOM(masterKey);
+        botMsg.appendChild(sheetDOM);
+        chatArea.scrollTop = chatArea.scrollHeight;
+        if (sheetStatus) {
+          sheetStatus.style.display = 'inline-flex';
+          sheetStatus.innerHTML = '<span>🌟 Loaded Verified Master Cheatsheet (' + escapeHtml(data.subject) + ')</span>';
+          setTimeout(() => { if (sheetStatus) sheetStatus.style.display = 'none'; }, 4000);
+        }
+        return;
+      }
+    }
+
     }
     const apiKey = getActiveAiApiKey();
     if (!apiKey) {

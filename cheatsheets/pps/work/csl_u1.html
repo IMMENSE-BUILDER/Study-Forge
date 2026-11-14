@@ -1,0 +1,187 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Cheatsheet Unit 1</title><style>@page{size:297mm 210mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#fff}
+:root{--ac:#1a59a6;--ac2:#2f78c4;--soft:#f4f8fd;--line:#dbe5f1;--hd:#e1ecf9;--dk:#0d2a4d;--g1:#17407a;--g2:#2b6cb8;--mut:#46607e}
+body.u2{--ac:#0f6b5f;--ac2:#1d9a86;--soft:#f2faf8;--line:#cfe8e3;--hd:#dcf1ec;--dk:#0b3b35;--g1:#0b4f47;--g2:#1b8f7b;--mut:#3f6b64}
+body{font-family:'Carlito','Calibri','Inter',sans-serif;font-size:6.5pt;line-height:1.18;color:#14202e}
+.page{width:297mm;height:210mm;position:relative;page-break-after:always;overflow:hidden}
+.wrap{position:absolute;left:3.5mm;top:3.5mm;width:calc(141.5mm / var(--z));height:calc(203mm / var(--z));zoom:var(--z)}
+.banner{background:linear-gradient(90deg,var(--g1),var(--g2));color:#fff;font-weight:700;font-size:8pt;padding:2.2pt 6pt;border-radius:2.5pt;margin-bottom:3pt;letter-spacing:.1pt;display:flex;justify-content:space-between}
+.banner span{font-weight:400;font-size:6pt;opacity:.9;align-self:center}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2.4mm;height:calc(100% - 15pt)}
+.col{overflow:hidden;min-height:0}
+.card{background:var(--soft);border:.4pt solid var(--line);border-left:2pt solid var(--ac2);border-radius:2pt;padding:1.4pt 3.2pt 1.6pt 3.8pt;margin-bottom:2.2pt}
+.card h3{font-size:7.3pt;color:var(--ac);font-weight:700;display:flex;align-items:center;gap:2pt;margin-bottom:1.2pt;line-height:1.15}
+.n{display:inline-block;background:var(--ac);color:#fff;border-radius:2pt;min-width:8pt;height:8pt;text-align:center;font-size:5.6pt;line-height:8pt;padding:0 1pt}
+b{font-weight:700;color:var(--dk)}
+ul{list-style:none}
+li{padding-left:6pt;position:relative;margin:.3pt 0}
+li:before{content:'';position:absolute;left:1.6pt;top:3pt;width:2pt;height:2pt;border-radius:50%;background:var(--ac2)}
+p{margin:.6pt 0}
+table{border-collapse:collapse;width:100%;margin:1pt 0;font-size:5.9pt;line-height:1.12}
+th,td{border:.35pt solid var(--line);padding:.6pt 2pt;text-align:left;vertical-align:top;background:#fff}
+th{background:var(--hd);color:var(--dk);font-weight:700}
+.eq{background:#fff;border:.4pt solid var(--line);border-left:1.4pt solid var(--ac);border-radius:2pt;padding:.8pt 3pt;margin:1pt 0;font-size:6.3pt;line-height:1.3}
+.d{border-left:1.4pt solid #e08a1e;padding-left:3pt;margin:1pt 0;background:#fff8ee}
+.d .t{font-weight:700;color:#9a5200}
+.ex{border-left:1.4pt solid #3f9a5a;padding-left:3pt;margin:1pt 0;background:#f0faf3}
+.ex .t{font-weight:700;color:#256b3c}
+.w{border-left:1.4pt solid #c0392b;padding-left:3pt;margin:1pt 0;background:#fff3f1}
+.w .t{font-weight:700;color:#a8321f}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:1pt 0;margin:1pt 0}
+.chip{background:#fff;border:.5pt solid var(--ac2);border-radius:2pt;padding:.4pt 2.5pt;font-weight:700;color:var(--dk);font-size:5.9pt;text-align:center;line-height:1.1}
+.arr{color:var(--ac2);font-weight:700;padding:0 1.2pt;font-size:7pt}
+sub,sup{font-size:70%;line-height:0}
+svg{display:block;margin:1pt auto}
+.c2{display:grid;grid-template-columns:1fr 1fr;gap:3pt}
+.tp{background:#e08a1e;color:#fff;border-radius:2pt;padding:0 2pt;font-size:5pt;font-weight:700;line-height:1.35;margin-left:1pt;white-space:nowrap}ol li:before{display:none}ol li{padding-left:0}ol{margin-left:9pt}.wrap{left:0;top:0;width:calc(146.5mm / var(--z));height:calc(210mm / var(--z));padding:0}.card{margin-bottom:1.6pt}.cols{grid-template-rows:minmax(0,1fr)}table{line-height:1.04}th,td{padding:.25pt 1.5pt}p{margin:.3pt 0}li{margin:0}.card{padding:1pt 3pt 1.2pt 3.6pt}.eq{margin:.6pt 0}.w,.d,.ex{margin:.6pt 0}</style></head><body class="u1"><div class="page"><div class="wrap" style="--z:1.04"><div class="banner">UNIT I · PPS: Foundations &amp; Standards<span>ICT 101 · Programming for Problem Solving (C)</span></div><div class="cols"><div class="col" id="a0"><div class="card"><h3><span class="n">1</span>Basic Types &amp; Machine Representation</h3>
+<table><tr><th>Type</th><th>Min Size</th><th>Typical (x64)</th><th>Format</th><th>Range / Precision</th></tr>
+<tr><td><b>char</b></td><td>1 byte</td><td>1 byte</td><td>%c, %d</td><td>-128..127 or 0..255</td></tr>
+<tr><td><b>short</b></td><td>16 bits</td><td>2 bytes</td><td>%hd</td><td>-32,768..32,767</td></tr>
+<tr><td><b>int</b></td><td>16 bits</td><td>4 bytes</td><td>%d, %i</td><td>-2,147,483,648..2,147,483,647</td></tr>
+<tr><td><b>long</b></td><td>32 bits</td><td>4 / 8 bytes</td><td>%ld</td><td>at least ±2×10<sup>9</sup></td></tr>
+<tr><td><b>long long</b></td><td>64 bits</td><td>8 bytes</td><td>%lld</td><td>-9×10<sup>18</sup>..9×10<sup>18</sup></td></tr>
+<tr><td><b>float</b></td><td>32 bits</td><td>4 bytes</td><td>%f, %e</td><td>IEEE-754, ~6–7 dec digits</td></tr>
+<tr><td><b>double</b></td><td>64 bits</td><td>8 bytes</td><td>%lf, %f</td><td>IEEE-754, ~15–17 dec digits</td></tr>
+<tr><td><b>long double</b></td><td>80/128 bits</td><td>16 bytes</td><td>%Lf</td><td>extended precision</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> <b>sizeof(char) == 1</b> always. <b>sizeof</b> yields unsigned <b>size_t</b>, printed with <b>%zu</b>. Query bounds via <b>&lt;limits.h&gt;</b> (<b>INT_MAX</b>, <b>CHAR_BIT</b>) and <b>&lt;float.h&gt;</b> (<b>DBL_DIG</b>).</div>
+</div><div class="card"><h3><span class="n">2</span>Bitwise Operators &amp; Masks</h3>
+<table><tr><th>Op</th><th>Name</th><th>Effect</th><th>Formula / Idiom</th></tr>
+<tr><td><b>&amp;</b></td><td>AND</td><td>1 only if both 1</td><td>Clear bit: <b>x &amp;= ~(1U &lt;&lt; k)</b></td></tr>
+<tr><td><b>|</b></td><td>OR</td><td>1 if either 1</td><td>Set bit: <b>x |= (1U &lt;&lt; k)</b></td></tr>
+<tr><td><b>^</b></td><td>XOR</td><td>1 if bits differ</td><td>Toggle bit: <b>x ^= (1U &lt;&lt; k)</b></td></tr>
+<tr><td><b>~</b></td><td>NOT</td><td>Flips all bits</td><td>One's complement</td></tr>
+<tr><td><b>&lt;&lt;</b></td><td>Left shift</td><td>Shifts left, fills 0</td><td><b>x &lt;&lt; k == x × 2<sup>k</sup></b></td></tr>
+<tr><td><b>&gt;&gt;</b></td><td>Right shift</td><td>Shifts right</td><td>Unsigned: 0-fill; Signed: sign-fill</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> Test $k$-th bit: <b>(x &gt;&gt; k) &amp; 1U</b>. Check power of 2: <b>(x &gt; 0) &amp;&amp; ((x &amp; (x - 1)) == 0)</b>.</div>
+</div><div class="card"><h3><span class="n">3</span>Operator Precedence Hierarchy</h3>
+<table><tr><th>Rank</th><th>Category</th><th>Operators</th><th>Assoc.</th></tr>
+<tr><td>1</td><td>Postfix</td><td><b>()  []  .  -&gt;  ++  --</b></td><td>L → R</td></tr>
+<tr><td>2</td><td>Unary</td><td><b>++  --  +  -  !  ~  *  &amp;  sizeof  (type)</b></td><td>R → L</td></tr>
+<tr><td>3</td><td>Multiplicative</td><td><b>*  /  %</b></td><td>L → R</td></tr>
+<tr><td>4</td><td>Additive</td><td><b>+  -</b></td><td>L → R</td></tr>
+<tr><td>5</td><td>Shift</td><td><b>&lt;&lt;  &gt;&gt;</b></td><td>L → R</td></tr>
+<tr><td>6</td><td>Relational</td><td><b>&lt;  &lt;=  &gt;  &gt;=</b></td><td>L → R</td></tr>
+<tr><td>7</td><td>Equality</td><td><b>==  !=</b></td><td>L → R</td></tr>
+<tr><td>8</td><td>Bitwise</td><td><b>&amp;</b> then <b>^</b> then <b>|</b></td><td>L → R</td></tr>
+<tr><td>9</td><td>Logical</td><td><b>&amp;&amp;</b> then <b>||</b></td><td>L → R</td></tr>
+<tr><td>10</td><td>Conditional</td><td><b>? :</b></td><td>R → L</td></tr>
+<tr><td>11</td><td>Assignment</td><td><b>=  +=  -=  *=  /=  %=  &amp;=  ^=</b></td><td>R → L</td></tr>
+<tr><td>12</td><td>Comma</td><td><b>,</b></td><td>L → R</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> <b>==</b> binds tighter than <b>&amp;</b>: <b>a &amp; b == c</b> means <b>a &amp; (b == c)</b>. Always write <b>(a &amp; b) == c</b>.</div>
+</div><div class="card"><h3><span class="n">4</span>Selection: switch, case &amp; break</h3>
+<p><b>switch (expr)</b> requires integer/enum expression. <b>case</b> labels must be compile-time integer constant expressions. Duplicate cases are forbidden.</p>
+<div class="eq">switch (op) {<br/>  case '+': res = a + b; break;<br/>  case '-': res = a - b; break;<br/>  case '*': res = a * b; break;<br/>  case '/': if (b) res = a / b; break;<br/>  default:  res = 0; break;<br/>}</div>
+<div class="ex"><span class="t">Ex.</span> <b>Fall-through:</b> Omitting <b>break</b> causes execution to flow directly into the next case. Used intentionally for grouping: <b>case 'a': case 'A': count++; break;</b>.</div>
+</div><div class="card"><h3><span class="n">5</span>Loops: while &amp; do-while</h3>
+<p><b>while(cond):</b> Entry-controlled (pre-test). Loop body executes 0 or more times.</p>
+<p><b>do { body; } while(cond);:</b> Exit-controlled (post-test). Executes at least 1 time. Note trailing semicolon.</p>
+<div class="eq">/* Sum digits */               /* Menu prompt */<br/>int n = 456, sum = 0;         int opt;<br/>while (n &gt; 0) {               do {<br/>  sum += n % 10;  n /= 10;       scanf("%d", &amp;opt);<br/>}                             } while (opt &lt; 1 || opt &gt; 4);</div>
+<div class="ex"><span class="t">Ex.</span> Infinite loop idiom: <b>while (1) { if (done) break; }</b>.</div>
+</div></div><div class="col" id="b0"><div class="card"><h3><span class="n">6</span>Arithmetic &amp; Assignment Operators</h3>
+<p>Binary: <b>+</b>, <b>-</b>, <b>*</b>, <b>/</b>, <b>%</b>. Modulus <b>%</b> requires integer operands.</p>
+<div class="eq">Division: 7 / 2 == 3 (truncates to zero). Float: 7.0 / 2 == 3.5<br/>Modulus: -7 % 2 == -1; In C99+: (a / b) * b + (a % b) == a</div>
+<p><b>Increment / Decrement:</b> <b>++x</b> (pre: increments first, yields new value); <b>x++</b> (post: yields old value, then increments).</p>
+<div class="ex"><span class="t">Ex.</span> <b>int i = 2; int a = ++i; /* a=3, i=3 */ int b = i++; /* b=3, i=4 */</b>. Unsequenced operations like <b>i = i++</b> or <b>f(i++, i++)</b> cause undefined behavior (UB).</div>
+</div><div class="card"><h3><span class="n">7</span>Explicit Type Casting</h3>
+<p><b>Syntax:</b> <b>(target_type)expression</b>. Temporarily converts value representation.</p>
+<div class="eq">int i = 7, j = 2;<br/>double r1 = i / j;         /* 3.0 (integer division occurs first) */<br/>double r2 = (double)i / j;  /* 3.5 (i promoted to double before div) */<br/>int trunc = (int)3.999;     /* 3 (fraction truncated toward zero) */</div>
+<div class="ex"><span class="t">Ex.</span> Pointer casts: <b>void *raw = malloc(n); int *arr = (int *)raw;</b> (casting <b>void*</b> is optional in C, mandatory in C++).</div>
+</div><div class="card"><h3><span class="n">8</span>printf Specifiers &amp; Precision</h3>
+<p>Format: <b>%[flags][width][.precision][length]specifier</b>. Returns count of chars printed.</p>
+<table><tr><th>Spec</th><th>Output</th><th>Spec</th><th>Output</th><th>Length</th><th>Meaning</th></tr>
+<tr><td><b>%d / %i</b></td><td>signed int</td><td><b>%f</b></td><td>decimal float</td><td><b>hh</b></td><td>char (1 byte)</td></tr>
+<tr><td><b>%u</b></td><td>unsigned int</td><td><b>%e / %E</b></td><td>scientific</td><td><b>h</b></td><td>short int</td></tr>
+<tr><td><b>%x / %X</b></td><td>hex (lower/upper)</td><td><b>%g</b></td><td>shortest %f/%e</td><td><b>l</b></td><td>long / double</td></tr>
+<tr><td><b>%o</b></td><td>octal</td><td><b>%c</b></td><td>single char</td><td><b>ll</b></td><td>long long</td></tr>
+<tr><td><b>%p</b></td><td>pointer address</td><td><b>%s</b></td><td>string (  term)</td><td><b>z</b></td><td>size_t</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> <b>printf("%08.2f\n", 3.1415);</b> → <b>"00003.14"</b> (width 8, zero-padded, 2 decimals). Dynamic width/precision: <b>printf("%*.*f", 6, 2, 4.5);</b>.</div>
+</div><div class="card"><h3><span class="n">9</span>scanf &amp; Input Buffer Control</h3>
+<p><b>scanf(format, &amp;var, ...)</b> reads formatted stdin. Returns count of successfully matched items, or <b>EOF</b> on end/error. Always pass memory addresses.</p>
+<div class="eq">int n; double d; char s[20];<br/>if (scanf("%d %lf %19s", &amp;n, &amp;d, s) == 3) { /* success */ }</div>
+<div class="ex"><span class="t">Ex.</span> Mandatory length for double: <b>scanf("%lf", &amp;d)</b> (using %f writes only 4 bytes into 8-byte double). Clean trailing newline before reading char: <b>scanf(" %c", &amp;ch);</b> (leading space skips whitespace).</div>
+</div><div class="card"><h3><span class="n">10</span>Jump Control: break, continue &amp; goto</h3>
+<table><tr><th>Keyword</th><th>Scope of Effect</th><th>Action</th></tr>
+<tr><td><b>break</b></td><td>Innermost loop or switch</td><td>Terminates loop immediately; control jumps past closing brace.</td></tr>
+<tr><td><b>continue</b></td><td>Innermost loop only</td><td>Skips rest of current iteration. In <b>for</b>, jumps to update expression.</td></tr>
+<tr><td><b>goto label;</b></td><td>Enclosing function</td><td>Unconditional jump to <b>label:</b>. Used for multi-level loop breakout and cleanup.</td></tr>
+<tr><td><b>return expr;</b></td><td>Current function</td><td>Exits function immediately and returns value to caller.</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> <b>goto</b> error cleanup idiom: <b>if (!res1) goto cleanup; if (!res2) goto cleanup; ... cleanup: free(ptr); return rc;</b></div>
+</div><div class="card"><h3><span class="n">11</span>C Standards: C11, C17 &amp; C23</h3>
+<table><tr><th>Standard</th><th>Year</th><th>Key Technical Enhancements</th></tr>
+<tr><td><b>C11</b></td><td>2011</td><td><b>_Generic</b> type selection, <b>_Static_assert</b>, <b>_Atomic</b> &amp; <b>&lt;stdatomic.h&gt;</b>, <b>&lt;threads.h&gt;</b>, anonymous structs/unions, <b>gets()</b> removed (buffer overflow prevention).</td></tr>
+<tr><td><b>C17</b></td><td>2018</td><td>Defect-report fixes only; retains <b>__STDC_VERSION__ == 201710L</b>.</td></tr>
+<tr><td><b>C23</b></td><td>2024</td><td>Native <b>bool</b>, <b>true</b>, <b>false</b> keywords, <b>nullptr</b>, <b>constexpr</b>, <b>typeof</b>, binary literals (<b>0b101</b>), <b>#embed</b>, <b>static_assert</b> without underscore, empty parens <b>f()</b> strictly means <b>f(void)</b>.</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> C11 Generic Selection: <b>#define print_val(x) _Generic((x), int: "%d", double: "%f", char*: "%s")</b> selects format specifier at compile time.</div>
+</div></div></div></div></div>
+<div class="page"><div class="wrap" style="--z:1.04"><div class="banner">UNIT I · PPS: Foundations &amp; Standards (contd.)<span>ICT 101 · Programming for Problem Solving (C)</span></div><div class="cols"><div class="col" id="a1"><div class="card"><h3><span class="n">12</span>Bool &amp; Fixed-Width Types</h3>
+<p><b>bool</b>: Introduced as <b>_Bool</b> in C99. <b>&lt;stdbool.h&gt;</b> provides <b>bool</b>, <b>true</b> (1), <b>false</b> (0). C23 makes <b>bool</b>, <b>true</b>, <b>false</b> direct keywords.</p>
+<p><b>Fixed-Width (&lt;stdint.h&gt;):</b> Guaranteed exact widths across platforms:</p>
+<div class="eq">int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t<br/>intptr_t, uintptr_t (pointer-sized int), size_t (unsigned index)</div>
+<div class="ex"><span class="t">Ex.</span> Format macros in <b>&lt;inttypes.h&gt;</b>: <b>uint32_t x = 42; printf("%" PRIu32 "\n", x);</b> guarantees architecture-independent printing.</div>
+</div><div class="card"><h3><span class="n">13</span>Preprocessor: #define &amp; Macros</h3>
+<p><b>Textual replacement</b> performed before compilation. No types, no scope.</p>
+<div class="eq">#define PI 3.1415926535<br/>#define SQR(x) ((x) * (x))                /* enclose parameters in parens */<br/>#define SWAP(a,b,T) do { T t = a; a = b; b = t; } while(0) /* multi-statement */</div>
+<div class="ex"><span class="t">Ex.</span> Stringify: <b>#define STR(s) #s</b> → <b>STR(hello)</b> → <b>"hello"</b>.<br/>Token-paste: <b>#define CAT(a,b) a ## b</b> → <b>CAT(var, 1)</b> → <b>var1</b>.</div>
+</div><div class="card"><h3><span class="n">14</span>Type Conversions: Implicit &amp; Promotion</h3>
+<p><b>Integer Promotion:</b> Types smaller than <b>int</b> (<b>char</b>, <b>short</b>, <b>bool</b>) are automatically promoted to <b>int</b> in arithmetic expressions.</p>
+<p><b>Usual Arithmetic Conversions (Common Rank):</b></p>
+<div class="flow"><span class="chip">long double</span><span class="arr">→</span><span class="chip">double</span><span class="arr">→</span><span class="chip">float</span><span class="arr">→</span><span class="chip">unsigned long long</span><span class="arr">→</span><span class="chip">long long</span><span class="arr">→</span><span class="chip">unsigned long</span><span class="arr">→</span><span class="chip">long</span><span class="arr">→</span><span class="chip">unsigned int</span><span class="arr">→</span><span class="chip">int</span></div>
+<div class="ex"><span class="t">Ex.</span> Signed vs unsigned hazard: <b>int a = -1; unsigned b = 1; if (a &lt; b)</b> evaluates to <b>false</b> because <b>a</b> promotes to unsigned (<b>UINT_MAX</b>). Always cast before comparing mixed signedness.</div>
+</div><div class="card"><h3><span class="n">15</span>Compound Blocks &amp; Lexical Scope</h3>
+<p>A compound statement <b>{ ... }</b> creates a local block scope. Identifiers have automatic storage duration by default (destroyed at closing brace <b>}</b>).</p>
+<div class="eq">int x = 10;<br/>{<br/>  int x = 20;        /* shadows outer x */<br/>  printf("%d ", x);  /* prints 20 */<br/>}<br/>printf("%d\n", x);  /* prints 10 */</div>
+<div class="ex"><span class="t">Ex.</span> Returning address of local stack variable (<b>return &amp;x;</b>) leaves a dangling pointer and causes undefined behavior upon caller dereference.</div>
+</div><div class="card"><h3><span class="n">16</span>Iteration: for Loop Mechanics</h3>
+<p>Syntax: <b>for (init; condition; update) body;</b>. Execution order: init → condition → body → update → condition → ...</p>
+<div class="eq">/* C99 scoped loop counter */<br/>for (int i = 0; i &lt; n; i++) { a[i] = i * 2; }<br/>/* Multiple loop variables via comma operator */<br/>for (int i = 0, j = n - 1; i &lt; j; i++, j--) { int t = a[i]; a[i] = a[j]; a[j] = t; }</div>
+<div class="ex"><span class="t">Ex.</span> All expressions are optional: <b>for (;;)</b> creates a clean infinite loop identical to <b>while (1)</b>.</div>
+</div><div class="card"><h3><span class="n">17</span>Algorithm Dry Runs &amp; Flowcharts</h3>
+<table><tr><th>Shape</th><th>Standard Symbol</th><th>Function in Flowchart</th></tr>
+<tr><td>Oval / Stadium</td><td>Terminator</td><td>Start or End of procedure</td></tr>
+<tr><td>Parallelogram</td><td>Input / Output</td><td>Read variable (scanf), print output (printf)</td></tr>
+<tr><td>Rectangle</td><td>Process</td><td>Calculation, data assignment, memory allocation</td></tr>
+<tr><td>Diamond</td><td>Decision</td><td>Conditional branch (if/switch); Yes/No paths</td></tr>
+<tr><td>Circle</td><td>Connector</td><td>Connects non-adjacent points on same page</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> <b>Dry run table for Factorial (n=4):</b><br/>
+Step 1: n=4, fact=1, i=1 | Step 2: fact=1, i=2 | Step 3: fact=2, i=3 | Step 4: fact=6, i=4 | Step 5: fact=24, i=5 &gt; n → Output: 24.</div>
+</div></div><div class="col" id="b1"><div class="card"><h3><span class="n">18</span>C Program Structure &amp; Compilation</h3>
+<p><b>Order:</b> Preprocessor directives → Global declarations → Function prototypes → <b>main()</b> → Function definitions. Execution begins at <b>main</b>.</p>
+<div class="flow"><span class="chip">Source (.c)</span><span class="arr">→</span><span class="chip">Preprocessor (cpp)</span><span class="arr">→</span><span class="chip">Compiler (cc1)</span><span class="arr">→</span><span class="chip">Assembler (as)</span><span class="arr">→</span><span class="chip">Linker (ld)</span><span class="arr">→</span><span class="chip">Executable (.exe)</span></div>
+<div class="eq">#include &lt;stdio.h&gt;<br/>#define SUCCESS 0<br/>int add(int a, int b); /* prototype */<br/>int main(void) {<br/>  printf("Sum=%d\n", add(3, 4));<br/>  return SUCCESS;<br/>}<br/>int add(int a, int b) { return a + b; }</div>
+<div class="ex"><span class="t">Ex.</span> <b>main</b> must return <b>int</b>. C99 allows omitting <b>return 0;</b> in <b>main</b> (implicitly returns 0). Other functions returning non-void must have an explicit <b>return</b>.</div>
+</div><div class="card"><h3><span class="n">19</span>Constants, Literals &amp; const</h3>
+<p><b>const:</b> Read-only qualifier. Read declarations <b>right-to-left</b>:</p>
+<div class="eq">const int *p;        /* p is a pointer to const int */<br/>int *const q = &amp;x;   /* q is a const pointer to int */<br/>const int *const r; /* const pointer to const int */</div>
+<table><tr><th>Literal</th><th>Prefix/Suffix</th><th>Example</th><th>Type</th></tr>
+<tr><td>Decimal</td><td>none</td><td>42, -5</td><td>int, long</td></tr>
+<tr><td>Hexadecimal</td><td>0x / 0X</td><td>0x2A, 0xFF</td><td>int / unsigned</td></tr>
+<tr><td>Octal</td><td>0 (zero)</td><td>052 (evaluates to 42)</td><td>int</td></tr>
+<tr><td>Binary (C23)</td><td>0b / 0B</td><td>0b101010</td><td>int</td></tr>
+<tr><td>Char literal</td><td>single quotes</td><td>'A' (ASCII 65)</td><td><b>int</b> (sizeof('A')==sizeof(int))</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> Float suffixes: <b>1.5f</b> (float), <b>2.0</b> (double), <b>3.14L</b> (long double). Integer suffixes: <b>42U</b> (unsigned), <b>100LL</b> (long long).</div>
+</div><div class="card"><h3><span class="n">20</span>Relational &amp; Logical Operators</h3>
+<table><tr><th>Operator</th><th>Meaning</th><th>Example</th><th>Result</th></tr>
+<tr><td><b>== , !=</b></td><td>Equal / Not Equal</td><td>5 == 5 , 5 != 3</td><td>1 (true) , 1</td></tr>
+<tr><td><b>&lt; , &lt;= , &gt; , &gt;=</b></td><td>Relational</td><td>3 &lt; 7 , 4 &gt;= 9</td><td>1 , 0 (false)</td></tr>
+<tr><td><b>&amp;&amp;</b></td><td>Logical AND</td><td>(1 &lt; 2) &amp;&amp; (3 &lt; 4)</td><td>1</td></tr>
+<tr><td><b>||</b></td><td>Logical OR</td><td>(1 &gt; 2) || (3 &lt; 4)</td><td>1</td></tr>
+<tr><td><b>!</b></td><td>Logical NOT</td><td>!(5 == 5)</td><td>0</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> <b>Short-circuit evaluation:</b> In <b>A &amp;&amp; B</b>, if <b>A</b> is 0, <b>B</b> is never evaluated. In <b>A || B</b>, if <b>A</b> is non-zero, <b>B</b> is skipped. E.g., <b>if (p != NULL &amp;&amp; *p == 10)</b> safely avoids null dereference.</div>
+</div><div class="card"><h3><span class="n">21</span>Decision: if, else if &amp; Ternary</h3>
+<p>Condition evaluates to scalar: <b>0 is false</b>, <b>any non-zero is true</b>.</p>
+<div class="eq">if (score &gt;= 90) grade = 'A';<br/>else if (score &gt;= 75) grade = 'B';<br/>else grade = 'F';</div>
+<p><b>Dangling else rule:</b> <b>else</b> binds to the nearest open <b>if</b> unless braced.</p>
+<div class="ex"><span class="t">Ex.</span> <b>Ternary operator:</b> <b>int max = (a &gt; b) ? a : b;</b>. Ternary expressions return a value and can be embedded directly into function arguments: <b>printf("%s", ok ? "PASS" : "FAIL");</b>.</div>
+</div><div class="card"><h3><span class="n">22</span>C Standards: C89/C90 vs C99</h3>
+<table><tr><th>Feature</th><th>C89 / C90 (ANSI)</th><th>C99 (ISO/IEC 9899:1999)</th></tr>
+<tr><td>Comments</td><td><b>/* traditional */</b> only</td><td><b>// line comments</b> added</td></tr>
+<tr><td>Declarations</td><td>Must precede statements in block</td><td>Mixed declarations anywhere</td></tr>
+<tr><td>for-loop init</td><td>External variable declaration</td><td><b>for (int i = 0; ...)</b> allowed</td></tr>
+<tr><td>Arrays</td><td>Constant compile-time sizes only</td><td>Variable Length Arrays (VLAs)</td></tr>
+<tr><td>Headers</td><td>stdio.h, stdlib.h, string.h, math.h</td><td><b>&lt;stdint.h&gt;</b>, <b>&lt;stdbool.h&gt;</b>, &lt;inttypes.h&gt;</td></tr>
+<tr><td>Initializers</td><td>Positional only: {1, 2, 3}</td><td>Designated: <b>{[2]=5, [0]=1}</b></td></tr>
+<tr><td>Functions</td><td>Implicit int return type allowed</td><td>Implicit int removed; <b>inline</b> added</td></tr></table>
+<div class="ex"><span class="t">Ex.</span> Macro <b>__STDC_VERSION__ == 199901L</b> indicates C99 compliance.</div>
+</div></div></div></div></div>
+</body></html>

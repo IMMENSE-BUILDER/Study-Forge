@@ -1,0 +1,142 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Cheatsheet Unit 1</title><style>@page{size:297mm 210mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#fff}
+:root{--ac:#1a59a6;--ac2:#2f78c4;--soft:#f4f8fd;--line:#dbe5f1;--hd:#e1ecf9;--dk:#0d2a4d;--g1:#17407a;--g2:#2b6cb8;--mut:#46607e}
+body.u2{--ac:#0f6b5f;--ac2:#1d9a86;--soft:#f2faf8;--line:#cfe8e3;--hd:#dcf1ec;--dk:#0b3b35;--g1:#0b4f47;--g2:#1b8f7b;--mut:#3f6b64}
+body{font-family:'Carlito','Calibri','Inter',sans-serif;font-size:6.5pt;line-height:1.18;color:#14202e}
+.page{width:297mm;height:210mm;position:relative;page-break-after:always;overflow:hidden}
+.wrap{position:absolute;left:3.5mm;top:3.5mm;width:calc(141.5mm / var(--z));height:calc(203mm / var(--z));zoom:var(--z)}
+.banner{background:linear-gradient(90deg,var(--g1),var(--g2));color:#fff;font-weight:700;font-size:8pt;padding:2.2pt 6pt;border-radius:2.5pt;margin-bottom:3pt;letter-spacing:.1pt;display:flex;justify-content:space-between}
+.banner span{font-weight:400;font-size:6pt;opacity:.9;align-self:center}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2.4mm;height:calc(100% - 15pt)}
+.col{overflow:hidden;min-height:0}
+.card{background:var(--soft);border:.4pt solid var(--line);border-left:2pt solid var(--ac2);border-radius:2pt;padding:1.4pt 3.2pt 1.6pt 3.8pt;margin-bottom:2.2pt}
+.card h3{font-size:7.3pt;color:var(--ac);font-weight:700;display:flex;align-items:center;gap:2pt;margin-bottom:1.2pt;line-height:1.15}
+.n{display:inline-block;background:var(--ac);color:#fff;border-radius:2pt;min-width:8pt;height:8pt;text-align:center;font-size:5.6pt;line-height:8pt;padding:0 1pt}
+b{font-weight:700;color:var(--dk)}
+ul{list-style:none}
+li{padding-left:6pt;position:relative;margin:.3pt 0}
+li:before{content:'';position:absolute;left:1.6pt;top:3pt;width:2pt;height:2pt;border-radius:50%;background:var(--ac2)}
+p{margin:.6pt 0}
+table{border-collapse:collapse;width:100%;margin:1pt 0;font-size:5.9pt;line-height:1.12}
+th,td{border:.35pt solid var(--line);padding:.6pt 2pt;text-align:left;vertical-align:top;background:#fff}
+th{background:var(--hd);color:var(--dk);font-weight:700}
+.eq{background:#fff;border:.4pt solid var(--line);border-left:1.4pt solid var(--ac);border-radius:2pt;padding:.8pt 3pt;margin:1pt 0;font-size:6.3pt;line-height:1.3}
+.d{border-left:1.4pt solid #e08a1e;padding-left:3pt;margin:1pt 0;background:#fff8ee}
+.d .t{font-weight:700;color:#9a5200}
+.ex{border-left:1.4pt solid #3f9a5a;padding-left:3pt;margin:1pt 0;background:#f0faf3}
+.ex .t{font-weight:700;color:#256b3c}
+.w{border-left:1.4pt solid #c0392b;padding-left:3pt;margin:1pt 0;background:#fff3f1}
+.w .t{font-weight:700;color:#a8321f}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:1pt 0;margin:1pt 0}
+.chip{background:#fff;border:.5pt solid var(--ac2);border-radius:2pt;padding:.4pt 2.5pt;font-weight:700;color:var(--dk);font-size:5.9pt;text-align:center;line-height:1.1}
+.arr{color:var(--ac2);font-weight:700;padding:0 1.2pt;font-size:7pt}
+sub,sup{font-size:70%;line-height:0}
+svg{display:block;margin:1pt auto}
+.c2{display:grid;grid-template-columns:1fr 1fr;gap:3pt}
+.tp{background:#e08a1e;color:#fff;border-radius:2pt;padding:0 2pt;font-size:5pt;font-weight:700;line-height:1.35;margin-left:1pt;white-space:nowrap}ol li:before{display:none}ol li{padding-left:0}ol{margin-left:9pt}.wrap{left:0;top:0;width:calc(146.5mm / var(--z));height:calc(210mm / var(--z));padding:0}.card{margin-bottom:1.6pt}.cols{grid-template-rows:minmax(0,1fr)}table{line-height:1.04}th,td{padding:.25pt 1.5pt}p{margin:.3pt 0}li{margin:0}.card{padding:1pt 3pt 1.2pt 3.6pt}.eq{margin:.6pt 0}.w,.d,.ex{margin:.6pt 0}</style></head><body class="u1"><div class="page"><div class="wrap" style="--z:1.11"><div class="banner">UNIT III · EM: Kinematics &amp; Kinetics<span>ICT 119 · 3C · L-P 3-0 · N. Bajpai</span></div><div class="cols"><div class="col" id="a0"><div class="card"><h3><span class="n">1</span>Rectilinear motion: variable and constant acceleration</h3>
+<p>For variable acceleration use the differential forms and integrate between limits.</p>
+<div class="eq">a = dv/dt  ⇒  ∫<sub>v1</sub><sup>v2</sup> dv = ∫<sub>t1</sub><sup>t2</sup> a dt<br/>a = v dv/dx  ⇒  ∫<sub>v1</sub><sup>v2</sup> v dv = ∫<sub>x1</sub><sup>x2</sup> a dx</div>
+<p>For <b>constant a</b>, integrate once and twice:</p>
+<div class="eq">v = u + at<br/>s = ut + ½at²<br/>v² = u² + 2as<br/>s = ½(u + v)t</div>
+<div class="ex"><span class="t">Eg.</span> <b>u = 10 m/s</b>, <b>a = 2 m/s²</b>, <b>t = 5 s</b> → <b>v = 20 m/s</b>, <b>s = 75 m</b>.</div></div><div class="card"><h3><span class="n">2</span>Relative motion of particles</h3>
+<div class="eq">r<sub>A/B</sub> = r<sub>A</sub> − r<sub>B</sub><br/>v<sub>A/B</sub> = v<sub>A</sub> − v<sub>B</sub><br/>a<sub>A/B</sub> = a<sub>A</sub> − a<sub>B</sub></div>
+<p>Use a vector triangle or components. <b>Example:</b> a boat heads across a river at <b>5 m/s</b> while the current is <b>3 m/s</b> downstream.</p>
+<div class="ex"><span class="t">Eg.</span> Resultant <b>v = √(5²+3²) = 5.83 m/s</b> at <b>31°</b> to the bank; to cross <b>100 m</b> takes <b>20 s</b> and the boat drifts <b>60 m</b> downstream.</div></div><div class="card"><h3><span class="n">3</span>D'Alembert's principle</h3>
+<p>Write the inertia force <b>F<sub>i</sub> = −ma</b> and add it to the free-body diagram; the system is then in <b>static equilibrium</b>.</p>
+<div class="eq">ΣF + (−ma) = 0  or  ΣF = ma</div>
+<svg style="display:block;width:100%;height:auto" viewbox="0 0 160 62"><defs><marker id="emLift" markerheight="5" markerwidth="5" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker><marker id="emLiftR" markerheight="5" markerwidth="5" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="6.5"><rect fill="#dbe5f1" height="22" stroke="#1a59a6" width="28" x="65" y="25"></rect><line marker-end="url(#emLift)" stroke="#1a59a6" stroke-width="1.2" x1="79" x2="79" y1="25" y2="5"></line><line marker-end="url(#emLiftR)" stroke="#c0392b" stroke-width="1.2" x1="79" x2="79" y1="47" y2="60"></line><line marker-end="url(#emLiftR)" stroke="#c0392b" stroke-width="1.2" x1="105" x2="105" y1="45" y2="60"></line><text fill="#1a59a6" x="83" y="15">T</text><text fill="#c0392b" x="83" y="58">W</text><text fill="#c0392b" x="109" y="58">ma</text></g></svg>
+<table><tr><th>Lift</th><th>Tension</th></tr>
+<tr><td>upward acceleration a</td><td><b>T = m(g + a)</b></td></tr>
+<tr><td>downward acceleration a</td><td><b>T = m(g − a)</b></td></tr>
+<tr><td>free fall</td><td><b>T = 0</b></td></tr></table>
+<div class="ex"><span class="t">Eg.</span> <b>m = 100 kg</b>, <b>a = 2 m/s²</b> up → <b>T = 1181 N</b>; down → <b>T = 781 N</b>.</div></div><div class="card"><h3><span class="n">4</span>Connected bodies and pulleys</h3>
+<p>For two masses <b>m<sub>1</sub> &gt; m<sub>2</sub></b> connected by a light inextensible string over a frictionless pulley:</p>
+<div class="eq">m<sub>1</sub>g − T = m<sub>1</sub>a<br/>T − m<sub>2</sub>g = m<sub>2</sub>a<br/>a = (m<sub>1</sub> − m<sub>2</sub>)g/(m<sub>1</sub> + m<sub>2</sub>)<br/>T = 2m<sub>1</sub>m<sub>2</sub>g/(m<sub>1</sub> + m<sub>2</sub>)</div>
+<div class="ex"><span class="t">Eg.</span> <b>m<sub>1</sub> = 5 kg</b>, <b>m<sub>2</sub> = 3 kg</b> → <b>a = 2.45 m/s²</b>, <b>T = 36.8 N</b>.</div>
+<p>For a block on a rough incline, use <b>D'Alembert</b> along and perpendicular to the plane; the string tension is the same on both sides of a light frictionless pulley.</p></div><div class="card"><h3><span class="n">5</span>Work and power</h3>
+<div class="eq">dW = F · dr,   W = ∫F · dr<br/>W = F d cos θ  (constant force)<br/>P = dW/dt = F · v</div>
+<table><tr><th>Angle</th><th>Work</th></tr>
+<tr><td>θ &lt; 90°</td><td>positive</td></tr>
+<tr><td>θ = 90°</td><td>zero</td></tr>
+<tr><td>θ &gt; 90°</td><td>negative</td></tr></table>
+<div class="ex"><span class="t">Eg.</span> <b>F = 100 N</b> at <b>30°</b> over <b>5 m</b>: <b>W = 100(5)cos30 = 433 J</b>; at <b>v = 2 m/s</b>, <b>P = 173 W</b>.</div></div></div><div class="col" id="b0"><div class="card"><h3><span class="n">6</span>Projectile motion</h3>
+<p>Horizontal velocity is constant; vertical motion has <b>a = −g</b>.</p>
+<div class="eq">x = u cos θ · t,   y = u sin θ · t − ½gt²<br/>y = x tan θ − gx²/(2u²cos²θ)<br/>T = 2u sin θ/g,   H = u²sin²θ/(2g),   R = u²sin 2θ/g</div>
+<svg style="display:block;width:100%;height:auto" viewbox="0 8 190 74"><defs><marker id="emProj" markerheight="5" markerwidth="5" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="6.5"><line stroke="#8a9aad" stroke-width="0.8" x1="15" x2="180" y1="70" y2="70"></line><line stroke="#8a9aad" stroke-width="0.8" x1="15" x2="15" y1="70" y2="18"></line><path d="M15,70 Q95,0 175,70" fill="none" stroke="#1a59a6" stroke-dasharray="3 2" stroke-width="1.3"></path><line marker-end="url(#emProj)" stroke="#c0392b" stroke-width="1.3" x1="15" x2="57" y1="70" y2="41"></line><text fill="#c0392b" x="28" y="48">u</text><text fill="#c0392b" x="24" y="66">θ</text><text fill="#14202e" x="150" y="78">R</text><text fill="#1a59a6" x="93" y="30">H</text><text fill="#8a9aad" x="15" y="14">y</text><text fill="#8a9aad" x="176" y="78">x</text></g></svg>
+<div class="ex"><span class="t">Eg.</span> <b>u = 20 m/s</b>, <b>θ = 30°</b> → <b>R = 35.3 m</b>, <b>H = 5.1 m</b>, <b>T = 2.04 s</b>.</div></div><div class="card"><h3><span class="n">7</span>Impulse and momentum</h3>
+<div class="eq">p = mv,   J = ∫F dt = Δp = mv<sub>2</sub> − mv<sub>1</sub></div>
+<p>The impulse is the area under the force-time graph. For a constant force, <b>J = F Δt</b>; average force <b>F<sub>avg</sub> = Δp/Δt</b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>0.5 kg</b> ball hits a wall at <b>10 m/s</b> and rebounds at <b>6 m/s</b>: take right positive, <b>Δp = 0.5(−6−10) = −8 N·s</b> (8 N·s to the left). Over <b>0.02 s</b>, <b>F<sub>avg</sub> = 400 N</b>.</div>
+<p>Momentum is conserved in a system when the net external impulse is zero.</p></div><div class="card"><h3><span class="n">8</span>Impact and coefficient of restitution</h3>
+<p>For direct central impact, momentum is conserved along the line of impact. The coefficient of restitution compares separation and approach speeds:</p>
+<div class="eq">m<sub>1</sub>v<sub>1</sub> + m<sub>2</sub>v<sub>2</sub> = m<sub>1</sub>v<sub>1</sub>' + m<sub>2</sub>v<sub>2</sub>'<br/>e = (v<sub>2</sub>' − v<sub>1</sub>')/(v<sub>1</sub> − v<sub>2</sub>)</div>
+<svg style="display:block;width:100%;height:auto" viewbox="0 0 180 55"><defs><marker id="emImp" markerheight="5" markerwidth="5" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0,0 L10,5 L0,10 z" fill="#1a59a6"></path></marker></defs><g fill="#14202e" font-family="Calibri, sans-serif" font-size="6.5"><circle cx="55" cy="32" fill="#dbe5f1" r="11" stroke="#1a59a6"></circle><circle cx="125" cy="32" fill="#eef" r="11" stroke="#0f6b5f"></circle><line marker-end="url(#emImp)" stroke="#1a59a6" stroke-width="1.2" x1="18" x2="42" y1="22" y2="22"></line><line marker-end="url(#emImp)" stroke="#0f6b5f" stroke-width="1.2" x1="162" x2="138" y1="22" y2="22"></line><line stroke="#8a9aad" stroke-dasharray="3 2" stroke-width="0.7" x1="20" x2="160" y1="32" y2="32"></line><text x="18" y="50">v<tspan dy="2" font-size="4">1</tspan></text><text x="150" y="50">v<tspan dy="2" font-size="4">2</tspan></text><text x="47" y="18">m1</text><text x="117" y="18">m2</text></g></svg>
+<p><b>e = 0</b> perfectly plastic (stick together); <b>e = 1</b> perfectly elastic; <b>0 &lt; e &lt; 1</b> partial.</p>
+<div class="ex"><span class="t">Eg.</span> <b>m<sub>1</sub> = 2 kg</b>, <b>v<sub>1</sub> = 5 m/s</b>; <b>m<sub>2</sub> = 3 kg</b>, <b>v<sub>2</sub> = 0</b>; <b>e = 0.5</b> → <b>v<sub>1</sub>' = 0.5 m/s</b>, <b>v<sub>2</sub>' = 3 m/s</b>.</div></div><div class="card"><h3><span class="n">9</span>D'Alembert on an incline</h3>
+<p>Block of mass m on an incline θ, force P up the plane, friction μ. Perpendicular to the plane, <b>N = mg cos θ</b>; along the plane, <b>P − mg sin θ − f = ma</b>, with <b>f = μN</b>.</p>
+<div class="eq">a = [P − mg sin θ − μmg cos θ]/m</div>
+<div class="ex"><span class="t">Eg.</span> <b>m = 10 kg</b>, <b>θ = 30°</b>, <b>μ = 0.2</b>, <b>P = 100 N</b>: <b>N = 84.96 N</b>, <b>f = 16.99 N</b>, <b>a = 3.40 m/s²</b>.</div>
+<p>If the block moves down, reverse the friction direction; if <b>a</b> comes out negative, the assumed motion is wrong.</p></div><div class="card"><h3><span class="n">10</span>Atwood machine by work-energy</h3>
+<p>For masses <b>m<sub>1</sub> &gt; m<sub>2</sub></b> moving through height <b>h</b>:</p>
+<div class="eq">(m<sub>1</sub> − m<sub>2</sub>)gh = ½(m<sub>1</sub> + m<sub>2</sub>)v²<br/>v = √(2gh(m<sub>1</sub>−m<sub>2</sub>)/(m<sub>1</sub>+m<sub>2</sub>))</div>
+<div class="ex"><span class="t">Eg.</span> <b>5 kg</b> and <b>3 kg</b>, <b>h = 2 m</b> → <b>v = 3.13 m/s</b>; the tension is <b>T = 2m<sub>1</sub>m<sub>2</sub>g/(m<sub>1</sub>+m<sub>2</sub>) = 36.8 N</b>.</div>
+<p>The work done by gravity on the heavier mass minus the work against gravity on the lighter mass equals the gain in kinetic energy of both.</p></div></div></div></div></div>
+<div class="page"><div class="wrap" style="--z:1.11"><div class="banner">UNIT III · EM: Kinematics &amp; Kinetics (contd.)</div><div class="cols"><div class="col" id="a1"><div class="card"><h3><span class="n">11</span>Motion under gravity</h3>
+<p>Take upward positive and <b>a = −g = −9.81 m/s²</b>. At maximum height <b>v = 0</b>; time to rise <b>u/g</b>, total flight <b>2u/g</b>, maximum height <b>u²/(2g)</b>.</p>
+<div class="ex"><span class="t">Eg.</span> <b>u = 20 m/s</b> upward → <b>H = 20.4 m</b>, <b>t<sub>up</sub> = 2.04 s</b>, total <b>4.08 s</b>; at 1 s, <b>v = 10.2 m/s</b>, <b>s = 15.1 m</b>.</div>
+<table><tr><th>Graph</th><th>Read off</th></tr>
+<tr><td>x-t</td><td>slope = velocity</td></tr>
+<tr><td>v-t</td><td>slope = acceleration; area = displacement</td></tr>
+<tr><td>a-t</td><td>area = change in velocity</td></tr></table>
+<p>For downward motion from rest, <b>v = gt</b>, <b>s = ½gt²</b>, <b>v² = 2gs</b>.</p></div><div class="card"><h3><span class="n">12</span>Curvilinear motion: normal and tangential acceleration</h3>
+<p>Velocity is tangent to the path. Its magnitude change gives tangential acceleration; its direction change gives normal (centripetal) acceleration.</p>
+<div class="eq">a<sub>t</sub> = dv/dt,   a<sub>n</sub> = v²/ρ<br/>a = √(a<sub>t</sub>² + a<sub>n</sub>²)</div>
+<p><b>Circle:</b> <b>a<sub>t</sub> = αr</b>, <b>a<sub>n</sub> = v²/r = ω²r</b>. <b>Radius of curvature:</b> <b>ρ = [1+(dy/dx)²]<sup>3/2</sup>/|d²y/dx²|</b>.</p>
+<div class="ex"><span class="t">Eg.</span> Car on <b>r = 50 m</b> at <b>v = 15 m/s</b>: <b>a<sub>n</sub> = 4.5 m/s²</b>; with braking <b>a<sub>t</sub> = −2 m/s²</b>, total <b>a = 4.92 m/s²</b>.</div></div><div class="card"><h3><span class="n">13</span>Potential energy and conservation</h3>
+<p>A conservative force has a potential: <b>F = −dV/dx</b>. Gravity <b>V = mgh</b>; spring <b>V = ½kx²</b>.</p>
+<div class="eq">T<sub>1</sub> + V<sub>1</sub> = T<sub>2</sub> + V<sub>2</sub><br/>T<sub>1</sub> + V<sub>1</sub> + U<sub>nc</sub> = T<sub>2</sub> + V<sub>2</sub></div>
+<div class="ex"><span class="t">Eg.</span> <b>2 kg</b> released from <b>5 m</b>: <b>mgh = ½mv²</b> → <b>v = √(2gh) = 9.9 m/s</b>. A spring <b>k = 200 N/m</b> compressed <b>0.1 m</b> stores <b>1 J</b>.</div>
+<p><b>Power:</b> <b>P = dW/dt</b>; for a spring/mass system, energy oscillates between kinetic and potential.</p></div><div class="card"><h3><span class="n">14</span>Elastic impact and ballistic pendulum</h3>
+<p>For perfectly elastic direct impact (<b>e = 1</b>), both momentum and kinetic energy are conserved:</p>
+<div class="eq">v<sub>1</sub>' = [(m<sub>1</sub>−m<sub>2</sub>)u<sub>1</sub> + 2m<sub>2</sub>u<sub>2</sub>]/(m<sub>1</sub>+m<sub>2</sub>)<br/>v<sub>2</sub>' = [2m<sub>1</sub>u<sub>1</sub> + (m<sub>2</sub>−m<sub>1</sub>)u<sub>2</sub>]/(m<sub>1</sub>+m<sub>2</sub>)</div>
+<p><b>Ballistic pendulum:</b> a bullet m embeds in a block M. Momentum: <b>mv = (m+M)V</b>; then energy: <b>½(m+M)V² = (m+M)gh</b>.</p>
+<div class="eq">v = (m+M)/m · √(2gh)</div>
+<div class="ex"><span class="t">Eg.</span> <b>m = 0.02 kg</b>, <b>M = 2 kg</b>, <b>h = 0.1 m</b> → <b>V = 1.40 m/s</b>, <b>v = 141 m/s</b>.</div></div><div class="card"><h3><span class="n">15</span>Work by a spring and variable force</h3>
+<div class="eq">W<sub>spring</sub> = ½kx<sub>1</sub>² − ½kx<sub>2</sub>²<br/>W = ∫F dx</div>
+<p>For a force <b>F = 3x² N</b> from <b>x = 0</b> to <b>2 m</b>: <b>W = [x³]<sub>0</sub><sup>2</sup> = 8 J</b>. If a <b>2 kg</b> body starts from rest, <b>v = √(2W/m) = 2.83 m/s</b>.</p>
+<div class="ex"><span class="t">Eg.</span> Spring <b>k = 200 N/m</b> compressed <b>0.4 m</b> stores <b>16 J</b>; a <b>2 kg</b> block released reaches <b>v = 4 m/s</b>.</div>
+<p><b>Spring force:</b> <b>F = −kx</b>; the negative sign shows restoration toward equilibrium.</p></div><div class="card"><h3><span class="n">16</span>Recoil and force-time graphs</h3>
+<p>For a gun-bullet system, total momentum is conserved:</p>
+<div class="eq">m<sub>b</sub>v<sub>b</sub> + M<sub>g</sub>V<sub>g</sub> = 0<br/>J = area under the F-t graph = Δp</div>
+<div class="ex"><span class="t">Eg.</span> Bullet <b>0.02 kg</b> at <b>400 m/s</b>, gun <b>5 kg</b>: <b>V<sub>g</sub> = −1.6 m/s</b> (recoil). If the force acts for <b>0.02 s</b>, the average force on the bullet is <b>400 N</b>.</div>
+<p>For a varying force, integrate the F-t curve; impulse is the area, not the peak force.</p></div></div><div class="col" id="b1"><div class="card"><h3><span class="n">17</span>Kinematics: position, velocity, acceleration</h3>
+<p><b>Rectilinear</b> motion is along a straight line; <b>curvilinear</b> motion is along a curved path. Position <b>r</b>, displacement <b>Δr</b>, velocity <b>v = dr/dt</b>, acceleration <b>a = dv/dt = d²r/dt²</b>.</p>
+<div class="eq">v<sub>avg</sub> = Δr/Δt,   a<sub>avg</sub> = Δv/Δt<br/>v = dr/dt,   a = dv/dt</div>
+<div class="ex"><span class="t">Eg.</span> <b>x = 2t³ − 3t² + 4t</b>: <b>v = 6t² − 6t + 4</b>, <b>a = 12t − 6</b>; at <b>t = 2 s</b>, <b>v = 16 m/s</b>, <b>a = 18 m/s²</b>.</div>
+<p><b>Graphs:</b> slope of x-t = v; slope of v-t = a; area under v-t = displacement; area under a-t = change in velocity.</p></div><div class="card"><h3><span class="n">18</span>Work-energy theorem</h3>
+<p>For a particle, <b>F = ma = m v dv/dx</b>. Integrate along the path:</p>
+<div class="eq">∫F dx = ∫m v dv = ½mv<sub>2</sub>² − ½mv<sub>1</sub>²<br/>U = ΔT = T<sub>2</sub> − T<sub>1</sub>,   T = ½mv²</div>
+<div class="ex"><span class="t">Eg.</span> <b>10 kg</b> from rest under <b>50 N</b> over <b>4 m</b>: <b>U = 200 J</b> → <b>v = √(2U/m) = 6.32 m/s</b>.</div>
+<p>Work is a scalar; the theorem relates the <b>net</b> work to the change in kinetic energy, independent of the path shape.</p></div><div class="card"><h3><span class="n">19</span>Impact energy loss and oblique impact</h3>
+<p>For direct central impact, the loss of kinetic energy is</p>
+<div class="eq">ΔE = ½ (m<sub>1</sub>m<sub>2</sub>/(m<sub>1</sub>+m<sub>2</sub>)) (v<sub>1</sub>−v<sub>2</sub>)² (1−e²)</div>
+<div class="ex"><span class="t">Eg.</span> For the previous impact: <b>ΔE = 11.25 J</b> (initial <b>25 J</b>, final <b>13.75 J</b>).</div>
+<p><b>Oblique impact:</b> resolve velocities along and perpendicular to the line of impact. The <b>tangential components are unchanged</b> (smooth spheres); the <b>normal components</b> satisfy momentum conservation and the restitution equation.</p>
+<table><tr><th>e</th><th>Impact</th><th>Energy</th></tr>
+<tr><td>0</td><td>perfectly plastic</td><td>maximum loss</td></tr>
+<tr><td>1</td><td>perfectly elastic</td><td>no loss</td></tr>
+<tr><td>0–1</td><td>partial</td><td>some loss</td></tr></table></div><div class="card"><h3><span class="n">20</span>Dependent motion of connected particles</h3>
+<p>An inextensible rope imposes a constraint on the displacements. Write the length of the rope and differentiate.</p>
+<div class="eq">s<sub>A</sub> + 2s<sub>B</sub> = L<br/>v<sub>A</sub> + 2v<sub>B</sub> = 0,   a<sub>A</sub> + 2a<sub>B</sub> = 0</div>
+<p>This is a rope over a fixed pulley and around a movable pulley carrying B; for a light frictionless movable pulley, <b>T<sub>A</sub> = 2T<sub>B</sub></b>.</p>
+<div class="ex"><span class="t">Eg.</span> A moves down at <b>2 m/s</b> → B moves up at <b>1 m/s</b>; A accelerates at <b>3 m/s²</b> → B accelerates at <b>1.5 m/s²</b>.</div></div><div class="card"><h3><span class="n">21</span>Variable acceleration: worked example</h3>
+<p>Given <b>v = 3t² − 2t m/s</b>:</p>
+<div class="eq">a = dv/dt = 6t − 2<br/>s = ∫v dt = t³ − t² + s<sub>0</sub></div>
+<div class="ex"><span class="t">Eg.</span> At <b>t = 2 s</b> (s<sub>0</sub>=0): <b>v = 8 m/s</b>, <b>a = 10 m/s²</b>, <b>s = 4 m</b>. The area under the v-t curve from 0 to 2 s is also <b>4 m</b>.</div>
+<p>If a is given as a function of x, use <b>a = v dv/dx</b> and integrate with respect to x.</p></div><div class="card"><h3><span class="n">22</span>Horizontal projectile</h3>
+<p>For a body projected horizontally with speed <b>u</b> from height <b>h</b>:</p>
+<div class="eq">t = √(2h/g)<br/>R = u t = u√(2h/g)<br/>v<sub>y</sub> = gt,   v = √(u² + v<sub>y</sub>²)</div>
+<div class="ex"><span class="t">Eg.</span> <b>h = 20 m</b>, <b>u = 10 m/s</b> → <b>t = 2.02 s</b>, <b>R = 20.2 m</b>; impact speed <b>v = √(100 + 392) = 22.2 m/s</b>.</div>
+<p>The horizontal motion is uniform; the vertical motion is free fall. The two components are independent.</p></div></div></div></div></div>
+</body></html>

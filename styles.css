@@ -6086,6 +6086,197 @@ label {
   height: 100%;
 }
 
+/* ── Master Verified Cheatsheet Viewer & Fullscreen Modal ── */
+.master-cheatsheet-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid var(--ink, #14202e);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 4px 4px 0 var(--shadow, rgba(0, 0, 0, 0.15));
+  box-sizing: border-box;
+}
+
+.master-sheet-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-bottom: 2px solid var(--line, #e2e8f0);
+  padding-bottom: 12px;
+}
+
+.master-sheet-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  text-transform: uppercase;
+}
+
+.master-sheet-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink, #0f172a);
+  margin-top: 2px;
+}
+
+.master-sheet-sub {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.master-sheet-sub span {
+  color: var(--ink, #0f172a);
+  font-weight: 700;
+}
+
+.master-pages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.master-page-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.master-page-tag {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: #64748b;
+  padding: 2px 4px;
+}
+
+.master-page-tag strong {
+  color: var(--ink, #0f172a);
+  font-weight: 700;
+}
+
+.master-sheet-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 297 / 210;
+  object-fit: contain;
+  border: 1.5px solid var(--line, #cbd5e1);
+  border-radius: 8px;
+  cursor: zoom-in;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  display: block;
+}
+
+.master-sheet-img:hover {
+  border-color: var(--ac, #1a59a6);
+  box-shadow: 0 6px 20px rgba(26, 89, 166, 0.18);
+}
+
+/* Fullscreen High-DPI Modal Viewer */
+.master-img-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.master-modal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(30, 41, 59, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.master-modal-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.master-modal-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.master-modal-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.master-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.master-modal-btn.primary {
+  background: #2563eb;
+  border-color: #3b82f6;
+}
+
+.master-modal-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+.master-modal-body {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  cursor: grab;
+}
+
+.master-modal-body:active {
+  cursor: grabbing;
+}
+
+.master-modal-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transform-origin: top center;
+  transition: transform 0.15s ease-out;
+}
+
 /* Forging loader v2: the page PRINTS itself — lines stamp in top-to-bottom on loop */
 .sheet-forge {
   display: flex;
