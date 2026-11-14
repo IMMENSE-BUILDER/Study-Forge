@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 115,
-  "latest": "v0.6.55",
-  "notes": "Single-Unit Master Cheatsheets & AI Gateway Auth Resilience: Added verified master vector PDF coverage for all individual units (EM Units 1-4, PPS Units 1-2, Physics Units 1-2) bypassing dead AI Gateway calls with instant 0ms hand-off. Added UI key configuration button (🔑) and in-chat 401 recovery prompt for Vercel AI Gateway credentials.",
+  "versionCode": 116,
+  "latest": "v0.6.56",
+  "notes": "In-App Cheatsheet Pop-Up Viewer & Conversational AI Iteration: Added dedicated in-app modal overlay (#masterModal) with multi-level zoom (100%-250%), 2-page duplex tab switcher, direct print, and download. Integrated full conversational context retention into Ask AI chat allowing real-time edits, formula additions, and instant re-rendering without leaving the app.",
   "apkUrl": ""
 }

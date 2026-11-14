@@ -6916,3 +6916,62 @@ label {
   border: 1px dashed var(--line, #cbd5e1);
   line-height: 1.4;
 }
+
+/* In-App Cheatsheet Pop-Up Modal Viewer & Iteration Engine */
+.master-sheet-viewport {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.6);
+  transform-origin: top center;
+  transition: transform 0.15s ease-out;
+  overflow: visible;
+  padding: 10px;
+  max-width: 100%;
+}
+
+.master-sheet-viewport .cheatsheet-sheet {
+  background: #fff;
+  width: min(94vw, 138vh, 1280px);
+  max-width: 100%;
+}
+
+.master-modal-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.master-modal-tab {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.master-modal-tab.active,
+.master-modal-tab:hover {
+  background: #2563eb;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+.master-modal-iframe-wrap {
+  width: min(96vw, 138vh, 1320px);
+  height: 88vh;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.6);
+}
+
+.master-modal-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}

@@ -3534,13 +3534,26 @@ function initAskAI() {
     const userContext = getUserContext();
     const subjectContext = trimmedBuddyBlock(typeof userText === 'string' ? userText : '');
 
-    const systemPrompt = `${AI_SYSTEM_PROMPT}${subjectContext ? `\n\n${subjectContext}` : ''}${userContext ? `\n\nStudent Live Context:\n${userContext}` : ''}`;
+    let systemPrompt = `${AI_SYSTEM_PROMPT}${subjectContext ? `\n\n${subjectContext}` : ''}${userContext ? `\n\nStudent Live Context:\n${userContext}` : ''}`;
+    if (window.activeCheatsheetState) {
+      const s = window.activeCheatsheetState;
+      systemPrompt += `\n\n[ACTIVE CHEATSHEET ITERATION CONTEXT]\n` +
+        `The student currently has an active cheatsheet open in the pop-up viewer:\n` +
+        `- Title: ${s.title}\n` +
+        `- Subject: ${s.alias}\n` +
+        `- Subtitle: ${s.subtitle}\n` +
+        (s.doc && Array.isArray(s.doc.boxes) ? `- Current Cards (${s.doc.boxes.length}): ${s.doc.boxes.map((b, i) => `Card ${i+1}: ${b.title}`).join(', ')}\n` : '') +
+        `When the student asks to modify, update, shorten, add formulas, or rephrase cards on this cheatsheet, maintain technical accuracy and dense syllabus coverage. Respond with a concise explanation AND an updated JSON block containing {"title": "${s.title}", "boxes": [...]}. The app will automatically detect this JSON and refresh the student's pop-up viewer live!`;
+    }
     // Sufficient token budget to accommodate reasoning tokens (reasoning_details) and full response
     const maxTokens = 3500;
 
     // Balanced chat history: preserves full formulas, derivations, code, and details for recent turns
     // v0.6.7 snappy: last 5 turns + 1200-char cap (was 6/1500) — lighter prompt, faster TTFT in long chats.
     const recentHistory = chatHistory.slice(-5).map(msg => {
+      if (msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.includes('[ACTIVE CHEATSHEET')) {
+        return msg;
+      }
       if (msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.length > 1200) {
         return {
           role: 'assistant',
@@ -4017,6 +4030,18 @@ function initAskAI() {
     addBotActionButtons(botMsg, finalText, makeRetryHandler(botMsg, hasText ? text.trim() : '', imageToSend));
     chatArea.scrollTop = chatArea.scrollHeight;
 
+    // Check if the reply contains an updated cheatsheet JSON (conversational iteration)
+    if (window.activeCheatsheetState && typeof sheetParseDoc === 'function' && typeof updateActiveCheatsheet === 'function') {
+      try {
+        const parsedDoc = sheetParseDoc(finalText);
+        if (parsedDoc && Array.isArray(parsedDoc.boxes) && parsedDoc.boxes.length >= 3) {
+          updateActiveCheatsheet(parsedDoc, botMsg);
+        }
+      } catch (err) {
+        console.warn('Cheatsheet update parse check:', err);
+      }
+    }
+
     if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'assistant') {
       chatHistory[chatHistory.length - 1].thoughtSec = totalThoughtSec;
       chatHistory[chatHistory.length - 1].content = finalText;
@@ -4458,7 +4483,309 @@ function initAskAI() {
   }
 
 
-  // Clean Cheatsheet Export & Launch Card (No DOM Clutter / Direct External Hand-off)
+  // Dedicated In-App Cheatsheet Pop-Up Modal Viewer (No External Redirects, Keeps User in App)
+  function openCheatsheetPopUp(opts) {
+    if (!opts) return;
+    const existing = document.getElementById('masterModal');
+    if (existing) existing.remove();
+
+    let zoom = 1.0;
+    const modal = document.createElement('div');
+    modal.id = 'masterModal';
+    modal.className = 'master-img-modal';
+
+    const bar = document.createElement('div');
+    bar.className = 'master-modal-bar';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'master-modal-title';
+    titleEl.innerHTML = '<span>📄</span> <span>' + escapeHtml(opts.title || 'Cheatsheet Preview') + '</span>';
+
+    const tools = document.createElement('div');
+    tools.className = 'master-modal-tools';
+
+    // Page switcher tabs if 2 pages exist
+    let p1Wrap = null, p2Wrap = null;
+    if (opts.page1 && opts.page2) {
+      const tabsWrap = document.createElement('div');
+      tabsWrap.className = 'master-modal-tabs';
+
+      const tFront = document.createElement('button');
+      tFront.type = 'button';
+      tFront.className = 'master-modal-tab active';
+      tFront.textContent = '📄 Front';
+
+      const tBack = document.createElement('button');
+      tBack.type = 'button';
+      tBack.className = 'master-modal-tab';
+      tBack.textContent = '📄 Back';
+
+      const tBoth = document.createElement('button');
+      tBoth.type = 'button';
+      tBoth.className = 'master-modal-tab';
+      tBoth.textContent = '📑 Both';
+
+      tFront.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tFront.classList.add('active'); tBack.classList.remove('active'); tBoth.classList.remove('active');
+        if (p1Wrap) p1Wrap.style.display = '';
+        if (p2Wrap) p2Wrap.style.display = 'none';
+      });
+      tBack.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tBack.classList.add('active'); tFront.classList.remove('active'); tBoth.classList.remove('active');
+        if (p1Wrap) p1Wrap.style.display = 'none';
+        if (p2Wrap) p2Wrap.style.display = '';
+      });
+      tBoth.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tBoth.classList.add('active'); tFront.classList.remove('active'); tBack.classList.remove('active');
+        if (p1Wrap) p1Wrap.style.display = '';
+        if (p2Wrap) p2Wrap.style.display = '';
+      });
+
+      tabsWrap.append(tFront, tBack, tBoth);
+      tools.appendChild(tabsWrap);
+    }
+
+    // Zoom Controls
+    const zoomLabel = document.createElement('span');
+    zoomLabel.style.cssText = 'font-size:12px; font-weight:700; color:#cbd5e1; min-width:48px; text-align:center;';
+    zoomLabel.textContent = '100%';
+
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.type = 'button';
+    zoomOutBtn.className = 'master-modal-btn';
+    zoomOutBtn.textContent = '➖ Zoom Out';
+
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.type = 'button';
+    zoomInBtn.className = 'master-modal-btn';
+    zoomInBtn.textContent = '➕ Zoom In';
+
+    const zoomFitBtn = document.createElement('button');
+    zoomFitBtn.type = 'button';
+    zoomFitBtn.className = 'master-modal-btn';
+    zoomFitBtn.textContent = '🔄 Fit';
+
+    const zoom150Btn = document.createElement('button');
+    zoom150Btn.type = 'button';
+    zoom150Btn.className = 'master-modal-btn';
+    zoom150Btn.textContent = '🔍 150%';
+
+    tools.append(zoomOutBtn, zoomLabel, zoomInBtn, zoomFitBtn, zoom150Btn);
+
+    // Download Button
+    if (opts.pdfUrl) {
+      const dlBtn = document.createElement('a');
+      dlBtn.className = 'master-modal-btn primary';
+      dlBtn.href = opts.pdfUrl;
+      const fn = opts.filename || (opts.pdfUrl ? opts.pdfUrl.split('/').pop() : 'cheatsheet.pdf');
+      dlBtn.download = fn;
+      dlBtn.target = '_blank';
+      dlBtn.innerHTML = '📥 Download';
+      tools.appendChild(dlBtn);
+    }
+
+    // Print Button
+    const printBtn = document.createElement('button');
+    printBtn.type = 'button';
+    printBtn.className = 'master-modal-btn';
+    printBtn.innerHTML = '🖨️ Print';
+    printBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const win = window.open(opts.pdfUrl, '_blank');
+      if (win) {
+        win.focus();
+        setTimeout(() => { try { win.print(); } catch(e) {} }, 500);
+      }
+    });
+    tools.appendChild(printBtn);
+
+    // Close Button
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'master-modal-btn';
+    closeBtn.textContent = '✕ Close';
+    tools.appendChild(closeBtn);
+
+    bar.append(titleEl, tools);
+    modal.appendChild(bar);
+
+    // Modal Body Content
+    const body = document.createElement('div');
+    body.className = 'master-modal-body';
+
+    let zoomTarget = null;
+
+    if (opts.page1 && opts.page2) {
+      const pagesContainer = document.createElement('div');
+      pagesContainer.style.cssText = 'display:flex; flex-direction:column; gap:20px; align-items:center; transform-origin:top center; transition:transform 0.15s ease-out;';
+      zoomTarget = pagesContainer;
+
+      p1Wrap = document.createElement('div');
+      const img1 = document.createElement('img');
+      img1.className = 'master-modal-img';
+      img1.src = opts.page1;
+      img1.alt = (opts.title || '') + ' - Page 1';
+      p1Wrap.appendChild(img1);
+
+      p2Wrap = document.createElement('div');
+      p2Wrap.style.display = 'none';
+      const img2 = document.createElement('img');
+      img2.className = 'master-modal-img';
+      img2.src = opts.page2;
+      img2.alt = (opts.title || '') + ' - Page 2';
+      p2Wrap.appendChild(img2);
+
+      pagesContainer.append(p1Wrap, p2Wrap);
+      body.appendChild(pagesContainer);
+    } else if (opts.page1) {
+      const img = document.createElement('img');
+      img.className = 'master-modal-img';
+      img.src = opts.page1;
+      img.alt = opts.title || 'Cheatsheet';
+      zoomTarget = img;
+      body.appendChild(img);
+    } else if (opts.sheetDOM || opts.html) {
+      const viewport = document.createElement('div');
+      viewport.className = 'master-sheet-viewport';
+      zoomTarget = viewport;
+      if (opts.sheetDOM) {
+        const cloned = opts.sheetDOM.cloneNode(true);
+        const t1 = cloned.querySelector('.duplex-tab:nth-child(1)');
+        const t2 = cloned.querySelector('.duplex-tab:nth-child(2)');
+        const tBoth = cloned.querySelector('.duplex-tab:nth-child(3)');
+        const p1 = cloned.querySelector('.duplex-page.page-1') || cloned.querySelectorAll('.duplex-page')[0];
+        const p2 = cloned.querySelector('.duplex-page.page-2') || cloned.querySelectorAll('.duplex-page')[1];
+        if (t1 && t2 && p1 && p2) {
+          t1.addEventListener('click', () => {
+            t1.classList.add('active'); t2.classList.remove('active'); if (tBoth) tBoth.classList.remove('active');
+            p1.style.display = ''; p2.style.display = 'none';
+          });
+          t2.addEventListener('click', () => {
+            t2.classList.add('active'); t1.classList.remove('active'); if (tBoth) tBoth.classList.remove('active');
+            p1.style.display = 'none'; p2.style.display = '';
+          });
+          if (tBoth) {
+            tBoth.addEventListener('click', () => {
+              tBoth.classList.add('active'); t1.classList.remove('active'); t2.classList.remove('active');
+              p1.style.display = ''; p2.style.display = '';
+            });
+          }
+        }
+        viewport.appendChild(cloned);
+      } else if (opts.html) {
+        viewport.innerHTML = opts.html;
+      }
+      body.appendChild(viewport);
+    } else if (opts.pdfUrl) {
+      const iframeWrap = document.createElement('div');
+      iframeWrap.className = 'master-modal-iframe-wrap';
+      const iframe = document.createElement('iframe');
+      iframe.className = 'master-modal-iframe';
+      iframe.src = opts.pdfUrl + '#toolbar=0';
+      iframeWrap.appendChild(iframe);
+      body.appendChild(iframeWrap);
+    }
+
+    modal.appendChild(body);
+    document.body.appendChild(modal);
+
+    function applyZoom(z) {
+      zoom = Math.max(0.4, Math.min(3.0, z));
+      if (zoomTarget) {
+        zoomTarget.style.transform = 'scale(' + zoom + ')';
+      }
+      zoomLabel.textContent = Math.round(zoom * 100) + '%';
+      if (zoom > 1.0) {
+        body.style.alignItems = 'flex-start';
+        body.style.justifyContent = 'flex-start';
+      } else {
+        body.style.alignItems = 'flex-start';
+        body.style.justifyContent = 'center';
+      }
+    }
+
+    zoomInBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(zoom + 0.25); });
+    zoomOutBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(zoom - 0.25); });
+    zoomFitBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(1.0); });
+    zoom150Btn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(1.5); });
+
+    function closeModal() {
+      modal.remove();
+      window.removeEventListener('keydown', onKeyDown);
+    }
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') closeModal();
+      else if (e.key === '+' || e.key === '=') applyZoom(zoom + 0.25);
+      else if (e.key === '-' || e.key === '_') applyZoom(zoom - 0.25);
+      else if (e.key === '0') applyZoom(1.0);
+    }
+
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || e.target === body) closeModal();
+    });
+    window.addEventListener('keydown', onKeyDown);
+  }
+
+  // Handle in-chat iterative updates to the active cheatsheet
+  function updateActiveCheatsheet(newDoc, botMsg) {
+    const state = window.activeCheatsheetState;
+    if (!state) return;
+    state.doc = newDoc;
+    if (newDoc.title) state.title = newDoc.title;
+
+    // Rebuild sheet DOM
+    const newSheetDOM = buildSheetDOM(newDoc, state.uA || 0, state.alias);
+    stripAdviceNodes(newSheetDOM);
+    state.sheetDOM = newSheetDOM;
+
+    // Rebuild standalone HTML & Blob
+    const standaloneHTML = generateStandaloneSheetHTML(newSheetDOM, state.title, getUnitPaletteClass(state.uA || 0));
+    const blob = new Blob([standaloneHTML], { type: 'text/html' });
+    state.pdfUrl = URL.createObjectURL(blob);
+    state.html = standaloneHTML;
+
+    // Render an update card in chat
+    const updatedCard = buildSheetExportCard({
+      title: state.title,
+      subtitle: (state.subtitle || '') + ' · Updated via AI Iteration',
+      faculty: state.faculty || 'B.Tech IT · Semester 1',
+      badge: `✨ ITERATED & UPDATED · ${newDoc.boxes.length} DENSE TOPIC CARDS`,
+      pdfUrl: state.pdfUrl,
+      sheetDOM: newSheetDOM,
+      html: standaloneHTML,
+      filename: (state.alias || 'sheet') + '-updated-cheatsheet.html',
+      isMaster: false
+    });
+    if (botMsg) {
+      botMsg.appendChild(updatedCard);
+    } else {
+      chatArea.appendChild(updatedCard);
+    }
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    // If modal is open, live refresh it!
+    const modal = document.getElementById('masterModal');
+    if (modal) {
+      openCheatsheetPopUp({
+        title: state.title,
+        subtitle: state.subtitle,
+        faculty: state.faculty,
+        pdfUrl: state.pdfUrl,
+        sheetDOM: newSheetDOM,
+        html: standaloneHTML,
+        badge: `✨ ITERATED & UPDATED · ${newDoc.boxes.length} DENSE TOPIC CARDS`,
+        isMaster: false
+      });
+    }
+    showToast('Cheatsheet updated with your changes! 🎨');
+  }
+
+  // Clean Cheatsheet Export & Launch Card with In-App Pop-Up Window Hand-off
   function buildSheetExportCard(opts) {
     const root = document.createElement('div');
     root.className = 'sheet-export-card';
@@ -4468,7 +4795,7 @@ function initAskAI() {
 
     const badgeEl = document.createElement('span');
     badgeEl.className = 'sheet-export-badge' + (opts.isMaster ? ' master' : '');
-    badgeEl.textContent = opts.badge || (opts.isMaster ? '🌟 46 DENSE CARDS · VERIFIED DUPLEX A4 LANDSCAPE' : '📄 24 DENSE CARDS · PRINT-READY A4');
+    badgeEl.textContent = opts.badge || (opts.isMaster ? '🌟 46 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE' : '📄 24 DENSE TOPIC CARDS · PRINT-READY A4');
 
     const titleEl = document.createElement('h3');
     titleEl.className = 'sheet-export-title';
@@ -4484,33 +4811,32 @@ function initAskAI() {
     const actions = document.createElement('div');
     actions.className = 'sheet-export-actions';
 
-    // Primary Download Button
+    // PRIMARY ACTION: Open In-App Pop-Up Window (Never leaving StudyForged)
+    const openInAppBtn = document.createElement('button');
+    openInAppBtn.type = 'button';
+    openInAppBtn.className = 'btn-export-primary';
+    openInAppBtn.innerHTML = '👁️ Open Cheatsheet (In-App Pop-Up Viewer)';
+    openInAppBtn.addEventListener('click', () => {
+      openCheatsheetPopUp(opts);
+    });
+    actions.appendChild(openInAppBtn);
+
+    // SECONDARY ROW: Download PDF & Direct Print
+    const row = document.createElement('div');
+    row.className = 'sheet-export-row';
+
     const dlBtn = document.createElement('a');
-    dlBtn.className = 'btn-export-primary';
+    dlBtn.className = 'btn-export-secondary';
     dlBtn.href = opts.pdfUrl;
     const filename = opts.filename || (opts.pdfUrl ? opts.pdfUrl.split('/').pop() : 'cheatsheet.pdf');
     dlBtn.download = filename;
     dlBtn.target = '_blank';
-    dlBtn.innerHTML = '📥 Download Print-Ready ' + (opts.isMaster ? 'Vector PDF (A4 Duplex)' : 'Cheatsheet (Print / PDF)');
-    actions.appendChild(dlBtn);
-
-    // Secondary Action Row: Open in External Viewer & Direct Print
-    const row = document.createElement('div');
-    row.className = 'sheet-export-row';
-
-    const openBtn = document.createElement('button');
-    openBtn.type = 'button';
-    openBtn.className = 'btn-export-secondary';
-    openBtn.innerHTML = '↗️ Open in External Viewer / Drive';
-    openBtn.addEventListener('click', () => {
-      const win = window.open(opts.pdfUrl, '_blank');
-      if (win) win.focus();
-    });
+    dlBtn.innerHTML = '📥 Download ' + (opts.isMaster ? 'PDF (A4)' : 'Cheatsheet');
 
     const printBtn = document.createElement('button');
     printBtn.type = 'button';
     printBtn.className = 'btn-export-secondary';
-    printBtn.innerHTML = '🖨️ Direct Print (A4 Duplex)';
+    printBtn.innerHTML = '🖨️ Direct Print';
     printBtn.addEventListener('click', () => {
       const win = window.open(opts.pdfUrl, '_blank');
       if (win) {
@@ -4519,14 +4845,14 @@ function initAskAI() {
       }
     });
 
-    row.append(openBtn, printBtn);
+    row.append(dlBtn, printBtn);
     actions.appendChild(row);
 
     root.appendChild(actions);
 
     const footer = document.createElement('div');
     footer.className = 'sheet-export-info';
-    footer.innerHTML = '<span>💡 <strong>External Viewer Hand-off:</strong> Opens directly in your device\'s native viewer (Google Drive, Adobe Acrobat, or Chrome) for 100% crisp printing without in-app rendering bugs.</span>';
+    footer.innerHTML = '<span>💡 <strong>In-App Viewer & AI Iteration:</strong> Tap <strong>Open Cheatsheet</strong> above to inspect full-screen without leaving the app. You can also chat below to edit formulas, add topics, or request layout tweaks!</span>';
     root.appendChild(footer);
 
     return root;
@@ -5616,13 +5942,38 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       botMsg.className = 'ai-msg bot cheatsheet-msg';
       chatArea.appendChild(botMsg);
 
+      // Set global active cheatsheet state for in-app pop-up and chat iteration
+      window.activeCheatsheetState = {
+        alias: data.subject,
+        title: data.title,
+        subtitle: data.subtitle,
+        faculty: data.faculty,
+        pdfUrl: data.pdf,
+        page1: data.page1,
+        page2: data.page2,
+        isMaster: true,
+        masterKey
+      };
+
+      // Push structured cheatsheet context into chatHistory so Ask AI retains memory of all cards
+      chatHistory.push({
+        role: 'assistant',
+        content: `[ACTIVE CHEATSHEET LOADED IN POP-UP VIEWER: "${data.title}"]\n` +
+          `Subject: ${data.subject} · Coverage: ${data.subtitle}\n` +
+          `Faculty: ${data.faculty || ''}\n` +
+          `Pre-compiled Master Cheatsheet with verified dense A4 layout (200+ DPI, worked numerical examples, reference tables, derivations, and formulas).\n\n` +
+          `[CHEATSHEET ITERATION MODE: The student can view this cheatsheet full-screen in the pop-up viewer. If the student asks questions about the cheatsheet, asks to modify any card, or wants to add/shorten formulas, use your syllabus knowledge to provide the exact technical content, and output an updated JSON block {"title": "${data.title}", "boxes": [...]} if an update is requested.]`
+      });
+
       const exportCard = buildSheetExportCard({
         title: data.title,
         subtitle: data.subtitle,
         faculty: data.faculty,
         badge: data.badge || (isMasterDuplex ? '🌟 46 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE' : '🌟 22 DENSE TOPIC CARDS · VERIFIED A4 LANDSCAPE'),
         pdfUrl: data.pdf,
-        filename: data.pdf.split('/').pop(),
+        page1: data.page1,
+        page2: data.page2,
+        filename: data.pdf ? data.pdf.split('/').pop() : (masterKey + '.pdf'),
         isMaster: true
       });
       botMsg.appendChild(exportCard);
@@ -5708,12 +6059,44 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       const blob = new Blob([standaloneHTML], { type: 'text/html' });
       const blobUrl = URL.createObjectURL(blob);
 
+      // Set global active cheatsheet state for in-app pop-up and chat iteration
+      window.activeCheatsheetState = {
+        alias,
+        title: sheetTitle,
+        subtitle: isDuplex ? ('Units ' + (uA + 1) + ' & ' + (uB + 1)) : ('Unit ' + (uA + 1)),
+        faculty: 'B.Tech IT · Semester 1',
+        doc: isDuplex ? docA : doc,
+        sheetDOM: sheetDOM,
+        html: standaloneHTML,
+        pdfUrl: blobUrl,
+        isDuplex,
+        uA,
+        uB,
+        isMaster: false
+      };
+
+      let cardsDesc = '';
+      const activeDoc = isDuplex ? docA : doc;
+      if (activeDoc && Array.isArray(activeDoc.boxes)) {
+        cardsDesc = activeDoc.boxes.map((b, i) => `Card ${i + 1}: [${b.title}] (Layout: ${b.layout || 'standard'}) ${b.desc || ''} | Formula: ${b.eq || ''} | Ex: ${b.example || ''}`).join('\n');
+      }
+
+      chatHistory.push({
+        role: 'assistant',
+        content: `[ACTIVE CHEATSHEET GENERATED & LOADED IN POP-UP VIEWER: "${sheetTitle}"]\n` +
+          `Subject: ${alias} · Coverage: ${isDuplex ? 'Duplex Units ' + (uA + 1) + ' & ' + (uB + 1) : 'Unit ' + (uA + 1)}\n` +
+          (cardsDesc ? `Cards currently on sheet:\n${cardsDesc}\n\n` : '') +
+          `[CHEATSHEET ITERATION MODE: The student is viewing this cheatsheet in the pop-up viewer. If the student asks to change, tweak, add, shorten, or iterate on cards or formulas, explain your changes concisely and include the updated JSON block: {"title": "${sheetTitle}", "boxes": [ ...updated cards... ]}. The app will automatically detect the updated JSON and refresh the cheatsheet in the pop-up viewer.]`
+      });
+
       const exportCard = buildSheetExportCard({
         title: sheetTitle,
         subtitle: isDuplex ? ('Units ' + (uA + 1) + ' & ' + (uB + 1) + ' · Full Duplex Cheatsheet') : ('Unit ' + (uA + 1) + ' · Revision Cheatsheet'),
         faculty: 'B.Tech IT · Semester 1',
         badge: isDuplex ? '📄 40+ DENSE TOPIC CARDS · TWO-PAGE DUPLEX A4' : '📄 24 DENSE TOPIC CARDS · PRINT-READY A4',
         pdfUrl: blobUrl,
+        sheetDOM: sheetDOM,
+        html: standaloneHTML,
         filename: alias + '-' + (isDuplex ? ('u' + (uA + 1) + '-u' + (uB + 1)) : ('u' + (uA + 1))) + '-cheatsheet.html',
         isMaster: false
       });
