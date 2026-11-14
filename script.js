@@ -4117,11 +4117,11 @@ function initAskAI() {
     'phy-u1-u2': {
       subject: 'PHL',
       title: 'Engineering Physics–I (ICT-111T) · Units 1 & 2',
-      subtitle: 'Interference, Thin Films, Diffraction, Polarization, Lasers & Fibers',
+      subtitle: 'Coordinates, Newtonian Motion, Work-Energy, Momentum & Central Forces',
       pdf: './cheatsheets/phy/phy-cheatsheet.pdf',
       page1: './cheatsheets/phy/page1.png',
       page2: './cheatsheets/phy/page2.png',
-      faculty: 'ADGIPS IT Sem-1'
+      faculty: 'Dr. M. Gupta · ADGIPS IT Sem-1'
     }
   };
 
@@ -4372,6 +4372,81 @@ function initAskAI() {
       tabBoth.classList.add('active'); tab1.classList.remove('active'); tab2.classList.remove('active');
       p1Wrap.style.display = ''; p2Wrap.style.display = '';
     });
+
+    return root;
+  }
+
+
+  // Clean Cheatsheet Export & Launch Card (No DOM Clutter / Direct External Hand-off)
+  function buildSheetExportCard(opts) {
+    const root = document.createElement('div');
+    root.className = 'sheet-export-card';
+
+    const header = document.createElement('div');
+    header.className = 'sheet-export-header';
+
+    const badgeEl = document.createElement('span');
+    badgeEl.className = 'sheet-export-badge' + (opts.isMaster ? ' master' : '');
+    badgeEl.textContent = opts.badge || (opts.isMaster ? '🌟 46 DENSE CARDS · VERIFIED DUPLEX A4 LANDSCAPE' : '📄 24 DENSE CARDS · PRINT-READY A4');
+
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'sheet-export-title';
+    titleEl.textContent = opts.title || 'Examination Cheatsheet';
+
+    const subEl = document.createElement('p');
+    subEl.className = 'sheet-export-sub';
+    subEl.innerHTML = '<strong>Coverage:</strong> ' + escapeHtml(opts.subtitle || '') + (opts.faculty ? ' · <strong>Faculty:</strong> ' + escapeHtml(opts.faculty) : '');
+
+    header.append(badgeEl, titleEl, subEl);
+    root.appendChild(header);
+
+    const actions = document.createElement('div');
+    actions.className = 'sheet-export-actions';
+
+    // Primary Download Button
+    const dlBtn = document.createElement('a');
+    dlBtn.className = 'btn-export-primary';
+    dlBtn.href = opts.pdfUrl;
+    const filename = opts.filename || (opts.pdfUrl ? opts.pdfUrl.split('/').pop() : 'cheatsheet.pdf');
+    dlBtn.download = filename;
+    dlBtn.target = '_blank';
+    dlBtn.innerHTML = '📥 Download Print-Ready ' + (opts.isMaster ? 'Vector PDF (A4 Duplex)' : 'Cheatsheet (Print / PDF)');
+    actions.appendChild(dlBtn);
+
+    // Secondary Action Row: Open in External Viewer & Direct Print
+    const row = document.createElement('div');
+    row.className = 'sheet-export-row';
+
+    const openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'btn-export-secondary';
+    openBtn.innerHTML = '↗️ Open in External Viewer / Drive';
+    openBtn.addEventListener('click', () => {
+      const win = window.open(opts.pdfUrl, '_blank');
+      if (win) win.focus();
+    });
+
+    const printBtn = document.createElement('button');
+    printBtn.type = 'button';
+    printBtn.className = 'btn-export-secondary';
+    printBtn.innerHTML = '🖨️ Direct Print (A4 Duplex)';
+    printBtn.addEventListener('click', () => {
+      const win = window.open(opts.pdfUrl, '_blank');
+      if (win) {
+        win.focus();
+        setTimeout(() => { try { win.print(); } catch(e) {} }, 500);
+      }
+    });
+
+    row.append(openBtn, printBtn);
+    actions.appendChild(row);
+
+    root.appendChild(actions);
+
+    const footer = document.createElement('div');
+    footer.className = 'sheet-export-info';
+    footer.innerHTML = '<span>💡 <strong>External Viewer Hand-off:</strong> Opens directly in your device\'s native viewer (Google Drive, Adobe Acrobat, or Chrome) for 100% crisp printing without in-app rendering bugs.</span>';
+    root.appendChild(footer);
 
     return root;
   }
@@ -5182,6 +5257,14 @@ pre { background: #fff; border: 0.4pt solid var(--line); border-radius: 2pt; pad
 .half-unit .cols { grid-template-columns: 1fr 1fr; }
 .cheatsheet-sheet { width: 297mm; height: 210mm; padding: 3.5mm; box-sizing: border-box; background: #fff; }
 .duplex-tabs { display: none !important; }
+@media screen {
+  .floating-print-bar { position: fixed; bottom: 18px; right: 18px; background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 9999px; box-shadow: 0 4px 20px rgba(0,0,0,0.35); display: flex; align-items: center; gap: 12px; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; }
+  .floating-print-bar button { background: #2563eb; color: #fff; border: none; border-radius: 9999px; padding: 7px 15px; font-weight: 700; font-size: 12px; cursor: pointer; box-shadow: 0 2px 8px rgba(37,99,235,0.4); }
+  .floating-print-bar button:hover { background: #1d4ed8; }
+}
+@media print {
+  .floating-print-bar { display: none !important; }
+}
 `;
     return `<!doctype html>
 <html>
@@ -5311,9 +5394,17 @@ ${sheetElement.outerHTML}
     const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
 ${unitCtx}
 
-TASK: Emit ONE dense single-unit revision cheatsheet as raw JSON (no fences, no commentary) covering the ENTIRE syllabus above.
-STRICT JSON SCHEMA:
-{"title": "UNIT N — NAME", "boxes": [ <18-22 dense box objects covering every subtopic in syllabus order> ]}
+    TASK: Emit ONE ultra-dense, print-packed revision cheatsheet strictly following the cheatsheet-layout skill as raw JSON (no fences, no commentary) covering EVERY single subtopic in the syllabus above.
+
+    STRICT SKILL DENSITY RULES:
+    - PACKED INFORMATION DENSITY: Generate exactly 22 to 24 dense, exhaustive topic cards covering EVERY subtopic in the syllabus.
+    - ZERO ADVICE BOXES: Never write advice, tips, tricks, warnings, hacks, remember, or pitfalls. BANNED: trap, tip, trick, warning, note, pro tip, careful. Zero fluff. Every square millimeter must be examinable technical content: definitions, derivations, formulas, numerical examples, and tables.
+    - CORRECT FORMS, NOT SOLVING STEPS: Examples show the final correct form/result directly (e.g. "Eg. m = 1000 kg, v = 20 m/s -> K = 200 kJ").
+    - FULL COVERAGE: Every single syllabus topic, formula, law, algorithm, and conversion gets an explicit card.
+    - MICRO-NOTE BREVITY: High-yield fragments, never filler prose. Abbreviations: w/, thru, b/w, ->, ↑ ↓, Δ, ∴, ∵, ≈, ∝, ≤ ≥ ≠.
+
+    STRICT JSON SCHEMA:
+    {"title": "UNIT N — NAME", "boxes": [ <22-24 dense box objects covering every subtopic in syllabus order> ]}
 
 BOX STRUCTURE:
 Each box represents one topic card:
@@ -5414,8 +5505,16 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         botMsg.className = 'ai-msg bot cheatsheet-msg';
         chatArea.appendChild(botMsg);
 
-        const sheetDOM = buildMasterCheatsheetDOM(masterKey);
-        botMsg.appendChild(sheetDOM);
+        const exportCard = buildSheetExportCard({
+          title: data.title,
+          subtitle: data.subtitle,
+          faculty: data.faculty,
+          badge: '🌟 46 DENSE TOPIC CARDS · VERIFIED DUPLEX A4 LANDSCAPE',
+          pdfUrl: data.pdf,
+          filename: data.pdf.split('/').pop(),
+          isMaster: true
+        });
+        botMsg.appendChild(exportCard);
         chatArea.scrollTop = chatArea.scrollHeight;
         if (sheetStatus) {
           sheetStatus.style.display = 'inline-flex';
@@ -5505,67 +5604,22 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
 
       botMsg.innerHTML = '';
       stripAdviceNodes(sheetDOM);
-      botMsg.appendChild(sheetDOM);
+      // Generate standalone print HTML blob for direct external viewing/download (zero in-app DOM clutter)
+      const standaloneHTML = generateStandaloneSheetHTML(sheetDOM, sheetTitle, unitClass);
+      const blob = new Blob([standaloneHTML], { type: 'text/html' });
+      const blobUrl = URL.createObjectURL(blob);
 
-      const actions = document.createElement('div');
-      actions.className = 'sheet-actions';
-
-      const dl = document.createElement('button');
-      dl.type = 'button';
-      dl.className = 'sheet-dl-btn';
-      dl.textContent = '🖨️ Download / Save PDF (A4 Landscape)';
-      dl.addEventListener('click', () => {
-        document.body.classList.add('print-cheatsheet');
-        const dup = botMsg.querySelector('.duplex-sheet');
-        if (dup) {
-          dup.querySelectorAll('.duplex-page').forEach(p => p.style.display = '');
-        }
-        setTimeout(() => {
-          try { window.print(); } catch (e) {}
-        }, 80);
+      const exportCard = buildSheetExportCard({
+        title: sheetTitle,
+        subtitle: isDuplex ? ('Units ' + (uA + 1) + ' & ' + (uB + 1) + ' · Full Duplex Cheatsheet') : ('Unit ' + (uA + 1) + ' · Revision Cheatsheet'),
+        faculty: 'B.Tech IT · Semester 1',
+        badge: isDuplex ? '📄 40+ DENSE TOPIC CARDS · TWO-PAGE DUPLEX A4' : '📄 24 DENSE TOPIC CARDS · PRINT-READY A4',
+        pdfUrl: blobUrl,
+        filename: alias + '-' + (isDuplex ? ('u' + (uA + 1) + '-u' + (uB + 1)) : ('u' + (uA + 1))) + '-cheatsheet.html',
+        isMaster: false
       });
-
-      const fsBtn = document.createElement('button');
-      fsBtn.type = 'button';
-      fsBtn.className = 'ghost';
-      fsBtn.textContent = '⛶ Fullscreen';
-      fsBtn.addEventListener('click', () => openSheetFullscreen(sheetDOM.outerHTML || sheetDOM.innerHTML));
-
-      const copyBtn = document.createElement('button');
-      copyBtn.type = 'button';
-      copyBtn.className = 'ghost';
-      copyBtn.textContent = '📋 Copy HTML';
-      copyBtn.addEventListener('click', async () => {
-        const fullHtml = generateStandaloneSheetHTML(sheetDOM, sheetTitle, unitClass);
-        try {
-          await navigator.clipboard.writeText(fullHtml);
-          showToast('Standalone Cheatsheet HTML copied! 📋');
-        } catch (e) {
-          showToast('Copied HTML fallback!');
-        }
-      });
-
-      const regen = document.createElement('button');
-      regen.type = 'button';
-      regen.className = 'ghost';
-      regen.textContent = '🔁 Regenerate';
-      regen.addEventListener('click', () => {
-        botMsg.remove();
-        userBubble.remove();
-        generateCheatsheet();
-      });
-
-      actions.append(dl, fsBtn, copyBtn, regen);
-      botMsg.appendChild(actions);
-
-      sheetDOM.title = 'Tap to view fullscreen';
-      sheetDOM.style.cursor = 'zoom-in';
-      sheetDOM.addEventListener('click', (e) => {
-        if (e.target.closest('button') || e.target.closest('.duplex-tab')) return;
-        openSheetFullscreen(sheetDOM.outerHTML || sheetDOM.innerHTML);
-      });
-
-      requestAnimationFrame(() => fitSheetToPage(sheetDOM, 6.2));
+      botMsg.appendChild(exportCard);
+      chatArea.scrollTop = chatArea.scrollHeight;
       if (sheetStatus) sheetStatus.style.display = 'none';
       showToast(isDuplex ? '2-Page Duplex Cheatsheet ready! 📑' : '1-Page A4 Landscape Cheatsheet ready! 📄');
     } catch (err) {

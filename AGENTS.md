@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.53** [build 113]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.54** [build 114]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -166,7 +166,19 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.53):
+Recent major changes (Nov 2026, now v0.6.54):
+- v0.6.54 (Build 114):
+  - Direct External Viewer & Hand-off Architecture for Cheatsheets:
+    - User requested eliminating the hassle of rendering dense 297mm x 210mm A4 landscape DOM sheets inside the chat window.
+    - Instead of cluttering the chat DOM with squished cards, the Generate action outputs a high-polish, dedicated Cheatsheet Launch & Export Card (.sheet-export-card).
+    - Features direct action buttons:
+      1. Download Print-Ready Vector PDF (A4 Duplex) / Standalone Cheatsheet (Print / PDF)
+      2. Open in External Viewer / Drive (opens in Google Drive, Adobe Acrobat, or Chrome native PDF viewer with 100% vector sharpness and zero font scaling bugs)
+      3. Direct Print (A4 Duplex) with 1-click trigger
+    - Deeply embedded cheatsheet-layout skill rules in AI prompt: exactly 22-24 dense cards per unit, full technical coverage, correct forms directly, zero advice/trap/tip fluff, micro-note brevity, worked numerical examples, and reference tables.
+    - Added Engineering Physics–I (ICT-111T) Units 1 & 2 verified master vector cheatsheet (46 dense topic cards duplex, Dr. M. Gupta).
+    - In standalone HTML view, added floating quick-action print bar hidden automatically during printing.
+  - Triple bump v0.6.54 / versionCode: 114 / CACHE_NAME: study-forge-v0.6.54.
 - v0.6.53 (Build 113):
   - Fixed 'Cheatsheet came back garbled — try again' error in live cheatsheet generation:
     - Root cause: AI models (especially large JSON outputs with 20+ cards) occasionally generate minor syntax defects such as double closing braces (`}}` before `,`) or trailing commas, causing standard `JSON.parse()` to reject the entire 9KB payload despite all cards being complete.

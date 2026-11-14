@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 113,
-  "latest": "v0.6.53",
-  "notes": "Fixed cheatsheet JSON parser resilience: resolved 'Cheatsheet came back garbled' error caused by minor LLM syntax glitches (e.g. double closing braces or trailing commas). Added 3-tier parsing with regex syntax sanitizer and element-by-element array fallback.",
+  "versionCode": 114,
+  "latest": "v0.6.54",
+  "notes": "Direct External Viewer & Hand-off Card for Cheatsheets: eliminated in-app DOM clutter and layout scaling issues by generating clean download & launch cards (Download Print-Ready Vector PDF/HTML, Open in External Viewer / Drive / Adobe, Direct Print A4 Duplex). Deeply embedded cheatsheet-layout skill rules (22-24 dense cards per unit, zero advice fluff, numerical results directly, formulas and tables). Added Physics (ICT-111T) Units 1 & 2 master vector cheatsheet (46 cards duplex).",
   "apkUrl": ""
 }
