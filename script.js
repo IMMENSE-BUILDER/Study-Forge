@@ -2345,10 +2345,12 @@ function getVercelApiUrl() {
 }
 const VERCEL_API_URL = getVercelApiUrl();
 const DEFAULT_VERCEL_MODEL = 'meta/muse-ember';
+const DEFAULT_VERCEL_KEY = 'vck_4NmxNp8WJReYbp35VabjM5VuH4LKl0fdcdstBpEzwGsVgWwqhN4IA7LV';
 
 function getVercelApiKey() {
   return localStorage.getItem('sf_vercel_ai_key') ||
          localStorage.getItem('sf_ai_api_key') ||
+         DEFAULT_VERCEL_KEY ||
          '';
 }
 
@@ -2661,75 +2663,17 @@ function initAskAI() {
   const thinkToggle = document.getElementById('aiThinkToggle');
   if (thinkToggle) thinkToggle.style.display = 'none';
 
-  // ── AI & Voice Settings Dialog (Vercel AI Gateway) ──
-  const keyBtn = document.getElementById('aiKeyBtn');
-  const keyDialog = document.getElementById('tokenharborKeyDialog') || document.getElementById('openrouterKeyDialog');
-  const vcKeyInput = document.getElementById('vercelKeyInput');
-  const vcModelInput = document.getElementById('vercelModelInput');
-  const dgKeyInput = document.getElementById('deepgramKeyInput');
-  const keyForm = document.getElementById('tokenharborKeyForm') || document.getElementById('openrouterKeyForm');
-
+  // ── Unified Cloud AI Integration (Vercel AI Gateway · meta/muse-ember) ──
   updateAIModelBadge();
 
-  if (keyBtn && keyDialog) {
-    keyBtn.addEventListener('click', () => {
-      if (vcKeyInput) {
-        vcKeyInput.value = getVercelApiKey();
-      }
-      if (vcModelInput) {
-        vcModelInput.value = getVercelModel();
-      }
-      if (dgKeyInput) {
-        dgKeyInput.value = getDeepgramApiKey();
-      }
-      openDialog(keyDialog);
-    });
-  }
-
-  if (keyForm && keyDialog) {
-    keyForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      // 1. Save Vercel AI Gateway Credentials
-      if (vcKeyInput) {
-        const vcVal = vcKeyInput.value.trim();
-        if (vcVal) {
-          localStorage.setItem('sf_vercel_ai_key', vcVal);
-          localStorage.setItem('sf_ai_api_key', vcVal);
-        } else {
-          localStorage.removeItem('sf_vercel_ai_key');
-          localStorage.removeItem('sf_ai_api_key');
-        }
-      }
-      if (vcModelInput) {
-        const vcMVal = vcModelInput.value.trim();
-        if (vcMVal) {
-          localStorage.setItem('sf_vercel_ai_model', vcMVal);
-          localStorage.setItem('sf_ai_model', vcMVal);
-        } else {
-          localStorage.removeItem('sf_vercel_ai_model');
-        }
-      }
-      // 2. Save Voice Key (Deepgram)
-      if (dgKeyInput) {
-        const dgVal = dgKeyInput.value.trim();
-        if (dgVal) {
-          localStorage.setItem('sf_deepgram_api_key', dgVal);
-        } else {
-          localStorage.removeItem('sf_deepgram_api_key');
-        }
-      }
-      // Purge legacy provider keys
-      localStorage.removeItem('sf_tokenharbor_api_key');
-      localStorage.removeItem('sf_tokenharbor_model');
-      localStorage.removeItem('sf_openrouter_api_key');
-      localStorage.removeItem('sf_openrouter_model');
-      localStorage.removeItem('sf_deepseek_api_key');
-
-      updateAIModelBadge();
-      showToast(`Saved! Engine: Vercel AI Gateway (${getActiveAiModel()})`);
-      closeDialog(keyDialog);
-    });
-  }
+  // Purge legacy provider keys
+  try {
+    localStorage.removeItem('sf_tokenharbor_api_key');
+    localStorage.removeItem('sf_tokenharbor_model');
+    localStorage.removeItem('sf_openrouter_api_key');
+    localStorage.removeItem('sf_openrouter_model');
+    localStorage.removeItem('sf_deepseek_api_key');
+  } catch (e) {}
 
   // ── Multimodal Vision Controls ──
   const imageBtn = document.getElementById('aiImageBtn');
@@ -3603,7 +3547,7 @@ function initAskAI() {
     const activeApiUrl = getActiveAiApiUrl();
 
     if (!apiKey) {
-      const hintMsg = "Vercel AI Gateway Key required. Please click the 🔑 key icon in the header to enter your API key.";
+      const hintMsg = "AI Gateway is momentarily unavailable. Please retry in a moment.";
       chatHistory.push({ role: 'assistant', content: hintMsg });
       if (typeof onChunk === 'function') {
         onChunk({ delta: hintMsg, text: hintMsg, isFirst: true });
@@ -3652,7 +3596,7 @@ function initAskAI() {
         let rawMsg = errData.error?.message || `API error ${res.status}`;
         let userMsg = rawMsg;
         if (res.status === 401) {
-          userMsg = "Invalid API Key. Please click the 🔑 key icon in the header to enter a valid key.";
+          userMsg = "AI Gateway connection error. Please try again shortly.";
         } else if (res.status === 402 || (typeof rawMsg === 'string' && rawMsg.toLowerCase().includes('credit'))) {
           userMsg = "Pass or credits required for this model. Please check your account balance.";
         } else if (res.status === 429) {
@@ -4544,8 +4488,8 @@ function initAskAI() {
       return;
     }
     const apiKey = getActiveAiApiKey();
-    if (!apiKey && getActiveAiProvider() !== 'vercel') {
-      showToast('Please set your API key in 🔑 Ask AI settings first');
+    if (!apiKey) {
+      showToast('AI Gateway is momentarily unavailable.');
       return;
     }
     sheetBusy = true;
@@ -6016,8 +5960,8 @@ function initFlashcards() {
 
     if (!apiKey) {
       stopMockStages();
-      showToast('Please set your Vercel AI Gateway key in 🔑 Ask AI settings first');
-      deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">🔑</span><p>Please enter your Vercel AI Gateway key in the Ask AI 🔑 settings to enable flashcards.</p></div>`;
+      showToast('AI Gateway is momentarily unavailable.');
+      deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">⚠️</span><p>AI Gateway is momentarily unavailable. Please try again shortly.</p></div>`;
       generateBtn.disabled = false;
       generateBtn.textContent = '🔥 Generate Cards';
       return;
@@ -6722,7 +6666,7 @@ ${getJsonSchemaInstructions(batchSize)}`;
     const model = getActiveAiModel();
     const activeApiUrl = getActiveAiApiUrl();
     if (!apiKey) {
-      throw new Error('Please set your Vercel AI Gateway key in 🔑 Ask AI settings first');
+      throw new Error('AI Gateway is momentarily unavailable. Please try again shortly.');
     }
     const schema = `CRITICAL: Return ONLY a valid JSON array of exactly ${qCount} objects with these exact keys:
 - "q": The question (one crisp line; KaTeX \\( ... \\) for math, ANSI C in \`\`\`c fences for PPS code).

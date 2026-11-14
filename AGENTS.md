@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.46** [build 106]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.47** [build 107]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -165,6 +165,13 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 ```
 
 ## 7. Current Status / Important Notes
+
+Recent major changes (Nov 2026, now v0.6.47):
+- v0.6.47 (Build 107):
+  - Embedded unified cloud-side Vercel AI Gateway key (DEFAULT_VERCEL_KEY) directly into the app for out-of-the-box execution.
+  - Removed individual BYOK settings modal and key button from Ask AI header.
+  - Model pinned to meta/muse-ember.
+  - Triple bump v0.6.47 / versionCode: 107 / CACHE_NAME: study-forge-v0.6.47.
 
 Recent major changes (Nov 2026, now v0.6.46):
 - v0.6.46 (Build 106):

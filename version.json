@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":106,"latest":"v0.6.46","notes":"Removed Token Harbor integration and migrated app-wide to Vercel AI Gateway with meta/muse-ember default model."}
+{"apkUrl":"","app":"StudyForged","versionCode":107,"latest":"v0.6.47","notes":"Embedded unified Vercel AI Gateway key (meta/muse-ember) for cloud execution, removing individual BYOK settings."}

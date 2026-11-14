@@ -7,6 +7,7 @@ const path = require("path");
 
 const ROOT = __dirname;
 const PORT = 3000;
+const DEFAULT_VERCEL_KEY = "vck_4NmxNp8WJReYbp35VabjM5VuH4LKl0fdcdstBpEzwGsVgWwqhN4IA7LV";
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -44,6 +45,9 @@ const server = http.createServer((req, res) => {
     if (targetPath.includes("chat/completions")) {
       proxyHeaders["accept"] = "text/event-stream";
       proxyHeaders["cache-control"] = "no-cache";
+    }
+    if (!proxyHeaders["authorization"] && DEFAULT_VERCEL_KEY) {
+      proxyHeaders["authorization"] = `Bearer ${DEFAULT_VERCEL_KEY}`;
     }
 
     const reqStart = Date.now();
