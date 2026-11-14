@@ -4090,6 +4090,20 @@ function initAskAI() {
     const s = sheetSubjects().find(x => x.alias === sheetSubject.value);
     const units = (s && Array.isArray(s.units)) ? s.units : [];
     sheetUnit.innerHTML = '';
+
+    if (units.length >= 2) {
+      const d1 = document.createElement('option');
+      d1.value = 'duplex-0-1';
+      d1.textContent = '📑 Units 1 & 2 — Duplex A4 Landscape Sheet (2 Pages)';
+      sheetUnit.appendChild(d1);
+    }
+    if (units.length >= 4) {
+      const d2 = document.createElement('option');
+      d2.value = 'duplex-2-3';
+      d2.textContent = '📑 Units 3 & 4 — Duplex A4 Landscape Sheet (2 Pages)';
+      sheetUnit.appendChild(d2);
+    }
+
     units.forEach((u, i) => {
       const o = document.createElement('option');
       o.value = String(i);
@@ -4203,6 +4217,11 @@ function initAskAI() {
     const layout = SHEET_LAYOUTS.includes(raw.layout) ? raw.layout : 'table';
     const box = { title, layout };
     const strArr = (v, cap, len) => (Array.isArray(v) ? v : []).map(x => sheetCleanLine(x, len)).filter(Boolean).slice(0, cap);
+
+    if (raw.desc) box.desc = sheetCleanLine(raw.desc, 240);
+    if (raw.eq) box.eq = sheetClip(raw.eq, 180);
+    if (raw.example) box.example = sheetCleanLine(raw.example, 220);
+
     if (layout === 'flow') {
       box.steps = strArr(raw.steps, 6, 160);
       if (!box.steps.length) return null;
@@ -4230,11 +4249,10 @@ function initAskAI() {
         if (sheetIsAdvice(a[0]) || sheetIsAdvice(a[1])) return null;
         return [sheetCleanLine(a[0], 120), sheetCleanLine(a[1], 220)];
       }).filter(r => r && (r[0] || r[1]));
-      if (!box.rows.length) return null;
+      if (!box.rows.length && !box.desc && !box.eq) return null;
     }
     return box;
   }
-  // Bracket-balance repair for truncated JSON (same failure mode as quiz/flashcards).
   // Bracket-balance repair for truncated JSON (same failure mode as quiz/flashcards).
   // v0.6.38: LIFO stack — the old braces-then-brackets order emitted mismatched closers.
   function sheetBalance(s) {
@@ -4310,143 +4328,536 @@ function initAskAI() {
     if (valid.length < 3) return null;
     return { title, boxes: valid };
   }
-  // Deterministic renderer: identical grid every generation — the page math always closes.
-  function buildSheetDOM(doc) {
-    const frag = document.createDocumentFragment();
-    if (doc.title) {
-      const h2 = document.createElement('h2');
-      h2.textContent = doc.title;
-      frag.appendChild(h2);
-    }
-    const grid = document.createElement('div');
-    grid.className = 'sheet-grid';
-    const starify = (el, starred) => { if (starred) el.classList.add('star'); };
-    doc.boxes.forEach((b) => {
-      const sec = document.createElement('div');
-      sec.className = 'sheet-sec';
-      const h = document.createElement('h3');
-      h.textContent = b.title;
-      sec.appendChild(h);
-      if (b.layout === 'flow') {
-        const ol = document.createElement('ol');
-        b.steps.forEach((s) => {
-          const st = sheetStar(s);
-          const li = document.createElement('li');
-          li.innerHTML = sheetText(st.text);
-          starify(li, st.starred);
-          ol.appendChild(li);
-        });
-        sec.appendChild(ol);
-      } else if (b.layout === 'compare') {
-        const t = document.createElement('table');
-        const head = document.createElement('tr');
-        [b.left, b.right].forEach((hh) => {
-          const th = document.createElement('th');
-          th.textContent = hh;
-          head.appendChild(th);
-        });
-        t.appendChild(head);
-        b.rows.forEach((r) => {
-          const tr = document.createElement('tr');
-          r.forEach((cell) => {
-            const st = sheetStar(cell);
-            const td = document.createElement('td');
-            td.innerHTML = sheetText(st.text);
-            starify(td, st.starred);
-            tr.appendChild(td);
-          });
-          t.appendChild(tr);
-        });
-        sec.appendChild(t);
-      } else if (b.layout === 'values') {
-        // v0.6.39: long items render as list rows, NOT stretched full-width pills.
-        const chips = document.createElement('div');
-        chips.className = 'sheet-chips';
-        const longList = document.createElement('ul');
-        let hasLong = false;
-        b.items.forEach((it) => {
-          const st = sheetStar(it);
-          if (st.text.length > 48) {
-            hasLong = true;
-            const li = document.createElement('li');
-            li.innerHTML = sheetText(st.text);
-            if (st.starred) li.classList.add('star');
-            longList.appendChild(li);
-            return;
-          }
-          const c = document.createElement('span');
-          c.className = 'sheet-chip';
-          c.innerHTML = sheetText(st.text);
-          starify(c, st.starred);
-          chips.appendChild(c);
-        });
-        if (chips.children.length) sec.appendChild(chips);
-        if (hasLong) sec.appendChild(longList);
-      } else if (b.layout === 'code') {
-        if (b.code) {
-          const pre = document.createElement('pre');
-          pre.textContent = b.code;
-          sec.appendChild(pre);
-        }
-        if (b.notes.length) {
-          const ul = document.createElement('ul');
-          b.notes.forEach((n) => {
-            const st = sheetStar(n);
-            const li = document.createElement('li');
-            li.innerHTML = sheetText(st.text);
-            starify(li, st.starred);
-            ul.appendChild(li);
-          });
-          sec.appendChild(ul);
-        }
-      } else {
-        const t = document.createElement('table');
-        b.rows.forEach((r) => {
-          const st = sheetStar(r[0] || '');
-          const tr = document.createElement('tr');
-          const td0 = document.createElement('td');
-          td0.innerHTML = sheetText(st.text || '—');
-          const td1 = document.createElement('td');
-          const fsrc = String(r[1] || '').replace(/^\s*★\s*/, '');
-          if (!fsrc) td1.textContent = '—';
-          else td1.appendChild(sheetFormula(fsrc));
-          starify(tr, st.starred);
-          tr.append(td0, td1);
-          t.appendChild(tr);
-        });
-        sec.appendChild(t);
-      }
-      grid.appendChild(sec);
-    });
-    frag.appendChild(grid);
-    return frag;
+
+  // ── Cheatsheet Layout & Leveling Engine (Skill Port) ──
+  function getRomanNumeral(idx) {
+    const r = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+    return r[idx] || String(idx + 1);
+  }
+  function getUnitPaletteClass(idx) {
+    const p = ['u1', 'u2', 'u3', 'u4'];
+    return p[idx % 4] || 'u1';
   }
 
-  // STRICT A4 fit: shrink sheet type until content fits its box (binary search on
-  // font-size; inner sizes are em-based so the whole sheet scales on one knob).
-  // v0.6.36: checks BOTH axes — wide KaTeX display math punched through the right
-  // edge while only vertical fit ran.
-  function fitSheetToPage(sheet, minPx) {
-    if (!sheet || !sheet.isConnected) return;
-    const min = minPx || 8;
-    sheet.style.fontSize = '';
-    const fits = () => sheet.scrollHeight <= sheet.clientHeight + 1 && sheet.scrollWidth <= sheet.clientWidth + 1;
-    if (sheet.clientHeight <= 0 || fits()) return;
-    let lo = min;
-    let hi = parseFloat(getComputedStyle(sheet).fontSize) || 11;
-    let best = min;
-    let guard = 0;
-    while (hi - lo > 0.5 && guard++ < 12) {
-      const mid = (lo + hi) / 2;
-      sheet.style.fontSize = mid + 'px';
-      if (sheet.scrollHeight <= sheet.clientHeight + 1 && sheet.scrollWidth <= sheet.clientWidth + 1) { best = mid; lo = mid; }
-      else { hi = mid; }
+  // Fast content-based height estimation for unmounted cards
+  function estimateCardHeight(cardEl) {
+    if (cardEl && cardEl.isConnected) {
+      const r = cardEl.getBoundingClientRect();
+      if (r.height > 0) return r.height;
     }
-    sheet.style.fontSize = best + 'px';
+    let h = 26; // base card padding + h3 header
+    cardEl.querySelectorAll('p').forEach(p => { h += 14 + Math.ceil(p.textContent.length / 32) * 11; });
+    cardEl.querySelectorAll('.eq').forEach(() => { h += 24; });
+    cardEl.querySelectorAll('.ex').forEach(ex => { h += 16 + Math.ceil(ex.textContent.length / 32) * 11; });
+    cardEl.querySelectorAll('.flow').forEach(() => { h += 22; });
+    cardEl.querySelectorAll('table').forEach(t => { h += 12 + t.querySelectorAll('tr').length * 13; });
+    cardEl.querySelectorAll('ul li').forEach(() => { h += 13; });
+    cardEl.querySelectorAll('pre').forEach(p => { h += 14 + (p.textContent.split('\n').length || 1) * 12; });
+    return Math.max(h, 30);
   }
+
+  // Measure card heights in an off-screen container matching sheet geometry
+  function measureCardHeights(cardElements, colWidthPx) {
+    const scratch = document.createElement('div');
+    scratch.style.cssText = `position: absolute; left: -9999px; top: -9999px; width: ${colWidthPx || 220}px; visibility: hidden; pointer-events: none;`;
+    scratch.className = 'cheatsheet-sheet';
+    document.body.appendChild(scratch);
+    const heights = [];
+    cardElements.forEach(c => {
+      scratch.appendChild(c);
+      const h = c.getBoundingClientRect().height || estimateCardHeight(c);
+      heights.push(h);
+    });
+    scratch.remove();
+    return heights;
+  }
+
+  // JavaScript port of pack(h) from make_sheet.py:
+  // Split card heights into K bins: min max-bin, then most even (greedy + 2-opt leveling)
+  function packCards(heights, numCols) {
+    const K = numCols || 4;
+    const n = heights.length;
+    if (n <= K) {
+      const bins = [];
+      for (let i = 0; i < K; i++) bins.push(i < n ? [i] : []);
+      return bins;
+    }
+    const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => heights[b] - heights[a]);
+    let bins = Array.from({ length: K }, () => []);
+    const sums = new Array(K).fill(0);
+    for (const i of order) {
+      let minIdx = 0;
+      for (let j = 1; j < K; j++) {
+        if (sums[j] < sums[minIdx]) minIdx = j;
+      }
+      bins[minIdx].push(i);
+      sums[minIdx] += heights[i];
+    }
+
+    function obj(bs) {
+      const s = bs.map(b => b.reduce((acc, idx) => acc + (heights[idx] || 0), 0));
+      const maxVal = Math.max(...s);
+      const sumSq = s.reduce((acc, v) => acc + v * v, 0);
+      return [maxVal, sumSq];
+    }
+
+    function isBetter(o1, o2) {
+      if (o1[0] < o2[0] - 0.01) return true;
+      if (Math.abs(o1[0] - o2[0]) < 0.01 && o1[1] < o2[1] - 0.01) return true;
+      return false;
+    }
+
+    let best = obj(bins);
+    let improved = true;
+    let loops = 0;
+    while (improved && loops++ < 80) {
+      improved = false;
+      for (let a = 0; a < K; a++) {
+        for (let b = 0; b < K; b++) {
+          if (a === b) continue;
+          // Move one card from a to b
+          for (let idx = 0; idx < bins[a].length; idx++) {
+            const item = bins[a][idx];
+            const nb = bins.map(col => [...col]);
+            nb[a].splice(idx, 1);
+            nb[b].push(item);
+            const cand = obj(nb);
+            if (isBetter(cand, best)) {
+              bins = nb;
+              best = cand;
+              improved = true;
+              break;
+            }
+          }
+          if (improved) break;
+          // Swap two cards
+          for (let ia = 0; ia < bins[a].length; ia++) {
+            for (let ib = 0; ib < bins[b].length; ib++) {
+              const itemA = bins[a][ia];
+              const itemB = bins[b][ib];
+              const nb = bins.map(col => [...col]);
+              nb[a][ia] = itemB;
+              nb[b][ib] = itemA;
+              const cand = obj(nb);
+              if (isBetter(cand, best)) {
+                bins = nb;
+                best = cand;
+                improved = true;
+                break;
+              }
+            }
+            if (improved) break;
+          }
+          if (improved) break;
+        }
+        if (improved) break;
+      }
+    }
+    // Sort items within each bin by original index to keep syllabus flow
+    return bins.map(b => b.sort((x, y) => x - y));
+  }
+
+  // Authentic card builder supporting formulas (.eq), worked examples (.ex), flow chips (.flow), tables, and clean lists
+  function buildSheetCard(b, cardIndex) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const h3 = document.createElement('h3');
+    const badge = document.createElement('span');
+    badge.className = 'n';
+    badge.textContent = String(cardIndex != null ? cardIndex : 1);
+    h3.appendChild(badge);
+    h3.appendChild(document.createTextNode(b.title));
+    card.appendChild(h3);
+
+    if (b.desc) {
+      const p = document.createElement('p');
+      p.innerHTML = `<b>Def:</b> ${sheetText(b.desc)}`;
+      card.appendChild(p);
+    }
+
+    if (b.eq) {
+      const eqDiv = document.createElement('div');
+      eqDiv.className = 'eq';
+      const f = sheetFormula(b.eq);
+      if (f) eqDiv.appendChild(f);
+      else eqDiv.innerHTML = sheetText(b.eq);
+      card.appendChild(eqDiv);
+    }
+
+    if (b.layout === 'flow') {
+      const flowDiv = document.createElement('div');
+      flowDiv.className = 'flow';
+      (b.steps || []).forEach((s, idx) => {
+        if (idx > 0) {
+          const arr = document.createElement('span');
+          arr.className = 'arr';
+          arr.innerHTML = '&rarr;';
+          flowDiv.appendChild(arr);
+        }
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.innerHTML = sheetText(s);
+        flowDiv.appendChild(chip);
+      });
+      card.appendChild(flowDiv);
+    } else if (b.layout === 'compare') {
+      const tbl = document.createElement('table');
+      const trH = document.createElement('tr');
+      const th1 = document.createElement('th');
+      th1.textContent = b.left || 'A';
+      const th2 = document.createElement('th');
+      th2.textContent = b.right || 'B';
+      trH.append(th1, th2);
+      tbl.appendChild(trH);
+      (b.rows || []).forEach(r => {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td');
+        td1.innerHTML = sheetText(r[0] || '—');
+        const td2 = document.createElement('td');
+        td2.innerHTML = sheetText(r[1] || '—');
+        tr.append(td1, td2);
+        tbl.appendChild(tr);
+      });
+      card.appendChild(tbl);
+    } else if (b.layout === 'values') {
+      const ul = document.createElement('ul');
+      (b.items || []).forEach(it => {
+        const li = document.createElement('li');
+        li.innerHTML = sheetText(it);
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+    } else if (b.layout === 'code') {
+      if (b.code) {
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        code.textContent = b.code;
+        pre.appendChild(code);
+        card.appendChild(pre);
+      }
+      if (b.notes && b.notes.length) {
+        const ul = document.createElement('ul');
+        b.notes.forEach(n => {
+          const li = document.createElement('li');
+          li.innerHTML = sheetText(n);
+          ul.appendChild(li);
+        });
+        card.appendChild(ul);
+      }
+    } else {
+      // 'table' layout
+      if (b.rows && b.rows.length) {
+        const regularRows = [];
+        b.rows.forEach(r => {
+          const label = String(r[0] || '').trim();
+          const val = String(r[1] || '').trim();
+          if (/^e\.?g\.?|example\b/i.test(label) || /^e\.?g\.?|example\b/i.test(val)) {
+            const exDiv = document.createElement('div');
+            exDiv.className = 'ex';
+            exDiv.innerHTML = `<span class="t">Eg.</span> ${sheetText(val || label)}`;
+            card.appendChild(exDiv);
+          } else {
+            regularRows.push(r);
+          }
+        });
+
+        if (regularRows.length) {
+          const tbl = document.createElement('table');
+          regularRows.forEach(r => {
+            const tr = document.createElement('tr');
+            const td0 = document.createElement('td');
+            td0.innerHTML = sheetText(r[0] || '—');
+            const td1 = document.createElement('td');
+            const fsrc = String(r[1] || '').trim();
+            if (!fsrc) {
+              td1.textContent = '—';
+            } else {
+              const f = sheetFormula(fsrc);
+              if (f) td1.appendChild(f);
+              else td1.innerHTML = sheetText(fsrc);
+            }
+            tr.append(td0, td1);
+            tbl.appendChild(tr);
+          });
+          card.appendChild(tbl);
+        }
+      }
+    }
+
+    if (b.example) {
+      const exDiv = document.createElement('div');
+      exDiv.className = 'ex';
+      exDiv.innerHTML = `<span class="t">Eg.</span> ${sheetText(b.example)}`;
+      card.appendChild(exDiv);
+    }
+
+    return card;
+  }
+
+  // Single-unit 4-column balanced A4 landscape sheet
+  function buildSheetDOM(doc, unitIdx, alias) {
+    const s = sheetSubjects().find(x => x.alias === alias);
+    const fac = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY[alias]) ? SF_FACULTY[alias].faculty : '';
+    const code = (s && s.code) || alias;
+    const rU = getRomanNumeral(unitIdx);
+    const pal = getUnitPaletteClass(unitIdx);
+
+    const sheet = document.createElement('div');
+    sheet.className = `cheatsheet-sheet ${pal}`;
+
+    const banner = document.createElement('div');
+    banner.className = 'banner';
+    const bTitle = document.createElement('div');
+    bTitle.textContent = `UNIT ${rU} · ${doc.title || ('UNIT ' + rU)}`;
+    const bSub = document.createElement('span');
+    bSub.textContent = `${code} · ${fac || 'B.Tech IT'}`;
+    banner.append(bTitle, bSub);
+    sheet.appendChild(banner);
+
+    const cols = document.createElement('div');
+    cols.className = 'cols';
+    const colEls = [];
+    for (let i = 0; i < 4; i++) {
+      const c = document.createElement('div');
+      c.className = 'col';
+      colEls.push(c);
+      cols.appendChild(c);
+    }
+    sheet.appendChild(cols);
+
+    const cards = (doc.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
+    const heights = measureCardHeights(cards, 220);
+    const bins = packCards(heights, 4);
+
+    let seq = 1;
+    bins.forEach((binCards, colIdx) => {
+      binCards.forEach(idx => {
+        const c = cards[idx];
+        const bdg = c.querySelector('.n');
+        if (bdg) bdg.textContent = String(seq++);
+        colEls[colIdx].appendChild(c);
+      });
+    });
+
+    return sheet;
+  }
+
+  // Two-page Duplex A4 landscape sheet (Front: uA | uB, Back: uB | uA reversed blueprint)
+  function buildDuplexSheetDOM(docA, docB, uA, uB, alias) {
+    const s = sheetSubjects().find(x => x.alias === alias);
+    const fac = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY[alias]) ? SF_FACULTY[alias].faculty : '';
+    const code = (s && s.code) || alias;
+    const rA = getRomanNumeral(uA);
+    const rB = getRomanNumeral(uB);
+    const palA = getUnitPaletteClass(uA);
+    const palB = getUnitPaletteClass(uB);
+
+    const root = document.createElement('div');
+    root.className = 'duplex-sheet';
+
+    const tabs = document.createElement('div');
+    tabs.className = 'duplex-tabs';
+    const tab1 = document.createElement('button');
+    tab1.type = 'button';
+    tab1.className = 'duplex-tab active';
+    tab1.textContent = `📄 Page 1: Front (Unit ${rA} | Unit ${rB})`;
+    const tab2 = document.createElement('button');
+    tab2.type = 'button';
+    tab2.className = 'duplex-tab';
+    tab2.textContent = `📄 Page 2: Back (Unit ${rB} | Unit ${rA})`;
+    const tabBoth = document.createElement('button');
+    tabBoth.type = 'button';
+    tabBoth.className = 'duplex-tab';
+    tabBoth.textContent = '📑 Both Pages (Print Preview)';
+    tabs.append(tab1, tab2, tabBoth);
+    root.appendChild(tabs);
+
+    const cardsA = (docA.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
+    const heightsA = measureCardHeights(cardsA, 220);
+    const binsA = packCards(heightsA, 4);
+
+    const cardsB = (docB.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
+    const heightsB = measureCardHeights(cardsB, 220);
+    const binsB = packCards(heightsB, 4);
+
+    // Renumber Unit A cards 1..N
+    let seqA = 1;
+    [0, 1, 2, 3].forEach(k => {
+      (binsA[k] || []).forEach(idx => {
+        const bdg = cardsA[idx].querySelector('.n');
+        if (bdg) bdg.textContent = String(seqA++);
+      });
+    });
+    // Renumber Unit B cards 1..N
+    let seqB = 1;
+    [0, 1, 2, 3].forEach(k => {
+      (binsB[k] || []).forEach(idx => {
+        const bdg = cardsB[idx].querySelector('.n');
+        if (bdg) bdg.textContent = String(seqB++);
+      });
+    });
+
+    function createHalfUnit(unitClass, title, subtitle, colCards1, colCards2) {
+      const half = document.createElement('div');
+      half.className = `half-unit ${unitClass}`;
+      const banner = document.createElement('div');
+      banner.className = 'banner';
+      const bTitle = document.createElement('div');
+      bTitle.textContent = title;
+      const bSub = document.createElement('span');
+      bSub.textContent = subtitle;
+      banner.append(bTitle, bSub);
+      half.appendChild(banner);
+
+      const cols = document.createElement('div');
+      cols.className = 'cols';
+      const col1 = document.createElement('div');
+      col1.className = 'col';
+      colCards1.forEach(c => col1.appendChild(c));
+      const col2 = document.createElement('div');
+      col2.className = 'col';
+      colCards2.forEach(c => col2.appendChild(c));
+      cols.append(col1, col2);
+      half.appendChild(cols);
+      return half;
+    }
+
+    // Page 1: Unit A (bins 0, 1) on Left | Unit B (bins 0, 1) on Right
+    const page1 = document.createElement('div');
+    page1.className = 'duplex-page page-1';
+    const halfA_front = createHalfUnit(
+      palA,
+      `UNIT ${rA} · ${docA.title || 'UNIT ' + rA}`,
+      `${code} · ${fac || 'B.Tech IT'}`,
+      (binsA[0] || []).map(i => cardsA[i]),
+      (binsA[1] || []).map(i => cardsA[i])
+    );
+    const halfB_front = createHalfUnit(
+      palB,
+      `UNIT ${rB} · ${docB.title || 'UNIT ' + rB}`,
+      `${code} · ${fac || 'B.Tech IT'}`,
+      (binsB[0] || []).map(i => cardsB[i]),
+      (binsB[1] || []).map(i => cardsB[i])
+    );
+    page1.append(halfA_front, halfB_front);
+
+    // Page 2: Unit B (bins 2, 3) on Left | Unit A (bins 2, 3) on Right (Short-Edge Duplex Flip)
+    const page2 = document.createElement('div');
+    page2.className = 'duplex-page page-2';
+    page2.style.display = 'none';
+    const halfB_back = createHalfUnit(
+      palB,
+      `UNIT ${rB} · ${docB.title || 'UNIT ' + rB} (contd.)`,
+      `${code} · ${fac || 'B.Tech IT'}`,
+      (binsB[2] || []).map(i => cardsB[i]),
+      (binsB[3] || []).map(i => cardsB[i])
+    );
+    const halfA_back = createHalfUnit(
+      palA,
+      `UNIT ${rA} · ${docA.title || 'UNIT ' + rA} (contd.)`,
+      `${code} · ${fac || 'B.Tech IT'}`,
+      (binsA[2] || []).map(i => cardsA[i]),
+      (binsA[3] || []).map(i => cardsA[i])
+    );
+    page2.append(halfB_back, halfA_back);
+
+    root.append(page1, page2);
+
+    tab1.addEventListener('click', () => {
+      tab1.classList.add('active'); tab2.classList.remove('active'); tabBoth.classList.remove('active');
+      page1.style.display = ''; page2.style.display = 'none';
+    });
+    tab2.addEventListener('click', () => {
+      tab2.classList.add('active'); tab1.classList.remove('active'); tabBoth.classList.remove('active');
+      page1.style.display = 'none'; page2.style.display = '';
+    });
+    tabBoth.addEventListener('click', () => {
+      tabBoth.classList.add('active'); tab1.classList.remove('active'); tab2.classList.remove('active');
+      page1.style.display = ''; page2.style.display = '';
+    });
+
+    return root;
+  }
+
+  // Generates complete, self-contained standalone HTML for export / copy
+  function generateStandaloneSheetHTML(sheetElement, title, unitClass) {
+    const css = `
+@page { size: 297mm 210mm landscape; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #fff; font-family: 'Carlito', 'Calibri', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 6.8pt; line-height: 1.18; color: #14202e; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+:root, .u1, body.u1 { --ac: #1a59a6; --ac2: #2f78c4; --soft: #f4f8fd; --line: #dbe5f1; --hd: #e1ecf9; --dk: #0d2a4d; --g1: #17407a; --g2: #2b6cb8; --mut: #46607e; }
+.u2, body.u2 { --ac: #0f6b5f; --ac2: #1d9a86; --soft: #f2faf8; --line: #cfe8e3; --hd: #dcf1ec; --dk: #0b3b35; --g1: #0b4f47; --g2: #1b8f7b; --mut: #3f6b64; }
+.u3, body.u3 { --ac: #5b21b6; --ac2: #7c3aed; --soft: #f5f3ff; --line: #ddd6fe; --hd: #ede9fe; --dk: #2e1065; --g1: #4c1d95; --g2: #6d28d9; --mut: #5b21b6; }
+.u4, body.u4 { --ac: #b45309; --ac2: #d97706; --soft: #fffbeb; --line: #fde68a; --hd: #fef3c7; --dk: #78350f; --g1: #92400e; --g2: #b45309; --mut: #78350f; }
+.banner { background: linear-gradient(90deg, var(--g1), var(--g2)); color: #fff; font-weight: 700; font-size: 8.5pt; padding: 3pt 7pt; border-radius: 3pt; margin-bottom: 3.5pt; display: flex; justify-content: space-between; align-items: center; }
+.banner span { font-weight: 400; font-size: 6.2pt; opacity: 0.92; }
+.cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.4mm; height: 100%; }
+.col { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 2pt; }
+.card { background: var(--soft); border: 0.4pt solid var(--line); border-left: 2pt solid var(--ac2); border-radius: 2pt; padding: 1.6pt 3.5pt 2pt 4pt; margin-bottom: 2pt; font-size: 6.6pt; line-height: 1.18; color: #14202e; break-inside: avoid; }
+.card h3 { font-size: 7.4pt; color: var(--ac); font-weight: 700; display: flex; align-items: center; gap: 2.5pt; margin: 0 0 1.5pt; }
+.n { display: inline-block; background: var(--ac); color: #fff; border-radius: 2pt; min-width: 8pt; height: 8pt; text-align: center; font-size: 5.6pt; line-height: 8pt; padding: 0 1.2pt; font-weight: 800; flex-shrink: 0; }
+b { font-weight: 700; color: var(--dk); }
+p { margin: 0.6pt 0; overflow-wrap: break-word; }
+table { border-collapse: collapse; width: 100%; margin: 1pt 0; font-size: 6pt; line-height: 1.14; }
+th, td { border: 0.35pt solid var(--line); padding: 0.8pt 2.5pt; text-align: left; vertical-align: top; background: #fff; }
+th { background: var(--hd); color: var(--dk); font-weight: 700; }
+.eq { background: #fff; border: 0.4pt solid var(--line); border-left: 1.5pt solid var(--ac); border-radius: 2pt; padding: 1pt 3.5pt; margin: 1.2pt 0; font-size: 6.4pt; line-height: 1.35; color: var(--dk); }
+.ex { border-left: 1.5pt solid #3f9a5a; padding: 1pt 3.5pt; margin: 1.2pt 0; background: #f0faf3; border-radius: 2pt; font-size: 6.2pt; line-height: 1.25; }
+.ex .t { font-weight: 700; color: #256b3c; margin-right: 2pt; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5pt 0; margin: 1.2pt 0; }
+.chip { background: #fff; border: 0.5pt solid var(--ac2); border-radius: 2pt; padding: 0.5pt 3pt; font-weight: 700; color: var(--dk); font-size: 6pt; line-height: 1.15; }
+.arr { color: var(--ac2); font-weight: 700; padding: 0 1.5pt; font-size: 7pt; }
+ul { list-style: none; padding: 0; margin: 0.5pt 0; }
+li { padding-left: 7pt; position: relative; margin: 0.3pt 0; }
+li:before { content: ''; position: absolute; left: 1.8pt; top: 3.2pt; width: 2.2pt; height: 2.2pt; border-radius: 50%; background: var(--ac2); }
+pre { background: #fff; border: 0.4pt solid var(--line); border-radius: 2pt; padding: 1.2pt 3.5pt; font-family: monospace; font-size: 6pt; margin: 1pt 0; white-space: pre-wrap; }
+.duplex-page { width: 297mm; height: 210mm; display: grid; grid-template-columns: 146.5mm 146.5mm; gap: 3.5mm; padding: 3.5mm; box-sizing: border-box; page-break-after: always; break-after: page; background: #fff; }
+.half-unit { width: 146.5mm; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+.half-unit .cols { grid-template-columns: 1fr 1fr; }
+.cheatsheet-sheet { width: 297mm; height: 210mm; padding: 3.5mm; box-sizing: border-box; background: #fff; }
+.duplex-tabs { display: none !important; }
+`;
+    return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(title || 'Cheatsheet')}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <style>${css}</style>
+</head>
+<body class="${unitClass || 'u1'}">
+${sheetElement.outerHTML}
+</body>
+</html>`;
+  }
+
+  // STRICT A4 fit: shrink type until content fits 210mm landscape bounds
+  function fitSheetToPage(root, minPx) {
+    if (!root || !root.isConnected) return;
+    const pages = root.classList.contains('duplex-sheet')
+      ? root.querySelectorAll('.duplex-page')
+      : [root];
+    pages.forEach(p => {
+      const min = minPx || 5.8;
+      p.style.fontSize = '';
+      const fits = () => p.scrollHeight <= p.clientHeight + 2;
+      if (p.clientHeight <= 0 || fits()) return;
+      let lo = min, hi = parseFloat(getComputedStyle(p).fontSize) || 8.5;
+      let best = min, guard = 0;
+      while (hi - lo > 0.3 && guard++ < 12) {
+        const mid = (lo + hi) / 2;
+        p.style.fontSize = mid + 'px';
+        if (p.scrollHeight <= p.clientHeight + 2) { best = mid; lo = mid; }
+        else { hi = mid; }
+      }
+      p.style.fontSize = best + 'px';
+    });
+  }
+
   function refitVisibleSheets() {
-    document.querySelectorAll('.cheatsheet-sheet').forEach((s) => {
-      if (s.offsetParent !== null) fitSheetToPage(s, 7);
+    document.querySelectorAll('.cheatsheet-sheet, .duplex-sheet').forEach((s) => {
+      if (s.offsetParent !== null) fitSheetToPage(s, 6.2);
     });
   }
   let sheetResizeTimer = null;
@@ -4455,20 +4866,41 @@ function initAskAI() {
     sheetResizeTimer = setTimeout(refitVisibleSheets, 250);
   });
 
-  // Cheatsheet fullscreen viewer (tap sheet or ⛶).
+  // Cheatsheet fullscreen viewer with interactive duplex tab preservation
   function openSheetFullscreen(html) {
     const fs = document.getElementById('sheetFullscreen');
     const body = document.getElementById('sheetFsBody');
     if (!fs || !body) return;
     body.innerHTML = '';
-    const sheet = document.createElement('div');
-    sheet.className = 'cheatsheet-sheet';
-    sheet.innerHTML = html;
-    body.appendChild(sheet);
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    const t1 = wrap.querySelector('.duplex-tabs button:nth-child(1)');
+    const t2 = wrap.querySelector('.duplex-tabs button:nth-child(2)');
+    const tBoth = wrap.querySelector('.duplex-tabs button:nth-child(3)');
+    const p1 = wrap.querySelector('.duplex-page.page-1');
+    const p2 = wrap.querySelector('.duplex-page.page-2');
+    if (t1 && t2 && p1 && p2) {
+      t1.addEventListener('click', () => {
+        t1.classList.add('active'); t2.classList.remove('active'); if (tBoth) tBoth.classList.remove('active');
+        p1.style.display = ''; p2.style.display = 'none';
+      });
+      t2.addEventListener('click', () => {
+        t2.classList.add('active'); t1.classList.remove('active'); if (tBoth) tBoth.classList.remove('active');
+        p1.style.display = 'none'; p2.style.display = '';
+      });
+      if (tBoth) {
+        tBoth.addEventListener('click', () => {
+          tBoth.classList.add('active'); t1.classList.remove('active'); t2.classList.remove('active');
+          p1.style.display = ''; p2.style.display = '';
+        });
+      }
+    }
+    body.appendChild(wrap);
     fs.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => fitSheetToPage(sheet, 8));
+    requestAnimationFrame(() => fitSheetToPage(wrap, 7));
   }
+
   function closeSheetFullscreen() {
     const fs = document.getElementById('sheetFullscreen');
     if (!fs) return;
@@ -4486,14 +4918,13 @@ function initAskAI() {
     if (fs && fs.style.display !== 'none') closeSheetFullscreen();
   });
 
-  // Code-level advice scrubber: deletes trap/tip boxes and advice lines the model
-  // sneaks in despite the schema lock — runs before the sheet is ever shown.
+  // Code-level advice scrubber: deletes trap/tip boxes and advice lines
   function stripAdviceNodes(root) {
     if (!root || !root.querySelectorAll) return;
     root.querySelectorAll('.sheet-trap, .trap, .tips, .warnings').forEach(n => n.remove());
     root.querySelectorAll('h3, h4').forEach((h) => {
       if (/^(exam\s+)?(tips?|tricks?|hacks?|traps?|warnings?|important notes?|things to remember|key points|to remember)\b/i.test(h.textContent.trim())) {
-        const box = h.closest('.sheet-sec');
+        const box = h.closest('.card') || h.closest('.sheet-sec');
         (box || h).remove();
       }
     });
@@ -4506,12 +4937,98 @@ function initAskAI() {
     });
   }
 
+  // Fetch single-unit cheatsheet document from AI Gateway
+  async function fetchUnitCheatsheetDoc(alias, unitIdx, signal) {
+    const unitCtx = getSheetUnitContext(alias, unitIdx);
+    if (!unitCtx) throw new Error(`Missing syllabus for ${alias} Unit ${unitIdx + 1}`);
+    const apiKey = getActiveAiApiKey();
+
+    const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
+${unitCtx}
+
+TASK: Emit ONE dense single-unit revision cheatsheet as raw JSON (no fences, no commentary) covering the ENTIRE syllabus above.
+STRICT JSON SCHEMA:
+{"title": "UNIT N — NAME", "boxes": [ <10-12 box objects covering every subtopic in syllabus order> ]}
+
+BOX STRUCTURE:
+Each box represents one topic card:
+- "title": "CAPS TOPIC TITLE" (do NOT number titles)
+- "layout": "table" | "flow" | "compare" | "values" | "code"
+- Optional "desc": "1-2 concise definition lines with key terms"
+- Optional "eq": "key raw LaTeX formula without delimiters, e.g. V_{th} = V_{oc}"
+- Optional "example": "worked numerical or conceptual example starting with context, e.g. F = 100 N at 30° -> Fx = 86.6 N, Fy = 50 N"
+- For "table": "rows": [["label", "raw LaTeX formula or concise rule"], ...max 5]
+- For "flow": "steps": ["step 1", "step 2", "step 3", ...max 5] (derivations/process chips)
+- For "compare": "left": "Topic A", "right": "Topic B", "rows": [["feature A", "feature B"], ...max 5]
+- For "values": "items": ["constant / condition 1", "unit 2", ...max 6]
+- For "code": "code": "ANSI C snippet (max 6 lines)", "notes": ["key observation"]
+
+MICRO-NOTE STYLE: High-yield fragments, never filler sentences. Abbreviations encouraged (w/, thru, b/w, ->, ↑ ↓, Δ, ∴, ∵, ≈, ∝, ≤ ≥ ≠).
+HARD RULES:
+- NO unbroken string longer than 22 characters.
+- BANNED: trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful. ZERO advice boxes.
+- Full syllabus coverage. Fit tightly into balanced cards.
+REASONING: Keep reasoning concise and output the JSON directly.`;
+
+    const payload = {
+      model: getActiveAiModel(),
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: `Generate the 1-page cheatsheet JSON for ${alias} Unit ${unitIdx + 1}. Full unit coverage, print-dense.` }
+      ],
+      stream: false,
+      temperature: 0.3,
+      max_tokens: 8000,
+      reasoning_effort: 'low'
+    };
+
+    const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    let resp = null;
+    let lastErr = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        resp = await fetch(attempt === 1 ? getActiveAiApiUrl() : getActiveAiApiFallbackUrl(), {
+          method: 'POST', headers, body: JSON.stringify(payload),
+          signal
+        });
+        if (resp.ok) break;
+        if (attempt === 1 && resp.status >= 500) {
+          await new Promise(r => setTimeout(r, 700));
+          continue;
+        }
+        break;
+      } catch (e) {
+        if (e && e.name === 'AbortError') throw e;
+        lastErr = e;
+        if (attempt === 1) await new Promise(r => setTimeout(r, 700));
+      }
+    }
+    if (!resp) throw (lastErr || new Error('Network error reaching AI backend'));
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      const sheetErr = errData.error?.message || `API error ${resp.status}`;
+      if (isModelMissingError(sheetErr)) healDeadModel();
+      throw new Error(sheetErr);
+    }
+    const data = await resp.json();
+    const raw = (data.choices?.[0]?.message?.content || data.choices?.[0]?.text || '').trim();
+    if (!raw) {
+      if (data.choices?.[0]?.finish_reason === 'length') {
+        throw new Error('Cheatsheet exceeded token capacity — please tap Regenerate');
+      }
+      throw new Error('Empty cheatsheet response — try again');
+    }
+    const doc = sheetParseDoc(raw);
+    if (!doc) throw new Error(`Cheatsheet for Unit ${unitIdx + 1} came back garbled — try again`);
+    return doc;
+  }
+
   async function generateCheatsheet() {
     if (sheetBusy) return;
     const alias = sheetSubject ? sheetSubject.value : '';
-    const unitIdx = sheetUnit ? (parseInt(sheetUnit.value, 10) || 0) : 0;
-    const unitCtx = getSheetUnitContext(alias, unitIdx);
-    if (!alias || !unitCtx) {
+    const unitVal = sheetUnit ? sheetUnit.value : '0';
+    if (!alias) {
       showToast('Pick a subject and unit first.');
       return;
     }
@@ -4520,14 +5037,30 @@ function initAskAI() {
       showToast('AI Gateway is momentarily unavailable.');
       return;
     }
+
+    const isDuplex = unitVal.startsWith('duplex-');
+    let uA = 0, uB = 1;
+    if (isDuplex) {
+      const parts = unitVal.replace('duplex-', '').split('-');
+      uA = parseInt(parts[0], 10) || 0;
+      uB = parseInt(parts[1], 10) || 1;
+    } else {
+      uA = parseInt(unitVal, 10) || 0;
+    }
+
     sheetBusy = true;
     sheetAbort = new AbortController();
     if (sheetGenBtn) { sheetGenBtn.disabled = false; sheetGenBtn.textContent = '⏹ Stop generation'; }
     if (sheetStatus) {
       sheetStatus.style.display = 'inline-flex';
-      sheetStatus.innerHTML = `<span class="fc-stream-dot"></span><span>Forging 1-page ${escapeHtml(alias)} Unit ${unitIdx + 1} cheatsheet…</span>`;
+      sheetStatus.innerHTML = isDuplex
+        ? `<span class="fc-stream-dot"></span><span>Forging 2-page Duplex ${escapeHtml(alias)} Units ${uA + 1} & ${uB + 1} cheatsheet…</span>`
+        : `<span class="fc-stream-dot"></span><span>Forging 1-page ${escapeHtml(alias)} Unit ${uA + 1} cheatsheet…</span>`;
     }
-    const userLine = `📄 Cheatsheet: ${alias} · Unit ${unitIdx + 1}`;
+
+    const userLine = isDuplex
+      ? `📄 Cheatsheet: ${alias} · Duplex Units ${uA + 1} & ${uB + 1}`
+      : `📄 Cheatsheet: ${alias} · Unit ${uA + 1}`;
     const userBubble = document.createElement('div');
     userBubble.className = 'ai-msg user';
     const userText = document.createElement('div');
@@ -4540,106 +5073,83 @@ function initAskAI() {
     chatArea.appendChild(botMsg);
     const loading = document.createElement('div');
     loading.className = 'ai-bot-content';
-    loading.innerHTML = `<div class="sheet-forge"><div class="sheet-forge-page"><div class="sheet-forge-head"></div><div class="sheet-forge-lines"><span></span><span></span><span></span><span></span><span></span><span></span></div></div><div class="sheet-forge-text" id="sheetForgeStage">Reading unit syllabus…</div></div>`;
+    loading.innerHTML = `<div class="sheet-forge"><div class="sheet-forge-page"><div class="sheet-forge-head"></div><div class="sheet-forge-lines"><span></span><span></span><span></span><span></span><span></span><span></span></div></div><div class="sheet-forge-text" id="sheetForgeStage">Reading syllabus & balancing columns…</div></div>`;
     botMsg.appendChild(loading);
     chatArea.scrollTop = chatArea.scrollHeight;
-    {
-      const stages = ['Reading unit syllabus…', 'Distilling formulas…', 'Compressing tables…', 'Symbolizing notes…', 'Fitting one page…'];
-      let stageIdx = 0;
-      sheetForgeTimer = setInterval(() => {
-        const el = document.getElementById('sheetForgeStage');
-        if (!el) { stopSheetForge(); return; }
-        stageIdx = (stageIdx + 1) % stages.length;
-        el.textContent = stages[stageIdx];
-      }, 1400);
-    }
 
-    const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
-${unitCtx}
+    const stages = isDuplex
+      ? ['Reading Unit ' + (uA + 1) + ' & ' + (uB + 1) + ' syllabus…', 'Distilling formulas…', 'Optimizing 4-column bin packing…', 'Formatting duplex landscape geometry…', 'Fitting 297mm x 210mm layout…']
+      : ['Reading unit syllabus…', 'Distilling formulas…', 'Compressing tables & examples…', 'Balancing 4 column bottoms…', 'Fitting A4 landscape…'];
+    let stageIdx = 0;
+    sheetForgeTimer = setInterval(() => {
+      const el = document.getElementById('sheetForgeStage');
+      if (!el) { stopSheetForge(); return; }
+      stageIdx = (stageIdx + 1) % stages.length;
+      el.textContent = stages[stageIdx];
+    }, 1400);
 
-TASK: Emit ONE dense single-A4 revision cheatsheet as raw JSON (no fences, no commentary) covering the ENTIRE unit above — every box becomes one numbered micro-box on the page.
-STRICT JSON SCHEMA (exact keys, nothing else):
-{"title": "UNIT N — NAME", "boxes": [ <10-12 box objects, one per subtopic in taught order> ]}
-BOX TYPES — mix freely to fit the content (numbering automatic, do NOT number titles):
-- table: {"title":"CAPS TITLE","layout":"table","rows":[["label","raw LaTeX formula"],...max 6]} — definitions & formulas. LaTeX WITHOUT delimiters, e.g. "V_{th} = V_{oc}".
-- flow: {"title":"CAPS TITLE","layout":"flow","steps":["...max 12 words",...max 6]} — derivations & procedures. KaTeX \\( \\) allowed inline.
-- compare: {"title":"CAPS TITLE","layout":"compare","left":"A","right":"B","rows":[["a1","b1"],...max 6]} — differences & vs-topics.
-- values: {"title":"CAPS TITLE","layout":"values","items":["...max 8 words",...max 8]} — constants, units, conditions.
-- code: {"title":"CAPS TITLE","layout":"code","code":"...max 6 lines ANSI C","notes":["...max 3"]} — PPS only.
-MICRO-NOTE STYLE: fragments, never sentences. Abbreviations encouraged (w/, thru, b/w, →, ↑ ↓, Δ, ∴, ∵, ≈, ∝, ≤ ≥ ≠). Prefix max 2 highest-yield lines per box with "★ ".
-HARD TYPOGRAPHY RULES (violations get cut): no unbroken string longer than 22 characters — insert spaces or split across rows; real ANSI C / textbook terms only, never placeholders like $var or FooBar; each table row must fit its two cells without running on.
-FORBIDDEN STRINGS ANYWHERE (instant rejection): trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful, avoid. ZERO advice.
-~550-700 words of pure content. Fit one A4 page — compress, never cut subtopics.
-REASONING: Keep reasoning concise and output the JSON directly.`;
-    const payload = {
-      model: getActiveAiModel(),
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: `Generate the 1-page cheatsheet HTML for ${alias} Unit ${unitIdx + 1}. Full unit coverage, print-dense.` }
-      ],
-      stream: false,
-      temperature: 0.3,
-      max_tokens: 8000,
-      reasoning_effort: 'low'
-    };
     try {
-      const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
-      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-      let resp = null;
-      let lastErr = null;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          resp = await fetch(attempt === 1 ? getActiveAiApiUrl() : getActiveAiApiFallbackUrl(), {
-            method: 'POST', headers, body: JSON.stringify(payload),
-            signal: sheetAbort ? sheetAbort.signal : undefined
-          });
-          if (resp.ok) break;
-          if (attempt === 1 && resp.status >= 500) {
-            await new Promise(r => setTimeout(r, 700));
-            continue;
-          }
-          break;
-        } catch (e) {
-          if (e && e.name === 'AbortError') throw e;
-          lastErr = e;
-          if (attempt === 1) await new Promise(r => setTimeout(r, 700));
-        }
+      let sheetDOM = null;
+      let sheetTitle = '';
+      let unitClass = '';
+
+      if (isDuplex) {
+        const [docA, docB] = await Promise.all([
+          fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal),
+          fetchUnitCheatsheetDoc(alias, uB, sheetAbort.signal)
+        ]);
+        sheetDOM = buildDuplexSheetDOM(docA, docB, uA, uB, alias);
+        sheetTitle = `${alias} Units ${uA + 1} & ${uB + 1} Duplex Cheatsheet`;
+        unitClass = getUnitPaletteClass(uA);
+      } else {
+        const doc = await fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal);
+        sheetDOM = buildSheetDOM(doc, uA, alias);
+        sheetTitle = `${alias} Unit ${uA + 1} Cheatsheet`;
+        unitClass = getUnitPaletteClass(uA);
       }
-      if (!resp) throw (lastErr || new Error('Network error reaching AI backend'));
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({}));
-        const sheetErr = errData.error?.message || `API error ${resp.status}`;
-        if (isModelMissingError(sheetErr)) healDeadModel();
-        throw new Error(sheetErr);
-      }
-      const data = await resp.json();
-      const raw = (data.choices?.[0]?.message?.content || data.choices?.[0]?.text || '').trim();
-      if (!raw) {
-        if (data.choices?.[0]?.finish_reason === 'length') {
-          throw new Error('Cheatsheet exceeded token capacity — please tap Regenerate');
-        }
-        throw new Error('Empty cheatsheet response — try again');
-      }
-      const doc = sheetParseDoc(raw);
-      if (!doc) throw new Error('Cheatsheet came back garbled — try again');
+
       botMsg.innerHTML = '';
-      const sheet = document.createElement('div');
-      sheet.className = 'cheatsheet-sheet';
-      sheet.appendChild(buildSheetDOM(doc));
-      stripAdviceNodes(sheet);
-      botMsg.appendChild(sheet);
+      stripAdviceNodes(sheetDOM);
+      botMsg.appendChild(sheetDOM);
+
       const actions = document.createElement('div');
       actions.className = 'sheet-actions';
+
       const dl = document.createElement('button');
       dl.type = 'button';
       dl.className = 'sheet-dl-btn';
-      dl.textContent = '🖨️ Download / Save PDF';
+      dl.textContent = '🖨️ Download / Save PDF (A4 Landscape)';
       dl.addEventListener('click', () => {
         document.body.classList.add('print-cheatsheet');
+        const dup = botMsg.querySelector('.duplex-sheet');
+        if (dup) {
+          dup.querySelectorAll('.duplex-page').forEach(p => p.style.display = '');
+        }
         setTimeout(() => {
           try { window.print(); } catch (e) {}
-        }, 60);
+        }, 80);
       });
+
+      const fsBtn = document.createElement('button');
+      fsBtn.type = 'button';
+      fsBtn.className = 'ghost';
+      fsBtn.textContent = '⛶ Fullscreen';
+      fsBtn.addEventListener('click', () => openSheetFullscreen(sheetDOM.outerHTML || sheetDOM.innerHTML));
+
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'ghost';
+      copyBtn.textContent = '📋 Copy HTML';
+      copyBtn.addEventListener('click', async () => {
+        const fullHtml = generateStandaloneSheetHTML(sheetDOM, sheetTitle, unitClass);
+        try {
+          await navigator.clipboard.writeText(fullHtml);
+          showToast('Standalone Cheatsheet HTML copied! 📋');
+        } catch (e) {
+          showToast('Copied HTML fallback!');
+        }
+      });
+
       const regen = document.createElement('button');
       regen.type = 'button';
       regen.className = 'ghost';
@@ -4649,19 +5159,20 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         userBubble.remove();
         generateCheatsheet();
       });
-      const fsBtn = document.createElement('button');
-      fsBtn.type = 'button';
-      fsBtn.className = 'ghost';
-      fsBtn.textContent = '⛶ Fullscreen';
-      fsBtn.addEventListener('click', () => openSheetFullscreen(sheet.innerHTML));
-      actions.append(dl, fsBtn, regen);
+
+      actions.append(dl, fsBtn, copyBtn, regen);
       botMsg.appendChild(actions);
-      sheet.title = 'Tap to view fullscreen';
-      sheet.style.cursor = 'zoom-in';
-      sheet.addEventListener('click', () => openSheetFullscreen(sheet.innerHTML));
-      requestAnimationFrame(() => fitSheetToPage(sheet, 7));
+
+      sheetDOM.title = 'Tap to view fullscreen';
+      sheetDOM.style.cursor = 'zoom-in';
+      sheetDOM.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('.duplex-tab')) return;
+        openSheetFullscreen(sheetDOM.outerHTML || sheetDOM.innerHTML);
+      });
+
+      requestAnimationFrame(() => fitSheetToPage(sheetDOM, 6.2));
       if (sheetStatus) sheetStatus.style.display = 'none';
-      showToast('Cheatsheet ready — Download for a zero-margin 1-page PDF! 📄');
+      showToast(isDuplex ? '2-Page Duplex Cheatsheet ready! 📑' : '1-Page A4 Landscape Cheatsheet ready! 📄');
     } catch (err) {
       console.error('Cheatsheet error:', err);
       if (err && err.name === 'AbortError') {
@@ -4685,7 +5196,7 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       stopSheetForge();
       sheetBusy = false;
       sheetAbort = null;
-      if (sheetGenBtn) { sheetGenBtn.disabled = false; sheetGenBtn.textContent = '⚡ 1-Page Cheatsheet'; }
+      if (sheetGenBtn) { sheetGenBtn.disabled = false; sheetGenBtn.textContent = '⚡ Cheatsheet'; }
       chatArea.scrollTop = chatArea.scrollHeight;
     }
   }
@@ -4698,6 +5209,21 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
   });
   window.addEventListener('afterprint', () => {
     document.body.classList.remove('print-cheatsheet');
+    const dup = document.querySelector('.duplex-sheet');
+    if (dup) {
+      const activeTab = dup.querySelector('.duplex-tab.active');
+      const p1 = dup.querySelector('.duplex-page.page-1');
+      const p2 = dup.querySelector('.duplex-page.page-2');
+      if (activeTab && p1 && p2) {
+        if (activeTab.textContent.includes('Page 1')) {
+          p1.style.display = ''; p2.style.display = 'none';
+        } else if (activeTab.textContent.includes('Page 2')) {
+          p1.style.display = 'none'; p2.style.display = '';
+        } else {
+          p1.style.display = ''; p2.style.display = '';
+        }
+      }
+    }
   });
 }
 

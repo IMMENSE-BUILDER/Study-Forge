@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.49** [build 109]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.50** [build 110]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -165,6 +165,18 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 ```
 
 ## 7. Current Status / Important Notes
+
+Recent major changes (Nov 2026, now v0.6.50):
+- v0.6.50 (Build 110):
+  - Integrated master `cheatsheet-layout` skill layout into the StudyForged Cheatsheet engine:
+    - Authentic 4-column balanced A4 landscape grid with optimal leveling targeting the 586pt wrap boundary.
+    - Greedy + 2-opt bin-packing leveling algorithm (`packCards`, port of `pack(h)` from `make_sheet.py`) minimizing max column height and distributing cards evenly across columns.
+    - Two-page Duplex A4 Landscape Sheet: Page 1 (Front: Unit 1 left | Unit 2 right) and Page 2 (Back: Unit 2 left | Unit 1 right) reversed back-to-back duplex blueprint with interactive on-screen page tabs.
+    - Authentic visual card styling: gradient header banners (`.banner`), card numbered badges (`<span class="n">`), formula derivation boxes (`.eq` with KaTeX), worked examples with green accent (`.ex` with `<span class="t">Eg.</span>`), step-by-step process chips (`.flow` with `.chip` and `<span class="arr">→</span>`), comparison tables (`table` with `th`/`td`), and clean dot-bulleted lists (`ul > li`).
+    - Authentic color palettes: Unit 1 (Blue `#1a59a6`), Unit 2 (Teal `#0f6b5f`), Unit 3 (Violet `#5b21b6`), Unit 4 (Amber `#b45309`).
+    - Print / PDF export: `@page { size: 297mm 210mm landscape; margin: 0; }` with `-webkit-print-color-adjust: exact;` for flawless zero-margin printing.
+    - Action buttons: "🖨️ Download / Save PDF (A4 Landscape)", "⛶ Fullscreen" (widescreen landscape lightbox), "📋 Copy HTML" (standalone self-contained document), and "🔁 Regenerate".
+  - Triple bump v0.6.50 / versionCode: 110 / CACHE_NAME: study-forge-v0.6.50.
 
 Recent major changes (Nov 2026, now v0.6.49):
 - v0.6.49 (Build 109):

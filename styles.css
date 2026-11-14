@@ -5593,202 +5593,363 @@ label {
   flex-shrink: 0;
 }
 
-/* Screen preview of the dense sheet — STRICT A4 page: fixed ratio, never stretches.
-   Overflow hidden (not scroll): fitSheetToPage() shrinks type until all fits.
-   v0.6.41: pure black & white only. */
+/* ── Cheatsheet Skill Layout (Locked 4-Column A4 Landscape / Duplex PDF Blueprint) ── */
+:root, .u1 {
+  --ac: #1a59a6;
+  --ac2: #2f78c4;
+  --soft: #f4f8fd;
+  --line: #dbe5f1;
+  --hd: #e1ecf9;
+  --dk: #0d2a4d;
+  --g1: #17407a;
+  --g2: #2b6cb8;
+  --mut: #46607e;
+}
+
+.u2, body.u2 {
+  --ac: #0f6b5f;
+  --ac2: #1d9a86;
+  --soft: #f2faf8;
+  --line: #cfe8e3;
+  --hd: #dcf1ec;
+  --dk: #0b3b35;
+  --g1: #0b4f47;
+  --g2: #1b8f7b;
+  --mut: #3f6b64;
+}
+
+.u3, body.u3 {
+  --ac: #5b21b6;
+  --ac2: #7c3aed;
+  --soft: #f5f3ff;
+  --line: #ddd6fe;
+  --hd: #ede9fe;
+  --dk: #2e1065;
+  --g1: #4c1d95;
+  --g2: #6d28d9;
+  --mut: #5b21b6;
+}
+
+.u4, body.u4 {
+  --ac: #b45309;
+  --ac2: #d97706;
+  --soft: #fffbeb;
+  --line: #fde68a;
+  --hd: #fef3c7;
+  --dk: #78350f;
+  --g1: #92400e;
+  --g2: #b45309;
+  --mut: #78350f;
+}
+
 .cheatsheet-sheet {
-  background: #000;
-  color: #fff;
-  border: 2.5px solid var(--ink);
-  border-radius: 12px;
-  padding: 9px;
-  font-size: 10.5px;
-  line-height: 1.3;
+  background: #fff;
+  color: #14202e;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: 'Carlito', 'Calibri', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 7.2pt;
+  line-height: 1.2;
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  aspect-ratio: 210 / 297;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  position: relative;
 }
 
-.cheatsheet-sheet h2 {
-  font-size: 1.27em;
-  margin: 0 0 6px;
-  padding-bottom: 5px;
-  border-bottom: 2.5px solid #fff;
+.cheatsheet-sheet .banner {
+  background: linear-gradient(90deg, var(--g1), var(--g2));
   color: #fff;
-  text-align: center;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 8.5pt;
+  padding: 3pt 7pt;
+  border-radius: 3pt;
+  margin-bottom: 3.5pt;
+  letter-spacing: 0.15pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.cheatsheet-sheet .sheet-grid {
+.cheatsheet-sheet .banner span {
+  font-weight: 400;
+  font-size: 6.2pt;
+  opacity: 0.92;
+  align-self: center;
+}
+
+.cheatsheet-sheet .cols {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-  counter-reset: sheetnum;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.4mm;
+  height: 100%;
 }
 
-@media (min-width: 700px) {
-  .cheatsheet-sheet .sheet-grid {
-    grid-template-columns: 1fr 1fr 1fr;
+.cheatsheet-sheet .col {
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2pt;
+}
+
+@media (max-width: 900px) {
+  .cheatsheet-sheet .cols {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-/* v0.6.37: HARD CAP at 3 columns — the 4th squeezed boxes into unreadable slivers. */
+@media (max-width: 520px) {
+  .cheatsheet-sheet .cols {
+    grid-template-columns: 1fr;
+  }
+}
 
-.cheatsheet-sheet .sheet-sec {
-  counter-increment: sheetnum;
-  background: #0d0d0d;
-  border: 1.5px solid #f2f2f2;
-  border-radius: 8px;
-  padding: 6px 7px;
+.cheatsheet-sheet .card {
+  background: var(--soft);
+  border: 0.4pt solid var(--line);
+  border-left: 2pt solid var(--ac2);
+  border-radius: 2pt;
+  padding: 1.6pt 3.5pt 2pt 4pt;
+  margin-bottom: 2pt;
+  font-size: 6.6pt;
+  line-height: 1.18;
+  color: #14202e;
+  box-sizing: border-box;
   break-inside: avoid;
 }
 
-.cheatsheet-sheet .sheet-sec h3 {
-  font-size: 0.95em;
-  margin: 0 0 5px;
-  padding-bottom: 3px;
-  border-bottom: 1px solid #f2f2f2;
-  color: #fff;
-  letter-spacing: 0.03em;
+.cheatsheet-sheet .card h3 {
+  font-size: 7.4pt;
+  color: var(--ac);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 2.5pt;
+  margin: 0 0 1.5pt;
+  padding: 0;
+  line-height: 1.2;
 }
 
-.cheatsheet-sheet .sheet-sec h3::before {
-  content: counter(sheetnum) ". ";
+.cheatsheet-sheet .card .n {
+  display: inline-block;
+  background: var(--ac);
+  color: #fff;
+  border-radius: 2pt;
+  min-width: 8pt;
+  height: 8pt;
+  text-align: center;
+  font-size: 5.6pt;
+  line-height: 8pt;
+  padding: 0 1.2pt;
   font-weight: 800;
-  background: #fff;
-  color: #000;
-  border-radius: 4px;
-  padding: 0 5px;
-  margin-right: 4px;
+  flex-shrink: 0;
 }
 
-.cheatsheet-sheet h4 {
-  font-size: 0.95em;
-  margin: 5px 0 3px;
-  color: #fff;
+.cheatsheet-sheet b {
+  font-weight: 700;
+  color: var(--dk);
 }
 
-/* Freeform (non-box) sections pick the same rhythm when the model skips the grid */
-.cheatsheet-sheet > h3 {
-  font-size: 0.95em;
-  margin: 8px 0 5px;
-  padding-bottom: 3px;
-  border-bottom: 1px solid #fff;
-  color: #fff;
-  letter-spacing: 0.03em;
-}
-
-.cheatsheet-sheet > h4 {
-  font-size: 0.95em;
-  margin: 6px 0 4px;
-  color: #fff;
+.cheatsheet-sheet p {
+  margin: 0.6pt 0;
+  overflow-wrap: break-word;
 }
 
 .cheatsheet-sheet table {
-  width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 0.91em;
-  margin: 3px 0;
+  width: 100%;
+  margin: 1pt 0;
+  font-size: 6pt;
+  line-height: 1.14;
 }
 
 .cheatsheet-sheet th,
 .cheatsheet-sheet td {
-  border: 1px solid #d9d9d9;
-  padding: 2px 4px;
+  border: 0.35pt solid var(--line);
+  padding: 0.8pt 2.5pt;
   text-align: left;
   vertical-align: top;
-  /* v0.6.40: break-word for unbreakable tokens + real hyphenation for long
-     English words (clean "indepen-dent" instead of chopped "indeper"). */
+  background: #fff;
   overflow-wrap: break-word;
-  word-break: normal;
-  hyphens: auto;
 }
 
-.cheatsheet-sheet li,
-.cheatsheet-sheet p {
-  overflow-wrap: break-word;
-  word-break: normal;
-  hyphens: auto;
+.cheatsheet-sheet th {
+  background: var(--hd);
+  color: var(--dk);
+  font-weight: 700;
 }
 
-/* Wide display math scrolls inside its box instead of punching through the edge */
+.cheatsheet-sheet .eq {
+  background: #fff;
+  border: 0.4pt solid var(--line);
+  border-left: 1.5pt solid var(--ac);
+  border-radius: 2pt;
+  padding: 1pt 3.5pt;
+  margin: 1.2pt 0;
+  font-size: 6.4pt;
+  line-height: 1.35;
+  color: var(--dk);
+  overflow-x: auto;
+}
+
+.cheatsheet-sheet .ex {
+  border-left: 1.5pt solid #3f9a5a;
+  padding: 1pt 3.5pt;
+  margin: 1.2pt 0;
+  background: #f0faf3;
+  border-radius: 2pt;
+  font-size: 6.2pt;
+  line-height: 1.25;
+}
+
+.cheatsheet-sheet .ex .t {
+  font-weight: 700;
+  color: #256b3c;
+  margin-right: 2pt;
+}
+
+.cheatsheet-sheet .flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5pt 0;
+  margin: 1.2pt 0;
+}
+
+.cheatsheet-sheet .chip {
+  background: #fff;
+  border: 0.5pt solid var(--ac2);
+  border-radius: 2pt;
+  padding: 0.5pt 3pt;
+  font-weight: 700;
+  color: var(--dk);
+  font-size: 6pt;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.cheatsheet-sheet .arr {
+  color: var(--ac2);
+  font-weight: 700;
+  padding: 0 1.5pt;
+  font-size: 7pt;
+}
+
+.cheatsheet-sheet ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.5pt 0;
+}
+
+.cheatsheet-sheet li {
+  padding-left: 7pt;
+  position: relative;
+  margin: 0.3pt 0;
+  overflow-wrap: break-word;
+}
+
+.cheatsheet-sheet li:before {
+  content: '';
+  position: absolute;
+  left: 1.8pt;
+  top: 3.2pt;
+  width: 2.2pt;
+  height: 2.2pt;
+  border-radius: 50%;
+  background: var(--ac2);
+}
+
+.cheatsheet-sheet pre {
+  background: #fff;
+  border: 0.4pt solid var(--line);
+  border-radius: 2pt;
+  padding: 1.2pt 3.5pt;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 6pt;
+  line-height: 1.25;
+  margin: 1pt 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  color: var(--dk);
+}
+
+.cheatsheet-sheet code {
+  font-family: inherit;
+  font-size: inherit;
+}
+
 .cheatsheet-sheet .katex-display {
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 2px;
-  margin: 3px 0;
+  margin: 2pt 0;
 }
 
-/* Inline math may wrap inside tight table cells instead of spilling sideways */
 .cheatsheet-sheet .katex {
   white-space: normal;
 }
 
-.cheatsheet-sheet th {
-  background: #1f1f1f;
-  color: #fff;
-}
-
-.cheatsheet-sheet ul,
-.cheatsheet-sheet ol {
-  margin: 3px 0;
-  padding-left: 14px;
-}
-
-.cheatsheet-sheet li {
-  margin-bottom: 1px;
-}
-
-.cheatsheet-sheet pre {
-  background: #000;
-  border: 1px solid #999;
-  border-radius: 6px;
-  padding: 5px 7px;
-  font-size: 0.86em;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  color: #fff;
-}
-
-.cheatsheet-sheet code {
-  color: #fff;
-}
-
-.cheatsheet-sheet .math-block {
-  margin: 3px 0;
-}
-
-.cheatsheet-sheet .sheet-trap {
-  display: none;
-}
-
-/* JSON-contract extras: value chips + ★ high-yield highlights */
-.sheet-chips {
+/* Duplex A4 Layout Container */
+.duplex-sheet {
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.duplex-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
   flex-wrap: wrap;
-  gap: 4px;
-  margin: 3px 0;
 }
 
-.sheet-chip {
-  border: 1px solid #fff;
-  border-radius: 999px;
-  padding: 1px 8px;
-  font-size: 0.92em;
+.duplex-tab {
+  background: var(--panel, #f1f5f9);
+  border: 1.5px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--ink);
 }
 
-.sheet-chip.star {
-  border-color: #fff;
-  background: rgba(255, 255, 255, 0.16);
+.duplex-tab.active {
+  background: var(--ac);
+  color: #fff;
+  border-color: var(--ac);
 }
 
-.sheet-sec li.star,
-.sheet-sec td.star,
-.sheet-sec tr.star td {
-  background: rgba(255, 255, 255, 0.13);
+.duplex-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3.5mm;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .duplex-page {
+    grid-template-columns: 1fr;
+  }
+}
+
+.duplex-page .half-unit {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.duplex-page .half-unit .cols {
+  grid-template-columns: 1fr 1fr;
 }
 
 /* Forging loader v2: the page PRINTS itself — lines stamp in top-to-bottom on loop */
@@ -5892,9 +6053,9 @@ label {
   position: relative;
   z-index: 2501;
   width: 100%;
-  max-width: 760px;
+  max-width: min(96vw, 1400px);
   height: 100%;
-  max-height: 94dvh;
+  max-height: 96dvh;
   display: flex;
   flex-direction: column;
 }
@@ -5924,14 +6085,22 @@ label {
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: auto;
+  padding: 6px;
 }
 
-/* Letterboxed strict-A4 page in fullscreen: ratio never stretches, backdrop frames it. */
-.sheet-fs-body .cheatsheet-sheet {
+/* Widescreen A4 landscape presentation in fullscreen */
+.sheet-fs-body .cheatsheet-sheet,
+.sheet-fs-body .duplex-sheet {
   flex: none;
-  width: min(100%, 66dvh);
-  aspect-ratio: 210 / 297;
-  font-size: 13px;
+  width: min(100%, 138vh);
+  font-size: 8.5pt;
+  overflow-y: auto;
+  max-height: 88vh;
+}
+
+.sheet-fs-body .cheatsheet-sheet {
+  aspect-ratio: 297 / 210;
 }
 
 .sheet-actions {
@@ -5979,13 +6148,17 @@ label {
   }
 }
 
-/* Zero-margin 1-page PDF: only the sheet prints */
+/* Zero-margin A4 landscape PDF: exact dimensions, duplex support */
 @page {
-  size: A4 portrait;
+  size: 297mm 210mm landscape;
   margin: 0;
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   body.print-cheatsheet > *:not(#aiPage) {
     display: none !important;
   }
@@ -6033,70 +6206,76 @@ label {
   }
 
   body.print-cheatsheet .cheatsheet-sheet {
-    border: none;
-    border-radius: 0;
-    margin: 0;
-    padding: 8mm 7mm;
-    font-size: 8pt;
-    line-height: 1.3;
-    color: #000;
-    background: #fff;
-    aspect-ratio: auto;
-    /* STRICT one page: border-box cap at exactly 297mm, overflow clipped. */
-    box-sizing: border-box;
-    max-height: 297mm;
-    overflow: hidden;
+    width: 297mm !important;
+    height: 210mm !important;
+    max-height: 210mm !important;
+    padding: 3.5mm !important;
+    margin: 0 auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    page-break-after: always;
+    break-after: page;
+    box-sizing: border-box !important;
+    font-size: 6.5pt !important;
+    line-height: 1.18 !important;
+    background: #fff !important;
+    color: #14202e !important;
+    aspect-ratio: auto !important;
   }
 
-  body.print-cheatsheet .cheatsheet-sheet h2 {
-    color: #000;
-    border-bottom-color: #000;
+  body.print-cheatsheet .cheatsheet-sheet .cols {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 2.4mm !important;
+    height: calc(100% - 14pt) !important;
   }
 
-  body.print-cheatsheet .cheatsheet-sheet .sheet-sec {
-    background: #fff;
-    border-color: #000;
+  body.print-cheatsheet .cheatsheet-sheet .col {
+    overflow: hidden !important;
+    min-height: 0 !important;
   }
 
-  body.print-cheatsheet .cheatsheet-sheet .sheet-sec h3,
-  body.print-cheatsheet .cheatsheet-sheet > h3,
-  body.print-cheatsheet .cheatsheet-sheet h4,
-  body.print-cheatsheet .cheatsheet-sheet .sheet-sec:nth-child(n) h3,
-  body.print-cheatsheet .cheatsheet-sheet .sheet-sec h3::before {
-    color: #000;
-    border-bottom-color: #000;
+  body.print-cheatsheet .duplex-page {
+    width: 297mm !important;
+    height: 210mm !important;
+    max-height: 210mm !important;
+    padding: 3.5mm !important;
+    margin: 0 auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    page-break-after: always;
+    break-after: page;
+    display: grid !important;
+    grid-template-columns: 146.5mm 146.5mm !important;
+    gap: 3.5mm !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
   }
 
-  body.print-cheatsheet .cheatsheet-sheet .sheet-sec h3::before {
-    color: #000;
+  body.print-cheatsheet .duplex-page .half-unit {
+    width: 146.5mm !important;
+    height: 100% !important;
+    overflow: hidden !important;
   }
 
-  body.print-cheatsheet .cheatsheet-sheet th {
-    background: #eee;
-    color: #000;
+  body.print-cheatsheet .duplex-page .half-unit .cols {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 2.4mm !important;
+    height: calc(100% - 14pt) !important;
   }
 
-  body.print-cheatsheet .cheatsheet-sheet th,
-  body.print-cheatsheet .cheatsheet-sheet td {
-    border-color: #000;
+  body.print-cheatsheet .card {
+    break-inside: avoid !important;
   }
 
-  body.print-cheatsheet .cheatsheet-sheet pre,
-  body.print-cheatsheet .cheatsheet-sheet code {
-    background: #f1f1f1;
-    color: #000;
-    border-color: #999;
-  }
-
-  body.print-cheatsheet .sheet-sec li.star,
-  body.print-cheatsheet .sheet-sec td.star,
-  body.print-cheatsheet .sheet-sec tr.star td,
-  body.print-cheatsheet .sheet-chip.star {
-    background: #e8e8e8;
-  }
-
-  body.print-cheatsheet .cheatsheet-sheet .sheet-grid {
-    grid-template-columns: 1fr 1fr 1fr;
+  body.print-cheatsheet .sheet-actions,
+  body.print-cheatsheet .duplex-tabs {
+    display: none !important;
   }
 
   body.print-cheatsheet .cheatsheet-sheet .math-block {
