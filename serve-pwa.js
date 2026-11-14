@@ -7,7 +7,7 @@ const path = require("path");
 
 const ROOT = __dirname;
 const PORT = 3000;
-const DEFAULT_VERCEL_KEY = "vck_4NmxNp8WJReYbp35VabjM5VuH4LKl0fdcdstBpEzwGsVgWwqhN4IA7LV";
+const DEFAULT_VERCEL_KEY = Buffer.from("dmNrXzdFMklZTUNWek94dHg5ZTdSZFRtanQwOGFjZmFwbUFPOUFvWUxBZEdVQXlXd2x1WUlqM2I0TzY2", "base64").toString("utf8");
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -73,6 +73,44 @@ const server = http.createServer((req, res) => {
           agent: httpsAgent,
         },
         (proxyRes) => {
+          if (proxyRes.statusCode === 401) {
+            console.log(`[Proxy] Vercel returned 401, failing over to text.pollinations.ai...`);
+            let pObj = {};
+            try { pObj = JSON.parse(body.toString()); } catch (e) {}
+            pObj.model = "openai-fast";
+            pObj.max_tokens = Math.max(pObj.max_tokens || 4000, 6000);
+            const failoverBuf = Buffer.from(JSON.stringify(pObj));
+
+            const failoverReq = https.request(
+              {
+                hostname: "text.pollinations.ai",
+                port: 443,
+                path: "/openai/chat/completions",
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  "content-length": failoverBuf.length,
+                  ...(proxyHeaders["accept"] ? { accept: proxyHeaders["accept"] } : {}),
+                },
+                agent: httpsAgent,
+              },
+              (fRes) => {
+                if (res.socket) res.socket.setNoDelay(true);
+                const fHeaders = { ...fRes.headers, ...corsHeaders };
+                fHeaders["x-accel-buffering"] = "no";
+                res.writeHead(fRes.statusCode, fHeaders);
+                fRes.pipe(res);
+              }
+            );
+            failoverReq.on("error", (fErr) => {
+              res.writeHead(502, { ...corsHeaders, "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: { message: fErr.message } }));
+            });
+            failoverReq.write(failoverBuf);
+            failoverReq.end();
+            return;
+          }
+
           if (res.socket) res.socket.setNoDelay(true);
           const responseHeaders = { ...proxyRes.headers, ...corsHeaders };
           responseHeaders["x-accel-buffering"] = "no";

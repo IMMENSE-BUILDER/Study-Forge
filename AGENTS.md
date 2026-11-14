@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.56** [build 116]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.57** [build 117]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 

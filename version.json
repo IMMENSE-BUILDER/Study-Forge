@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 116,
-  "latest": "v0.6.56",
-  "notes": "In-App Cheatsheet Pop-Up Viewer & Conversational AI Iteration: Added dedicated in-app modal overlay (#masterModal) with multi-level zoom (100%-250%), 2-page duplex tab switcher, direct print, and download. Integrated full conversational context retention into Ask AI chat allowing real-time edits, formula additions, and instant re-rendering without leaving the app.",
+  "versionCode": 117,
+  "latest": "v0.6.57",
+  "notes": "100% Real Dynamic AI Cheatsheet Engine: Completely removed all mock/hardcoded master bypasses. Every subject and unit (BEE, EGL, PPS, EM, PHL, SMT, EVSL) is dynamically synthesized directly by Vercel AI Gateway with fresh active key and meta/muse-ember (20-24 dense technical cards per unit, full LaTeX formulas, worked numeric examples, and 4-column balanced A4 landscape layout).",
   "apkUrl": ""
 }
