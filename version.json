@@ -1,1 +1,1 @@
-{"apkUrl":"","app":"StudyForged","versionCode":107,"latest":"v0.6.47","notes":"Embedded unified Vercel AI Gateway key (meta/muse-ember) for cloud execution, removing individual BYOK settings."}
+{"apkUrl":"","app":"StudyForged","versionCode":108,"latest":"v0.6.48","notes":"Fixed meta/muse-ember reasoning token starvation by expanding max_tokens budget (3500) for seamless streaming responses across chat and tools."}

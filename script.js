@@ -3522,8 +3522,8 @@ function initAskAI() {
     const subjectContext = trimmedBuddyBlock(typeof userText === 'string' ? userText : '');
 
     const systemPrompt = `${AI_SYSTEM_PROMPT}${subjectContext ? `\n\n${subjectContext}` : ''}${userContext ? `\n\nStudent Live Context:\n${userContext}` : ''}`;
-    // v0.6.7 snappy: 850 cap still covers 250-350 words + math/code headroom, cuts tail ~15%.
-    const maxTokens = 850;
+    // Sufficient token budget to accommodate reasoning tokens (reasoning_details) and full response
+    const maxTokens = 3500;
 
     // Balanced chat history: preserves full formulas, derivations, code, and details for recent turns
     // v0.6.7 snappy: last 5 turns + 1200-char cap (was 6/1500) — lighter prompt, faster TTFT in long chats.
@@ -3633,7 +3633,7 @@ function initAskAI() {
                 const json = JSON.parse(trimmed.slice(6));
                 const delta = json.choices?.[0]?.delta;
                 if (!delta) continue;
-                const content = delta.content || '';
+                const content = delta.content || delta.text || '';
                 if (content) {
                   accumulated += content;
                   if (typeof onChunk === 'function') {
@@ -6999,7 +6999,7 @@ HARD RULES: NEVER state the correct option letter/text or the final numeric answ
         ],
         stream: false,
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 2000
       };
       let resp = await fetch(getActiveAiApiUrl(), { method: 'POST', headers, body: JSON.stringify(payload) });
       if (!resp.ok && getActiveAiApiFallbackUrl()) {

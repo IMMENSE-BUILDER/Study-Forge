@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.47** [build 107]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.48** [build 108]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -165,6 +165,13 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 ```
 
 ## 7. Current Status / Important Notes
+
+Recent major changes (Nov 2026, now v0.6.48):
+- v0.6.48 (Build 108):
+  - Resolved "Sorry, I couldn't generate a response" error: meta/muse-ember uses internal reasoning tokens (reasoning_details), which previously exhausted the tight 850 token limit before any visible content could stream.
+  - Expanded chat max_tokens budget to 3500 and quiz help to 2000, allowing full reasoning completion followed by immediate response generation.
+  - Enhanced streaming chunk parser to inspect both delta.content and delta.text.
+  - Triple bump v0.6.48 / versionCode: 108 / CACHE_NAME: study-forge-v0.6.48.
 
 Recent major changes (Nov 2026, now v0.6.47):
 - v0.6.47 (Build 107):
