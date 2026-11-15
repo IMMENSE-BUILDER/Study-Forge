@@ -5540,6 +5540,11 @@ label {
   overflow: hidden;
 }
 
+.ai-model-select:disabled {
+  opacity: 0.9;
+  cursor: default;
+}
+
 .ai-sheet-bar {
   display: flex;
   gap: 8px;

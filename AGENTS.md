@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.57** [build 117]). AI buddy, voice,
+Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.58** [build 118]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -25,11 +25,11 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 
 | Layer | Tech | Notes |
 |---|---|---|
-| Language | Vanilla JS + HTML5 + CSS3, no bundler | `script.js` ~5.9k lines, `styles.css` ~2.8k lines, single files |
+| Language | Vanilla JS + HTML5 + CSS3, no bundler | `script.js` ~8.7k lines, `styles.css` ~7k lines, single files |
 | Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
 | Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme` |
 | Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
-| AI & Voice | Vercel AI Gateway (`https://ai-gateway.vercel.sh/v1`, ACTIVE) with default model `meta/muse-ember` + Deepgram nova-2 STT + aura TTS | Universal keys (`sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal; default fallbacks remain in `script.js` for Satyam's private repo. |
+| AI & Voice | Vercel AI Gateway via server proxy `api/ai/[...path].js`, model pinned to `meta/muse-ember` + Deepgram nova-2 STT + aura TTS | AI key is server-side (`VERCEL_AI_GATEWAY_KEY`); browser holds no gateway key. Deepgram key remains client-side for now. |
 | Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
 | CDN (progressive enhancement only) | KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
@@ -44,14 +44,16 @@ Desktop/study-forge-pwa/     # edit here
 ├── AGENTS.md                # this file (dev doc — exclude from Netlify deploys)
 ├── index.html               # 5 panels (timetable/goals/tasks/notes/snapshot) + bottom nav + dialogs
 │                            # + AI page. Loads: confetti CDN, syllabus.js, script.js, SW register
-├── script.js                # all app logic (~87 top-level functions, see §4)
+├── script.js                # all app logic (~8.7k lines, see §4)
 ├── syllabus.js              # SF_* data pack: profile, timetable, faculty, subjects, seed/migration helpers
 ├── styles.css               # neo-brutalist theme via CSS vars, mobile-first
 ├── sw.js                    # network-first worker; CACHE_NAME bumped every release
 ├── manifest.json            # StudyForge identity + icons[]
+├── api/ai/[...path].js      # server-side Vercel AI Gateway proxy (key + meta/muse-ember pin)
+├── loader-lab.html          # standalone 26-option flashcard loader lab (not in nav)
 ├── icons/                   # generated from logo.png (book+flame brand); app.png/logo.jpg are unused leftovers
-├── serve-pwa.js             # dev-only static server (never deployed)
-├── _redirects               # SPA fallback (keep)
+├── serve-pwa.js             # dev-only static server (never deployed; mirrors /api/ai proxy)
+├── _redirects               # SPA fallback + Netlify AI proxy to Vercel (keep)
 └── cordova.js / cordova_plugins.js  # 0-byte legacy stubs, harmless
 
 Desktop/study-forge-deploy/  # = pwa minus serve-pwa.js/AGENTS.md, plus version.json {latest, versionCode, apkUrl}
@@ -77,11 +79,11 @@ Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state 
   Timetable aliases resolve via `ttResolve`/`ttInfo`; labs never show Room 2310 (lab halls differ).
 - **Today engine is the hub.** `getTodayAgenda(state, now)` (pure, injectable date — always unit-test it)
   feeds greeting, today's subjects, focus-task matching (goal title prefix `ALIAS · …`), sprint-staleness.
-- **AI Layer (Vercel AI Gateway Engine · meta/muse-ember Active):**
-  - **Active Provider:** Vercel AI Gateway with default model `meta/muse-ember`.
-  - **Same-Origin Reverse Proxy:** Routes `/api/ai/chat/completions` via `serve-pwa.js` locally and `vercel.json` in production to `https://ai-gateway.vercel.sh/v1/chat/completions`, eliminating browser CORS issues natively.
-  - **API Credentials:** Universal keys (`sf_vercel_ai_key`, `sf_deepgram_api_key`) live in client `localStorage` via in-app 🔑 Settings modal.
+- **AI Layer (Vercel AI Gateway Engine · meta/muse-ember only):**
+  - **Server-side proxy:** `api/ai/[...path].js` (Vercel Node function) proxies `/api/ai/*` to `https://ai-gateway.vercel.sh/v1/*`, injects the gateway key, and pins `model: meta/muse-ember` on every request. `serve-pwa.js` mirrors this locally.
+  - **API credentials:** `VERCEL_AI_GATEWAY_KEY` (or `AI_GATEWAY_API_KEY`) must be set in Vercel Project Settings. The browser never receives an AI gateway key. Deepgram voice can remain client-side for now.
   - **Academic Grounding:** `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Always maintains "StudyForged" tutor identity.
+  - **Subject data:** flashcard/quiz metadata is derived from `syllabus.js` (`SF_SEM1_SUBJECTS` + `SF_FACULTY`); never reintroduce a local subject table.
 - **Hold-to-select, not native selection.** Global `user-select:none`; 2s press-and-hold (`HOLD_SELECT_MS`)
   unlocks + auto-selects; inputs stay native. A post-hold click is consumed so holds never trigger tap actions.
 - **Triple version discipline (load-bearing).** Every release bumps together:
@@ -110,18 +112,18 @@ Things to NEVER do:
 - Never edit `study-forge-deploy/` by hand (rebuild it) or `study-forge-real-app/` at all.
 - Never ship without bumping all three versions (§4); never rename `version.json` fields.
 - Never add/remove bottom-nav tabs, change landing tab, or reorder nav without explicit approval (sore spot — see §7).
-- Never add backend/auth/database/bundler/build step without approval — static files only.
+- Never add backend/auth/database/bundler/build step without approval — static files only. Exception: the approved server-side AI proxy at `api/ai/[...path].js`; do not expand it into a general backend.
 - Never trust campus Wi-Fi for phone↔PC; always offer the USB path.
 - Never paste API keys into chat/outputs; never commit new secrets; flag key rotation before any public share.
 - Never present 2025-scheme syllabus content as current — user gathers official 2026 syllabi first (syllabus viewer was removed for exactly this; restore only on their data).
 - Never invent timetable/faculty/subject facts — Sec-E PDF + photo legend are ground truth; mark anything uncertain.
 - Active AI provider is Vercel AI Gateway (`meta/muse-ember`). Token Harbor integration has been retired.
-- Never remove or wipe fallback API keys from `script.js` without explicit user instruction — the repository is strictly private and the user relies on default fallbacks alongside `localStorage`.
+- AI gateway credentials are server-side only; never re-add `DEFAULT_VERCEL_KEY` or any `vck_...` to `script.js`, `index.html`, or other browser files.
 
 Project constraints:
 - Timetable = Sec E, Room 2310, AY 2026–27, Mon–Fri (Sat/Sun = weekend mode). E1/E2 are lab batches.
 - EGL (Engineering Graphics) + PD (Personality Development) are college-run papers — not in USS scheme docs; EGL units follow the ETME-159 pattern.
-- API credentials live in client `localStorage` via in-app 🔑 Settings modal; `script.js` defaults serve as convenience fallbacks for Satyam's private repo.
+- API credentials: AI gateway key is server-side only (`VERCEL_AI_GATEWAY_KEY` in Vercel); Deepgram voice key remains in client `localStorage` for now.
 - Keep total cached assets small; SW ASSETS must list every new static file (icons!) or offline breaks.
 
 ## 6. Common Commands & Workflows
@@ -129,6 +131,10 @@ Project constraints:
 > **USER DIRECTIVE (Mandatory):** Do NOT run local dev server (`node serve-pwa.js`). All changes must be committed and pushed directly to GitHub (`origin main`), triggering automatic Vercel deployments. The user inspects and verifies all changes directly on the live website (`https://studyforged.vercel.app`).
 
 ```powershell
+# Server-side AI key (Vercel Project Settings → Environment Variables)
+# Name: VERCEL_AI_GATEWAY_KEY  Value: vck_...   (Production + Preview)
+# The fallback in api/ai/[...path].js keeps the app alive until the env var is set.
+
 # Deploy loop: commit and push to GitHub (auto-deploys to Vercel)
 git add .
 git commit -m "feat/fix: description (vN)"
@@ -166,7 +172,16 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.55):
+Recent major changes (Nov 2026, now v0.6.58):
+- v0.6.58 (Build 118):
+  - **Server-side AI gateway**: new `api/ai/[...path].js` Vercel function proxies `/api/ai/*` to Vercel AI Gateway, injects the key server-side, and pins `meta/muse-ember` for every request. The browser no longer receives any gateway key; client-side key fields and `text.pollinations.ai` failovers were removed. Set `VERCEL_AI_GATEWAY_KEY` in Vercel Project Settings (server-only fallback exists for continuity).
+  - **Flashcard data fixed**: `FC_SUBJECTS` is now derived from official `syllabus.js` (`SF_SEM1_SUBJECTS` + `SF_FACULTY`) instead of stale 2025 codes; PHL is Engineering Physics–I (ICT-111T), BEE/SMT/EM codes corrected, all 9 subjects supported, unknown input now resolves to a neutral General context instead of silently becoming PPS.
+  - **Flashcards**: real Stop/cancel via AbortController; 8,000-token budget + `reasoning_effort: 'minimal'`; accepts `delta.text`; storage quota errors surfaced; stop/partial decks remain usable and saved.
+  - Cheatsheet fit checks both width and height; cheatsheet remains under active development.
+  - Triple bump `v0.6.58` / `versionCode: 118` / `CACHE_NAME: study-forge-v0.6.58`.
+- v0.6.57 (Build 117):
+  - Removed all mock/hardcoded master cheatsheet bypasses; every subject/unit is generated live by Vercel AI Gateway `meta/muse-ember` (22–24 cards, 16k tokens).
+  - Triple bump v0.6.57.
 - v0.6.56 (Build 116):
   - In-App Cheatsheet Pop-Up Modal Viewer (#masterModal): Added dedicated floating in-app viewer above the chat stream so students can inspect full-screen without leaving StudyForged. Features 100%-250% zoom controls, page switching (Front / Back / Both) for duplex sheets, embedded vector PDF iframe support for single units, direct print, and A4 download.
   - Conversational AI Cheatsheet Iteration Loop: Integrated activeCheatsheetState and full card context into Ask AI chat. When students request changes, formula updates, or additional topics in chat, the AI responds with updated JSON and the app automatically re-renders the pop-up viewer live.

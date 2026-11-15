@@ -7,7 +7,10 @@ const path = require("path");
 
 const ROOT = __dirname;
 const PORT = 3000;
-const DEFAULT_VERCEL_KEY = Buffer.from("dmNrXzdFMklZTUNWek94dHg5ZTdSZFRtanQwOGFjZmFwbUFPOUFvWUxBZEdVQXlXd2x1WUlqM2I0TzY2", "base64").toString("utf8");
+const AI_MODEL = "meta/muse-ember";
+// Server-side only. The browser never receives this key.
+const FALLBACK_VERCEL_KEY = Buffer.from("dmNrXzdFMklZTUNWek94dHg5ZTdSZFRtanQwOGFjZmFwbUFPOUFvWUxBZEdVQXlXd2x1WUlqM2I0TzY2", "base64").toString("utf8");
+const SERVER_AI_KEY = process.env.VERCEL_AI_GATEWAY_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_AI_KEY || FALLBACK_VERCEL_KEY;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -48,15 +51,25 @@ const server = http.createServer((req, res) => {
       }
       proxyHeaders["cache-control"] = "no-cache";
     }
-    if (!proxyHeaders["authorization"] && DEFAULT_VERCEL_KEY) {
-      proxyHeaders["authorization"] = `Bearer ${DEFAULT_VERCEL_KEY}`;
+    // Server-side key only. Ignore any Authorization header from the browser.
+    delete proxyHeaders["authorization"];
+    if (SERVER_AI_KEY) {
+      proxyHeaders["authorization"] = `Bearer ${SERVER_AI_KEY}`;
     }
 
     const reqStart = Date.now();
     const chunks = [];
     req.on("data", (chunk) => chunks.push(chunk));
     req.on("end", () => {
-      const body = Buffer.concat(chunks);
+      let body = Buffer.concat(chunks);
+      // Pin the model server-side, even if a stale client sends another ID.
+      try {
+        const parsed = JSON.parse(body.toString("utf8"));
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          parsed.model = AI_MODEL;
+          body = Buffer.from(JSON.stringify(parsed));
+        }
+      } catch (e) {}
       proxyHeaders["content-length"] = body.length;
       console.log(`[Proxy] ${req.method} ${targetPath} (${body.length} bytes)`);
 
@@ -73,44 +86,6 @@ const server = http.createServer((req, res) => {
           agent: httpsAgent,
         },
         (proxyRes) => {
-          if (proxyRes.statusCode === 401) {
-            console.log(`[Proxy] Vercel returned 401, failing over to text.pollinations.ai...`);
-            let pObj = {};
-            try { pObj = JSON.parse(body.toString()); } catch (e) {}
-            pObj.model = "openai-fast";
-            pObj.max_tokens = Math.max(pObj.max_tokens || 4000, 6000);
-            const failoverBuf = Buffer.from(JSON.stringify(pObj));
-
-            const failoverReq = https.request(
-              {
-                hostname: "text.pollinations.ai",
-                port: 443,
-                path: "/openai/chat/completions",
-                method: "POST",
-                headers: {
-                  "content-type": "application/json",
-                  "content-length": failoverBuf.length,
-                  ...(proxyHeaders["accept"] ? { accept: proxyHeaders["accept"] } : {}),
-                },
-                agent: httpsAgent,
-              },
-              (fRes) => {
-                if (res.socket) res.socket.setNoDelay(true);
-                const fHeaders = { ...fRes.headers, ...corsHeaders };
-                fHeaders["x-accel-buffering"] = "no";
-                res.writeHead(fRes.statusCode, fHeaders);
-                fRes.pipe(res);
-              }
-            );
-            failoverReq.on("error", (fErr) => {
-              res.writeHead(502, { ...corsHeaders, "Content-Type": "application/json" });
-              res.end(JSON.stringify({ error: { message: fErr.message } }));
-            });
-            failoverReq.write(failoverBuf);
-            failoverReq.end();
-            return;
-          }
-
           if (res.socket) res.socket.setNoDelay(true);
           const responseHeaders = { ...proxyRes.headers, ...corsHeaders };
           responseHeaders["x-accel-buffering"] = "no";

@@ -1,9 +1,8 @@
 {
   "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/api/ai/:path*",
-      "destination": "https://ai-gateway.vercel.sh/v1/:path*"
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 60
     }
-  ]
+  }
 }

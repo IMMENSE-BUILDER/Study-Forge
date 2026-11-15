@@ -2336,37 +2336,21 @@ function setActiveAiProvider(provider) {
   localStorage.setItem('sf_ai_provider', 'vercel');
 }
 
-// ── Vercel AI Gateway (Active Engine · meta/muse-ember) ──
+// ── Vercel AI Gateway (server-side proxy · meta/muse-ember only) ──
+// The browser never holds a gateway key. /api/ai/* injects it server-side.
 function getVercelApiUrl() {
-  if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
-    return '/api/ai/chat/completions';
-  }
-  return 'https://ai-gateway.vercel.sh/v1/chat/completions';
+  return '/api/ai/chat/completions';
 }
 const VERCEL_API_URL = getVercelApiUrl();
 const DEFAULT_VERCEL_MODEL = 'meta/muse-ember';
-const DEFAULT_VERCEL_KEY = (function() {
-  try {
-    return atob('dmNrXzdFMklZTUNWek94dHg5ZTdSZFRtanQwOGFjZmFwbUFPOUFvWUxBZEdVQXlXd2x1WUlqM2I0TzY2');
-  } catch (e) {
-    return '';
-  }
-})();
 
+// Kept for backward compatibility with old call sites; server auth means no client key.
 function getVercelApiKey() {
-  return localStorage.getItem('sf_vercel_ai_key') ||
-         localStorage.getItem('sf_ai_api_key') ||
-         DEFAULT_VERCEL_KEY ||
-         '';
+  return '';
 }
 
 function getVercelModel() {
-  const stored = localStorage.getItem('sf_vercel_ai_model') || localStorage.getItem('sf_ai_model');
-  // Auto-migrate old Token Harbor models to meta/muse-ember
-  if (!stored || stored === 'glm-5.3-flash' || stored.startsWith('deepseek-') || stored.startsWith('mimo-') || stored.startsWith('qwen') || stored.startsWith('gpt-6')) {
-    return DEFAULT_VERCEL_MODEL;
-  }
-  return stored;
+  return DEFAULT_VERCEL_MODEL;
 }
 
 // ── Unified Active Provider Resolvers ──
@@ -2375,53 +2359,26 @@ function getActiveAiApiUrl() {
 }
 
 function getActiveAiApiKey() {
-  return getVercelApiKey();
+  return '';
 }
 
 function getActiveAiModel() {
-  return getVercelModel();
+  return DEFAULT_VERCEL_MODEL;
 }
 
 function getActiveAiApiFallbackUrl() {
-  return VERCEL_API_URL.startsWith('/api/ai')
-    ? 'https://ai-gateway.vercel.sh/v1/chat/completions'
-    : '/api/ai/chat/completions';
+  // Server-side proxy only: there is no keyless direct-gateway fallback.
+  return VERCEL_API_URL;
 }
 
-// Dead/plan-gated model IDs fail in every tool at once — detect, tell, heal to default.
+// Dead/plan-gated model IDs fail in every tool at once — detect and explain.
 function isModelMissingError(msg) {
   const m = String(msg || '').toLowerCase();
   return /model[^.]{0,60}(not found|does not exist|doesn.?t exist|invalid|unsupported|unknown|no such)/i.test(m) || /(^|[^0-9])404([^0-9]|$)/.test(m);
 }
 function healDeadModel() {
-  const cur = getActiveAiModel();
-  if (cur === DEFAULT_VERCEL_MODEL) return false;
-  try {
-    localStorage.setItem('sf_vercel_ai_model', DEFAULT_VERCEL_MODEL);
-    localStorage.setItem('sf_ai_model', DEFAULT_VERCEL_MODEL);
-  } catch (e) {}
-  try {
-    const sel = document.getElementById('aiModelSelect');
-    if (sel) sel.value = DEFAULT_VERCEL_MODEL;
-    const mi = document.getElementById('vercelModelInput');
-    if (mi) mi.value = DEFAULT_VERCEL_MODEL;
-  } catch (e) {}
-  updateAIModelBadge();
-  // ── Vercel AI Gateway Key Button ──
-  const keyBtn = document.getElementById('aiKeyBtn');
-  if (keyBtn) {
-    keyBtn.addEventListener('click', () => {
-      const current = getVercelApiKey();
-      const val = prompt('Enter your Vercel AI Gateway Key (vck_...):\n(Generate one at https://vercel.com/~/ai-gateway/api-keys)', current);
-      if (val !== null && val.trim()) {
-        localStorage.setItem('sf_vercel_ai_key', val.trim());
-        localStorage.setItem('sf_ai_api_key', val.trim());
-        showToast('Vercel API Key saved! ⚡');
-      }
-    });
-  }
-  showToast(`"${cur}" not found — reset to ${DEFAULT_VERCEL_MODEL} ⚡`);
-  return true;
+  showToast(`AI model unavailable on the server — please try again shortly.`);
+  return false;
 }
 
 // Backward-compatibility aliases
@@ -2685,13 +2642,18 @@ function initAskAI() {
   // ── Unified Cloud AI Integration (Vercel AI Gateway · meta/muse-ember) ──
   updateAIModelBadge();
 
-  // Purge legacy provider keys
+  // Purge legacy client-side AI credentials now that the gateway is server-side.
   try {
     localStorage.removeItem('sf_tokenharbor_api_key');
     localStorage.removeItem('sf_tokenharbor_model');
     localStorage.removeItem('sf_openrouter_api_key');
     localStorage.removeItem('sf_openrouter_model');
     localStorage.removeItem('sf_deepseek_api_key');
+    localStorage.removeItem('sf_vercel_ai_key');
+    localStorage.removeItem('sf_vercel_ai_model');
+    localStorage.removeItem('sf_ai_api_key');
+    localStorage.removeItem('sf_ai_model');
+    localStorage.removeItem('sf_ai_provider');
   } catch (e) {}
 
   // ── Multimodal Vision Controls ──
@@ -3574,27 +3536,14 @@ function initAskAI() {
       ...recentHistory
     ];
 
-    const apiKey = getActiveAiApiKey();
     const model = getActiveAiModel();
     const activeApiUrl = getActiveAiApiUrl();
-
-    if (!apiKey) {
-      const hintMsg = "AI Gateway is momentarily unavailable. Please retry in a moment.";
-      chatHistory.push({ role: 'assistant', content: hintMsg });
-      if (typeof onChunk === 'function') {
-        onChunk({ delta: hintMsg, text: hintMsg, isFirst: true });
-      }
-      return hintMsg;
-    }
 
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
       'Cache-Control': 'no-cache',
     };
-    if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
 
     let res;
     const reqPayload = JSON.stringify({
@@ -3625,29 +3574,6 @@ function initAskAI() {
         });
       }
       if (!res || !res.ok) {
-        console.warn('Primary AI gateway returned error (' + (res ? res.status : 'offline') + '). Seamlessly routing through resilient live AI engine...');
-        try {
-          res = await fetch('https://text.pollinations.ai/openai/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'text/event-stream'
-            },
-            body: JSON.stringify({
-              model: 'openai-fast',
-              messages,
-              temperature: 0.6,
-              max_tokens: 4000,
-              stream: true
-            }),
-            signal: signal
-          });
-        } catch (failoverErr) {
-          if (failoverErr.name === 'AbortError') throw failoverErr;
-        }
-      }
-
-      if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         let rawMsg = errData.error?.message || `API error ${res.status}`;
         throw new Error(rawMsg || 'AI connection issue — please try again');
@@ -4922,27 +4848,9 @@ function initAskAI() {
   }
   if (modeChatBtn) modeChatBtn.addEventListener('click', () => setSheetMode(false));
   if (modeSheetBtn) modeSheetBtn.addEventListener('click', () => setSheetMode(true));
-  // Global model picker — applies app-wide across chat, flashcards, quiz, sheets.
-  const AI_MODEL_IDS = [
-    'meta/muse-ember',
-    'meta/llama-3.3-70b-instruct',
-    'google/gemini-2.0-flash',
-    'openai/gpt-4o-mini',
-    'anthropic/claude-3-5-sonnet',
-    'deepseek/deepseek-chat'
-  ];
+  // Server-side model is pinned to meta/muse-ember. The UI control is informational only.
   const modelSelect = document.getElementById('aiModelSelect');
-  if (modelSelect) {
-    modelSelect.addEventListener('change', () => {
-      const id = modelSelect.value;
-      if (!AI_MODEL_IDS.includes(id)) return;
-      localStorage.setItem('sf_vercel_ai_model', id);
-      localStorage.setItem('sf_ai_model', id);
-      if (vcModelInput) vcModelInput.value = id;
-      updateAIModelBadge();
-      showToast(`Model: ${id} — app-wide ⚡`);
-    });
-  }
+  if (modelSelect) modelSelect.value = DEFAULT_VERCEL_MODEL;
   if (sheetSubject) sheetSubject.addEventListener('change', fillSheetUnits);
   fillSheetSubjects();
 
@@ -5695,14 +5603,14 @@ ${sheetElement.outerHTML}
     pages.forEach(p => {
       const min = minPx || 5.8;
       p.style.fontSize = '';
-      const fits = () => p.scrollHeight <= p.clientHeight + 2;
+      const fits = () => p.scrollHeight <= p.clientHeight + 2 && p.scrollWidth <= p.clientWidth + 2;
       if (p.clientHeight <= 0 || fits()) return;
       let lo = min, hi = parseFloat(getComputedStyle(p).fontSize) || 8.5;
       let best = min, guard = 0;
       while (hi - lo > 0.3 && guard++ < 12) {
         const mid = (lo + hi) / 2;
         p.style.fontSize = mid + 'px';
-        if (p.scrollHeight <= p.clientHeight + 2) { best = mid; lo = mid; }
+        if (p.scrollHeight <= p.clientHeight + 2 && p.scrollWidth <= p.clientWidth + 2) { best = mid; lo = mid; }
         else { hi = mid; }
       }
       p.style.fontSize = best + 'px';
@@ -5795,7 +5703,6 @@ ${sheetElement.outerHTML}
   async function fetchUnitCheatsheetDoc(alias, unitIdx, signal) {
     const unitCtx = getSheetUnitContext(alias, unitIdx);
     if (!unitCtx) throw new Error(`Missing syllabus for ${alias} Unit ${unitIdx + 1}`);
-    const apiKey = getActiveAiApiKey();
 
     const system = `You are StudyForged Cheatsheet Engine for Satyam Kumar (B.Tech IT Sem-1, Sec-E, ADGIPS, GGSIPU 2026).
 ${unitCtx}
@@ -5846,10 +5753,9 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
     };
 
     const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
-    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
     let resp = null;
     let lastErr = null;
-    // Attempt configured AI gateway
+    // The server proxy injects the gateway key and pins the model.
     try {
       resp = await fetch(getActiveAiApiUrl(), {
         method: 'POST', headers, body: JSON.stringify(payload),
@@ -5858,31 +5764,6 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
     } catch (e) {
       if (e && e.name === 'AbortError') throw e;
       lastErr = e;
-    }
-
-    // Resilient Live Failover: If primary failed, returned 401, 402, 403, 429, or error, failover to live engine
-    if (!resp || !resp.ok) {
-      console.warn('Primary AI gateway returned error (' + (resp ? resp.status : 'offline') + '). Routing via resilient live AI engine...');
-      try {
-        resp = await fetch('https://text.pollinations.ai/openai/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'openai-fast',
-            messages: [
-              { role: 'system', content: system },
-              { role: 'user', content: `Generate the 1-page cheatsheet JSON for ${alias} Unit ${unitIdx + 1}. Full unit coverage, print-dense.` }
-            ],
-            stream: false,
-            temperature: 0.3,
-            max_tokens: 8192
-          }),
-          signal
-        });
-      } catch (e2) {
-        if (e2 && e2.name === 'AbortError') throw e2;
-        lastErr = e2;
-      }
     }
 
     if (!resp || !resp.ok) {
@@ -6109,7 +5990,7 @@ function initFlashcards() {
   const countSelect = document.getElementById('fcCountSelect');
   const quickChips = document.getElementById('fcQuickChips');
   const deckArea = document.getElementById('fcDeckArea');
-  const emptyState = document.getElementById('fcEmptyState');
+  let emptyState = document.getElementById('fcEmptyState');
   const controls = document.getElementById('fcControls');
   const prevBtn = document.getElementById('fcPrevBtn');
   const flipBtn = document.getElementById('fcFlipBtn');
@@ -6134,84 +6015,99 @@ function initFlashcards() {
   const fcSubjTitle = document.getElementById('fcSubjTitle');
   const fcSubjMeta = document.getElementById('fcSubjMeta');
 
-  const FC_SUBJECTS = {
-    "PPS": {
-      alias: "PPS",
-      code: "ICT-101 / ETCS-107",
-      name: "Programming for Problem Solving",
-      faculty: "Ms. Alka (Theory) / Mr. Ankit Jain (Lab)",
-      units: "U1: C basics/operators/loops | U2: Functions/recursion/arrays/search/sort | U3: Pointers/DMA/structs | U4: Linked lists/stacks/trees",
-      meta: "Ms. Alka · Mr. Ankit Jain (Lab) · C Programming · Units I–IV",
-      context: "ANSI C programming language, GCC compiler, stack/heap memory, pointer arithmetic, recursion stack frames & base conditions, dynamic memory allocation (malloc/calloc/free), data structures, and university end-sem exam conventions."
-    },
-    "BEE": {
-      alias: "BEE",
-      code: "ICT-103 / ETEE-107",
-      name: "Basics of Electrical Engineering",
-      faculty: "Ms. Pooja",
-      units: "U1: DC circuits/KCL/KVL | U2: Network theorems (Thevenin/Norton/Superposition) | U3: AC circuits/phasors/resonance | U4: Transformers & DC machines",
-      meta: "Ms. Pooja · Circuits & Theorems · Units I–IV",
-      context: "Electric circuit theorems (Thevenin, Norton, Superposition, Maximum Power Transfer), mesh/nodal analysis, AC phasors, RLC resonance, and transformer calculations."
-    },
-    "SMT": {
-      alias: "SMT",
-      code: "ICT-105 / ETMA-101",
-      name: "System Modeling Techniques–I (Applied Maths)",
-      faculty: "Dr. Suryya Farhat",
-      units: "U1: Partial derivatives/Taylor series/ODEs | U2: Power series/Bessel/Gamma-Beta | U3: Matrices/Cayley-Hamilton/eigenvalues | U4: Vector calculus/Green/Stokes/Gauss",
-      meta: "Dr. Suryya Farhat · Engineering Mathematics · Units I–IV",
-      context: "Engineering mathematics, differential calculus, ODEs, matrix algebra (eigenvalues, Cayley-Hamilton), vector calculus (Green, Stokes, Gauss divergence theorems)."
-    },
-    "PHL": {
-      alias: "PHL",
-      code: "ICT-110 / ETPH-103",
-      name: "Semiconductor Engineering & Applications (Physics)",
-      faculty: "Dr. Mamta Gupta",
-      units: "U1: Crystal lattices/energy bands/drift-diffusion | U2: PN junctions/breakdown/Schottky | U3: BJT/MOSFET/LEDs/solar cells | U4: IC fabrication/cleanroom",
-      meta: "Dr. Mamta Gupta · Semiconductor Physics · Units I–IV",
-      context: "Semiconductor physics, energy band theory, carrier transport (drift & diffusion), PN junction diodes, breakdown mechanisms, BJT, FET, and optoelectronics."
-    },
-    "EM": {
-      alias: "EM",
-      code: "ICT-107/120 / ETME-105",
-      name: "Engineering Mechanics",
-      faculty: "Mr. Naman Bajpai",
-      units: "U1: Force systems/FBD/Varignon | U2: Trusses (joints/sections)/friction | U3: Kinematics/kinetics/work-energy | U4: Rigid body dynamics",
-      meta: "Mr. Naman Bajpai · Statics & Dynamics · Units I–IV",
-      context: "Engineering mechanics, free body diagrams, Varignon's theorem, method of joints/sections for trusses, friction laws, kinematics, and work-energy impulse-momentum principles."
-    },
-    "PPS Viva": {
-      alias: "PPS Viva",
-      code: "ICT-123 / ETCS-157",
-      name: "PPS Practical Lab & Viva Voce",
-      faculty: "Mr. Ankit Jain",
-      units: "16 Mandatory C Lab Experiments: Pointers, Segfaults, Dynamic Arrays, Linked Lists, File I/O",
-      meta: "Mr. Ankit Jain · 16 Lab Experiments · Viva Voce Traps",
-      context: "Practical C programming laboratory viva voce traps, memory leak detection with valgrind/free, pointer dereferencing gotchas, segmentation faults, gcc flags, and 16 syllabus lab experiments."
-    },
-    "BEE Viva": {
-      alias: "BEE Viva",
-      code: "ICT-103 P / ETEE-157",
-      name: "BEE Practical Lab & Viva Voce",
-      faculty: "Ms. Pooja",
-      units: "10 Mandatory Experiments: KCL/KVL Verification, Thevenin/Norton, 3-Phase Power, Transformers",
-      meta: "Ms. Pooja · 10 Lab Experiments · Meter Connections & Viva Traps",
-      context: "Practical electrical laboratory experiments, voltmeter/ammeter connections, wattmeter method, oscilloscope calibration, Thevenin kit verification, and professor viva interrogation questions."
-    }
+  // Single source of truth: derive flashcard/quiz metadata from syllabus.js.
+  // (The old local FC_SUBJECTS drifted to 2025 codes and even the wrong PHL subject.)
+  const FC_CONTEXT = {
+    PPS: "ANSI C programming language, GCC compiler, stack/heap memory, pointer arithmetic, recursion stack frames & base conditions, dynamic memory allocation, data structures, and university end-sem exam conventions.",
+    BEE: "Electric circuit theorems (Thevenin, Norton, Superposition, Maximum Power Transfer), mesh/nodal analysis, AC phasors, RLC resonance, and transformer calculations.",
+    SMT: "Engineering mathematics, differential calculus, ODEs, matrix algebra (eigenvalues, Cayley-Hamilton), vector calculus (Green, Stokes, Gauss divergence theorems).",
+    PHL: "Engineering Physics–I: crystallography, interference, diffraction, polarization, lasers, fiber optics, quantum mechanics, and semiconductor physics as per GGSIPU 2026 ICT-111T.",
+    EM: "Engineering mechanics, free body diagrams, Varignon's theorem, method of joints/sections for trusses, friction laws, kinematics, and work-energy impulse-momentum principles.",
+    CSL: "Communication skills: grammar, précis, paragraph writing, notices, minutes, memos, emails, phonetics, group discussion, and interview communication.",
+    EVSL: "Environmental Studies: ecology, biodiversity, natural resources, pollution, e-waste, climate change, environmental legislation, EIA, and sustainable development.",
+    PD: "Personality development: SWOT, time management, spoken communication, body language, presentations, résumé writing, group discussion, and interview skills.",
+    EGL: "Engineering Graphics: lettering, points/lines/planes, projection of solids, CAD, isometric projection, and engineering drawing conventions (ETME-159 pattern).",
+    "PPS Viva": "Practical C programming laboratory viva voce: pointers, segmentation faults, dynamic memory, linked lists, file I/O, gcc flags, and the 16 syllabus lab experiments.",
+    "BEE Viva": "Practical electrical laboratory: KCL/KVL verification, Thevenin/Norton kits, 3-phase power, transformers, meter connections, oscilloscope calibration, and viva questions."
   };
 
+  function buildFlashcardSubjects() {
+    const out = {};
+    const official = (typeof SF_SEM1_SUBJECTS !== 'undefined' && Array.isArray(SF_SEM1_SUBJECTS)) ? SF_SEM1_SUBJECTS : [];
+    official.forEach((s) => {
+      if (!s || !s.alias) return;
+      const fac = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY[s.alias]) ? (SF_FACULTY[s.alias].faculty || '') : '';
+      const units = Array.isArray(s.units) ? s.units.join(' | ') : '';
+      out[s.alias] = {
+        alias: s.alias,
+        code: s.code || s.alias,
+        name: s.name || s.alias,
+        faculty: fac || 'Faculty',
+        units,
+        meta: `${fac ? fac + ' · ' : ''}${s.name || s.alias} · Units I–IV`,
+        context: FC_CONTEXT[s.alias] || `${s.name || s.alias}: ${units}`
+      };
+    });
+    const ppsLab = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY['PPS LAB']) ? SF_FACULTY['PPS LAB'] : {};
+    const beeLab = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY['BEE LAB']) ? SF_FACULTY['BEE LAB'] : {};
+    out['PPS Viva'] = {
+      alias: 'PPS Viva',
+      code: ppsLab.code || 'ICT-151 / 101P',
+      name: 'PPS Practical Lab & Viva Voce',
+      faculty: ppsLab.faculty || 'Mr. Ankit Jain',
+      units: '16 mandatory C lab experiments: pointers, segfaults, dynamic arrays, linked lists, file I/O',
+      meta: `${ppsLab.faculty || 'Mr. Ankit Jain'} · 16 Lab Experiments · Viva Voce`,
+      context: FC_CONTEXT['PPS Viva']
+    };
+    out['BEE Viva'] = {
+      alias: 'BEE Viva',
+      code: beeLab.code || 'ICT-103P / ICT-106P',
+      name: 'BEE Practical Lab & Viva Voce',
+      faculty: beeLab.faculty || 'Ms. Pooja',
+      units: '10 mandatory experiments: KCL/KVL verification, Thevenin/Norton, 3-phase power, transformers',
+      meta: `${beeLab.faculty || 'Ms. Pooja'} · 10 Lab Experiments · Meter Connections & Viva`,
+      context: FC_CONTEXT['BEE Viva']
+    };
+    out.GEN = {
+      alias: 'General',
+      code: '—',
+      name: 'General Engineering & Science',
+      faculty: '',
+      units: 'Topic-driven; no single subject code',
+      meta: 'Topic-driven · General revision',
+      context: 'General engineering and science. No specific GGSIPU subject code was detected from the input.'
+    };
+    return out;
+  }
+
+  const FC_SUBJECTS = buildFlashcardSubjects();
+
   function resolveSubject(str) {
-    if (!str) return FC_SUBJECTS["PPS"];
-    const s = String(str).trim();
-    const upper = s.toUpperCase();
-    if (upper.includes("PPS VIVA") || upper.includes("PPS LAB")) return FC_SUBJECTS["PPS Viva"];
-    if (upper.includes("BEE VIVA") || upper.includes("BEE LAB")) return FC_SUBJECTS["BEE Viva"];
-    if (upper.startsWith("PPS") || upper.includes("PROGRAMMING") || upper.includes(" C ") || upper.endsWith(" C") || upper === "C") return FC_SUBJECTS["PPS"];
-    if (upper.startsWith("BEE") || upper.includes("ELECTRICAL")) return FC_SUBJECTS["BEE"];
-    if (upper.startsWith("SMT") || upper.includes("MATH") || upper.includes("MODELING")) return FC_SUBJECTS["SMT"];
-    if (upper.startsWith("PHL") || upper.includes("PHYSIC") || upper.includes("SEMICONDUCTOR")) return FC_SUBJECTS["PHL"];
-    if (upper.startsWith("EM") || upper.includes("MECHANIC")) return FC_SUBJECTS["EM"];
-    return FC_SUBJECTS["PPS"];
+    const key = String(str || '').trim().toUpperCase();
+    if (!key) return FC_SUBJECTS.PPS || FC_SUBJECTS.GEN;
+    if (key.includes('PPS VIVA') || key.includes('PPS LAB')) return FC_SUBJECTS['PPS Viva'];
+    if (key.includes('BEE VIVA') || key.includes('BEE LAB')) return FC_SUBJECTS['BEE Viva'];
+    const ordered = ['PPS', 'BEE', 'SMT', 'PHL', 'EM', 'CSL', 'EVSL', 'PD', 'EGL'];
+    for (const alias of ordered) {
+      const s = FC_SUBJECTS[alias];
+      if (!s) continue;
+      const ab = alias.toUpperCase();
+      const name = String(s.name || '').toUpperCase();
+      const code = String(s.code || '').toUpperCase();
+      if (key === ab || key.startsWith(ab + ':') || key.startsWith(ab + ' ') ||
+          (name && key.includes(name)) || (code && code !== '—' && key.includes(code))) {
+        return s;
+      }
+    }
+    if (/\bEVS\b|ENVIRONMENT/.test(key)) return FC_SUBJECTS.EVSL;
+    if (/PHYSICS|SEMICONDUCTOR/.test(key)) return FC_SUBJECTS.PHL;
+    if (/MATH|MODELING|MATRICES/.test(key)) return FC_SUBJECTS.SMT;
+    if (/ELECTRICAL|CIRCUIT/.test(key)) return FC_SUBJECTS.BEE;
+    if (/MECHANIC|STATICS|DYNAMICS/.test(key)) return FC_SUBJECTS.EM;
+    if (/COMMUNICATION|ENGLISH|GRAMMAR/.test(key)) return FC_SUBJECTS.CSL;
+    if (/GRAPHICS|DRAWING|CAD/.test(key)) return FC_SUBJECTS.EGL;
+    if (/PERSONALITY|SOFT SKILLS|INTERVIEW/.test(key)) return FC_SUBJECTS.PD;
+    return FC_SUBJECTS.GEN;
   }
 
   function updateSubjectContextBadge(subjKey) {
@@ -6226,6 +6122,8 @@ function initFlashcards() {
   let currentCards = [];
   let currentIndex = 0;
   let currentGenerationId = 0;
+  let flashAbort = null;
+  let flashBusy = false;
   const FC_STORAGE = 'studyForge_flashcards';
 
   function loadDecks() {
@@ -6233,7 +6131,12 @@ function initFlashcards() {
     catch { return []; }
   }
   function saveDecks(decks) {
-    localStorage.setItem(FC_STORAGE, JSON.stringify(decks));
+    try {
+      localStorage.setItem(FC_STORAGE, JSON.stringify(decks));
+    } catch (e) {
+      console.warn('Flashcard deck save failed:', e);
+      showToast('Could not save deck — storage full. Delete old decks.');
+    }
   }
 
   function normalizeCard(c, topic, defaultSubjAlias = 'StudyForged') {
@@ -7071,6 +6974,7 @@ function initFlashcards() {
             <p>Pick a subject chip above or enter any topic, choose your focus mode, and hit Generate!</p>
           </div>
         `;
+        emptyState = deckArea.querySelector('#fcEmptyState');
         controls.style.display = 'none';
         showToast('All saved decks cleared.');
       }
@@ -7307,9 +7211,8 @@ function initFlashcards() {
   }
 
   async function generateFlashcards(rawTopic) {
+    if (flashBusy) return;
     const thisGenId = ++currentGenerationId;
-    generateBtn.disabled = true;
-    generateBtn.textContent = '⏳ Streaming...';
     deckArea.innerHTML = "";
 
     // Resolve subject from topic or active chip
@@ -7390,17 +7293,7 @@ function initFlashcards() {
       }, 1600);
     }
 
-    const apiKey = getActiveAiApiKey();
     const model = getActiveAiModel();
-
-    if (!apiKey) {
-      stopMockStages();
-      showToast('AI Gateway is momentarily unavailable.');
-      deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">⚠️</span><p>AI Gateway is momentarily unavailable. Please try again shortly.</p></div>`;
-      generateBtn.disabled = false;
-      generateBtn.textContent = '🔥 Generate Cards';
-      return;
-    }
 
     const mode = modeSelect ? modeSelect.value : 'exam';
     const cardCount = countSelect ? (parseInt(countSelect.value, 10) || 4) : 4;
@@ -7438,6 +7331,12 @@ function initFlashcards() {
         return;
       }
     } catch (e) {}
+
+    flashBusy = true;
+    flashAbort = new AbortController();
+    const signal = flashAbort.signal;
+    generateBtn.disabled = false;
+    generateBtn.textContent = '⏹ Stop';
 
     let modePrompt = 'Focus on high-yield university end-sem exam topics (12-marker blueprints), core derivations, and essential theory from the ADGIPS/IPU curriculum.';
     if (mode === 'formulas') {
@@ -7495,40 +7394,35 @@ CRITICAL JSON RULES:
         'Accept': 'text/event-stream',
         'Cache-Control': 'no-cache'
       };
-      if (apiKey) {
-        headers['Authorization'] = `Bearer ${apiKey}`;
-      }
 
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           resp = await fetch(activeApiUrl, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal
           });
           if (resp.ok) break;
-          if (resp.status === 401 || resp.status === 402 || resp.status === 429) {
-            // Failover to resilient live AI engine
-            console.warn('Flashcard primary returned ' + resp.status + '. Failover to live AI engine...');
-            resp = await fetch('https://text.pollinations.ai/openai/chat/completions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-              body: JSON.stringify({ ...payload, model: 'openai-fast', max_tokens: 4000 })
-            });
-            if (resp.ok) break;
+          if (attempt === 1 && resp.status >= 500) {
+            await new Promise(r => setTimeout(r, 700));
+            continue;
           }
+          break;
         } catch (firstErr) {
+          if (firstErr && firstErr.name === 'AbortError') throw firstErr;
           lastFetchErr = firstErr;
           if (attempt === 1) {
-            const fallbackUrl = getActiveAiApiFallbackUrl();
             try {
-              resp = await fetch(fallbackUrl, {
+              resp = await fetch(getActiveAiApiFallbackUrl(), {
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal
               });
               if (resp.ok) break;
             } catch (fallbackErr) {
+              if (fallbackErr && fallbackErr.name === 'AbortError') throw fallbackErr;
               lastFetchErr = fallbackErr;
             }
             await new Promise(r => setTimeout(r, 700));
@@ -7536,12 +7430,12 @@ CRITICAL JSON RULES:
         }
       }
 
-      if (!resp && lastFetchErr) throw lastFetchErr;
+      if (!resp) throw (lastFetchErr || new Error('Network error reaching AI backend'));
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
         let rawMsg = errData.error?.message || `API error ${resp.status}`;
-        if (resp.status === 401) showToast('Invalid/missing API key');
+        if (resp.status === 401) showToast('AI gateway authentication failed');
         else if (resp.status === 402) showToast('Pass/credits required for model');
         else if (resp.status === 429) showToast('Rate limit reached. Please wait');
         else showToast(`Flashcards error: ${rawMsg}`);
@@ -7559,6 +7453,10 @@ CRITICAL JSON RULES:
         let accumulatedContent = '';
 
         while (true) {
+          if (signal.aborted) {
+            try { reader.cancel(); } catch (e) {}
+            throw new DOMException('Generation stopped', 'AbortError');
+          }
           if (thisGenId !== currentGenerationId) {
             try { reader.cancel(); } catch (e) {}
             return;
@@ -7583,12 +7481,13 @@ CRITICAL JSON RULES:
             if (trimmed.startsWith('data: ')) {
               try {
                 const json = JSON.parse(trimmed.slice(6));
-                const delta = json.choices?.[0]?.delta?.content || '';
-                if (delta) {
-                  accumulatedContent += delta;
+                const delta = json.choices?.[0]?.delta;
+                const deltaText = (delta && (delta.content || delta.text)) || '';
+                if (deltaText) {
+                  accumulatedContent += deltaText;
                   // Throttle: skip rescan for tiny appends unless a closing brace arrived.
                   const grew = accumulatedContent.length - lastExtractLen;
-                  const maybeClosed = delta.includes('}') || accumulatedContent.length - lastExtractLen > 250;
+                  const maybeClosed = deltaText.includes('}') || accumulatedContent.length - lastExtractLen > 250;
                   if (!maybeClosed && grew <= 250) continue;
                   lastExtractLen = accumulatedContent.length;
                   const rawObjs = extractCompleteObjects(accumulatedContent);
@@ -7756,8 +7655,8 @@ ${getJsonSchemaInstructions(1)}`;
         ],
         stream: true,
         temperature: 0.6,
-        max_tokens: 4500,
-        reasoning_effort: 'low'
+        max_tokens: 8000,
+        reasoning_effort: 'minimal'
       };
 
       // v0.6.8 blank-card guard: never render/count a shell with no readable content.
@@ -7815,6 +7714,7 @@ ${getJsonSchemaInstructions(1)}`;
       try {
         while (currentCards.length < cardCount) {
           if (thisGenId !== currentGenerationId) return;
+          if (signal.aborted) throw new DOMException('Generation stopped', 'AbortError');
           const remaining = cardCount - currentCards.length;
           // v0.6.11 user demand: 1 card per request so each lands visibly (1,1,1…) for 6/8-count decks.
           const batchSize = 1;
@@ -7836,8 +7736,8 @@ ${getJsonSchemaInstructions(batchSize)}`;
             ],
             stream: true,
             temperature: 0.6,
-            max_tokens: 4500,
-            reasoning_effort: 'low'
+            max_tokens: 8000,
+            reasoning_effort: 'minimal'
           };
 
           const lenBefore = currentCards.length;
@@ -7858,6 +7758,7 @@ ${getJsonSchemaInstructions(batchSize)}`;
               }
             });
           } catch (batchErr) {
+            if (batchErr && batchErr.name === 'AbortError') throw batchErr;
             console.warn('Phase 2 batch notice:', batchErr);
             phase2Note = (batchErr && batchErr.message) ? String(batchErr.message) : 'background request interrupted';
             break;
@@ -7895,9 +7796,31 @@ ${getJsonSchemaInstructions(batchSize)}`;
     } catch (err) {
       if (thisGenId !== currentGenerationId) return;
       stopMockStages();
+      if (err && err.name === 'AbortError') {
+        if (currentCards.length) {
+          syncCurrentDeckToStorage();
+          counter.textContent = `${currentIndex + 1} / ${currentCards.length}`;
+          prevBtn.disabled = currentIndex === 0;
+          nextBtn.disabled = currentIndex >= currentCards.length - 1;
+          if (streamStatus) {
+            streamStatus.className = 'fc-stream-status';
+            streamStatus.style.display = 'inline-flex';
+            streamStatus.innerHTML = `<span class="fc-stream-dot"></span><span>⏹ Stopped — ${currentCards.length} card(s) ready and saved.</span>`;
+          }
+          showToast(`Stopped — ${currentCards.length} card(s) ready.`);
+        } else {
+          deckArea.innerHTML = `<div class="fc-empty-state" id="fcEmptyState"><span class="fc-empty-icon">⏹</span><p>Generation stopped. Write a topic and hit Generate when ready.</p></div>`;
+          emptyState = deckArea.querySelector('#fcEmptyState');
+          controls.style.display = 'none';
+          if (streamStatus) streamStatus.style.display = 'none';
+          showToast('Generation stopped.');
+        }
+        return;
+      }
       console.error('Flashcard generation error:', err);
       if (!currentCards.length) {
-        deckArea.innerHTML = `<div class="fc-empty-state"><span class="fc-empty-icon">⚠️</span><p>Failed to generate cards: ${escapeHtml(err.message || 'Unknown error')}. Please try again.</p></div>`;
+        deckArea.innerHTML = `<div class="fc-empty-state" id="fcEmptyState"><span class="fc-empty-icon">⚠️</span><p>Failed to generate cards: ${escapeHtml(err.message || 'Unknown error')}. Please try again.</p></div>`;
+        emptyState = deckArea.querySelector('#fcEmptyState');
         if (streamStatus) streamStatus.style.display = 'none';
         controls.style.display = 'none';
       } else {
@@ -7906,6 +7829,8 @@ ${getJsonSchemaInstructions(batchSize)}`;
       showToast(`Flashcards error: ${err.message || 'Generation issue'}`);
     } finally {
       stopMockStages();
+      flashBusy = false;
+      flashAbort = null;
       if (thisGenId === currentGenerationId) {
         generateBtn.disabled = false;
         generateBtn.textContent = '🔥 Generate Cards';
@@ -7914,6 +7839,11 @@ ${getJsonSchemaInstructions(batchSize)}`;
   }
 
   generateBtn.addEventListener('click', () => {
+    if (flashBusy) {
+      if (flashAbort) flashAbort.abort();
+      showToast('Stopping generation…');
+      return;
+    }
     const topic = topicInput ? topicInput.value.trim() : '';
     if (!topic) {
       showToast('Pick a subject chip or write a topic to study!');
@@ -8103,12 +8033,8 @@ ${getJsonSchemaInstructions(batchSize)}`;
   }
 
   async function fetchQuizQuestions(subjData, cleanTopic, qCount) {
-    const apiKey = getActiveAiApiKey();
     const model = getActiveAiModel();
     const activeApiUrl = getActiveAiApiUrl();
-    if (!apiKey) {
-      throw new Error('AI Gateway is momentarily unavailable. Please try again shortly.');
-    }
     const schema = `CRITICAL: Return ONLY a valid JSON array of exactly ${qCount} objects with these exact keys:
 - "q": The question (one crisp line; KaTeX \\( ... \\) for math, ANSI C in \`\`\`c fences for PPS code).
 - "options": Array of exactly 4 short answer options (max ~12 words each). Exactly one is correct.
@@ -8133,7 +8059,6 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       reasoning_effort: 'low'
     };
     const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
-    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
     let resp = null;
     let lastErr = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -8151,16 +8076,6 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         lastErr = e;
         if (attempt === 1) await new Promise(r => setTimeout(r, 700));
       }
-    }
-    if (!resp || !resp.ok) {
-      console.warn('Quiz primary returned error (' + (resp ? resp.status : 'offline') + '). Failover to live AI engine...');
-      try {
-        resp = await fetch('https://text.pollinations.ai/openai/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, model: 'openai-fast', max_tokens: 6000 })
-        });
-      } catch (qErr) {}
     }
     if (!resp) throw (lastErr || new Error('Network error reaching AI backend'));
     if (!resp.ok) {
@@ -8443,10 +8358,7 @@ HARD RULES: NEVER state the correct option letter/text or the final numeric answ
     thinking.textContent = 'Thinking…';
     if (quizHelpMsgs) { quizHelpMsgs.appendChild(thinking); quizHelpScroll(); }
     try {
-      const apiKey = getActiveAiApiKey();
-      if (!apiKey && getActiveAiProvider() !== 'vercel') throw new Error('key');
       const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
-      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
       const payload = {
         model: getActiveAiModel(),
         messages: [

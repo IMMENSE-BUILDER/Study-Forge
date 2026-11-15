@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 117,
-  "latest": "v0.6.57",
-  "notes": "100% Real Dynamic AI Cheatsheet Engine: Completely removed all mock/hardcoded master bypasses. Every subject and unit (BEE, EGL, PPS, EM, PHL, SMT, EVSL) is dynamically synthesized directly by Vercel AI Gateway with fresh active key and meta/muse-ember (20-24 dense technical cards per unit, full LaTeX formulas, worked numeric examples, and 4-column balanced A4 landscape layout).",
+  "versionCode": 118,
+  "latest": "v0.6.58",
+  "notes": "Server-side AI gateway (browser holds no key), meta/muse-ember pinned app-wide, flashcard filters derived from official syllabus.js, flashcard Stop/cancel + 8k budget, stricter storage handling, both-axis cheatsheet fit.",
   "apkUrl": ""
 }

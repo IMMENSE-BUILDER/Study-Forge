@@ -156,15 +156,9 @@
     <div class="ai-mode-bar" role="tablist" aria-label="Ask AI mode">
       <button type="button" class="ai-mode-btn active" id="aiModeChatBtn" role="tab" aria-selected="true">💬 Chat</button>
       <button type="button" class="ai-mode-btn" id="aiModeSheetBtn" role="tab" aria-selected="false">📄 Cheatsheet</button>
-      <select id="aiModelSelect" class="ai-model-select" title="AI model — applies app-wide (chat, flashcards, quiz, sheets)">
+      <select id="aiModelSelect" class="ai-model-select" title="Server model: meta/muse-ember" disabled>
         <option value="meta/muse-ember" selected>meta/muse-ember</option>
-        <option value="meta/llama-3.3-70b-instruct">meta/llama-3.3-70b-instruct</option>
-        <option value="google/gemini-2.0-flash">google/gemini-2.0-flash</option>
-        <option value="openai/gpt-4o-mini">openai/gpt-4o-mini</option>
-        <option value="anthropic/claude-3-5-sonnet">anthropic/claude-3-5-sonnet</option>
-        <option value="deepseek/deepseek-chat">deepseek/deepseek-chat</option>
       </select>
-      <button type="button" class="ghost mini-btn" id="aiKeyBtn" title="Set Vercel AI Gateway Key" style="padding:4px 8px;font-size:13px;border:1.5px solid var(--line,#cbd5e1);border-radius:6px;cursor:pointer">🔑</button>
     </div>
     <div class="ai-sheet-bar" id="aiSheetBar" style="display:none;">
       <select id="aiSheetSubject" class="ai-sheet-select" title="Subject"></select>
@@ -308,8 +302,12 @@
           <button type="button" class="fc-chip" data-subject="PPS" data-example="Pointers, Dynamic Memory, Recursion" data-topic="PPS: Pointers, Dynamic Memory & Array Loops" data-mode="exam">💻 PPS</button>
           <button type="button" class="fc-chip" data-subject="BEE" data-example="Thevenin, Norton, KCL/KVL Circuit Laws" data-topic="BEE: Thevenin, Norton & KCL/KVL Circuit Laws" data-mode="formulas">⚡ BEE</button>
           <button type="button" class="fc-chip" data-subject="SMT" data-example="Matrices, Cayley-Hamilton, Taylor Series" data-topic="SMT: Matrices, Cayley-Hamilton & Taylor Series" data-mode="formulas">📐 SMT</button>
-          <button type="button" class="fc-chip" data-subject="PHL" data-example="Energy Bands, Semiconductor Diodes, Hall Effect" data-topic="PHL: Energy Bands, Semiconductor Diodes & Hall Effect" data-mode="exam">🔬 PHL</button>
+          <button type="button" class="fc-chip" data-subject="PHL" data-example="Interference, Diffraction, Polarization, Lasers" data-topic="PHL: Interference, Diffraction & Polarization" data-mode="exam">🔬 PHL</button>
           <button type="button" class="fc-chip" data-subject="EM" data-example="Friction, Coplanar Forces, Equilibrium" data-topic="EM: Friction, Coplanar Forces & Equilibrium" data-mode="exam">⚙️ EM</button>
+          <button type="button" class="fc-chip" data-subject="CSL" data-example="Précis, Memos, Group Discussion" data-topic="CSL: Précis, Memos & Group Discussion" data-mode="exam">🗣️ CSL</button>
+          <button type="button" class="fc-chip" data-subject="EVSL" data-example="Ecosystems, Pollution, EIA" data-topic="EVSL: Ecosystems, Pollution & EIA" data-mode="recall">🌿 EVS</button>
+          <button type="button" class="fc-chip" data-subject="PD" data-example="Resume, Interview, SWOT" data-topic="PD: Résumé, Interview & SWOT" data-mode="viva">🧭 PD</button>
+          <button type="button" class="fc-chip" data-subject="EGL" data-example="Projection, Isometric, CAD" data-topic="EGL: Projection, Isometric & CAD" data-mode="exam">📐 EGL</button>
           <button type="button" class="fc-chip" data-subject="PPS Viva" data-example="Pointer Traps, Memory Leaks, Preprocessor" data-topic="PPS Lab: Viva Voce & C Pointer Traps" data-mode="viva">🧪 PPS Viva</button>
           <button type="button" class="fc-chip" data-subject="BEE Viva" data-example="10 Experiments, Voltmeter/Ammeter, Wattmeter" data-topic="BEE Lab: 10 Experiments & Meter Connections" data-mode="viva">🔌 BEE Viva</button>
         </div>
@@ -317,10 +315,10 @@
         <div class="fc-generate-area">
           <div class="fc-subject-context" id="fcSubjectContext">
             <div class="fc-subject-context-left">
-              <span class="fc-subject-context-badge" id="fcSubjBadge">PPS · ETCS-107</span>
+              <span class="fc-subject-context-badge" id="fcSubjBadge">PPS · ICT-101</span>
               <span class="fc-subject-context-title" id="fcSubjTitle">Programming for Problem Solving</span>
             </div>
-            <span class="fc-subject-context-meta" id="fcSubjMeta">Mr. Ankit Jain · 16 Lab Experiments · Unit I–IV</span>
+            <span class="fc-subject-context-meta" id="fcSubjMeta">Ms. Alka · Mr. Ankit Jain (Lab) · C Programming · Units I–IV</span>
           </div>
           <div class="fc-input-row">
             <input type="text" class="fc-topic-input" id="fcTopicInput"
