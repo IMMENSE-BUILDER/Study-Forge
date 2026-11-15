@@ -5847,9 +5847,12 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       let sheetDOM = null;
       let sheetTitle = '';
       let unitClass = '';
+      let docA = null;
+      let docB = null;
+      let singleDoc = null;
 
       if (isDuplex) {
-        const [docA, docB] = await Promise.all([
+        [docA, docB] = await Promise.all([
           fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal),
           fetchUnitCheatsheetDoc(alias, uB, sheetAbort.signal)
         ]);
@@ -5857,8 +5860,8 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         sheetTitle = `${alias} Units ${uA + 1} & ${uB + 1} Duplex Cheatsheet`;
         unitClass = getUnitPaletteClass(uA);
       } else {
-        const doc = await fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal);
-        sheetDOM = buildSheetDOM(doc, uA, alias);
+        singleDoc = await fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal);
+        sheetDOM = buildSheetDOM(singleDoc, uA, alias);
         sheetTitle = `${alias} Unit ${uA + 1} Cheatsheet`;
         unitClass = getUnitPaletteClass(uA);
       }
@@ -5876,7 +5879,7 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         title: sheetTitle,
         subtitle: isDuplex ? ('Units ' + (uA + 1) + ' & ' + (uB + 1)) : ('Unit ' + (uA + 1)),
         faculty: 'B.Tech IT · Semester 1',
-        doc: isDuplex ? docA : doc,
+        doc: isDuplex ? docA : singleDoc,
         sheetDOM: sheetDOM,
         html: standaloneHTML,
         pdfUrl: blobUrl,
@@ -5887,7 +5890,7 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       };
 
       let cardsDesc = '';
-      const activeDoc = isDuplex ? docA : doc;
+      const activeDoc = isDuplex ? docA : singleDoc;
       if (activeDoc && Array.isArray(activeDoc.boxes)) {
         cardsDesc = activeDoc.boxes.map((b, i) => `Card ${i + 1}: [${b.title}] (Layout: ${b.layout || 'standard'}) ${b.desc || ''} | Formula: ${b.eq || ''} | Ex: ${b.example || ''}`).join('\n');
       }

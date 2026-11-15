@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 121,
-  "latest": "v0.6.61",
-  "notes": "AI proxy 401 resilience: a rejected env key now retries once with the server fallback; 404 route fix retained from v0.6.60.",
+  "versionCode": 122,
+  "latest": "v0.6.62",
+  "notes": "Cheatsheet DocA fix: docA/docB were block-scoped inside the duplex branch but referenced later; both docs are now hoisted and reused for the popup/iteration state.",
   "apkUrl": ""
 }
