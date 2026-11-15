@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 119,
-  "latest": "v0.6.59",
-  "notes": "Allow hyphenated production origin study-forged.vercel.app in the AI proxy + Netlify proxy target; server-side muse-ember flow unchanged.",
+  "versionCode": 120,
+  "latest": "v0.6.60",
+  "notes": "Fix AI 404: Vercel Functions do not support the bracketed catch-all route; moved proxy to exact api/ai/chat/completions.js.",
   "apkUrl": ""
 }

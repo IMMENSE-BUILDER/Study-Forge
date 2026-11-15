@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.59** [build 119]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.60** [build 120]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -29,7 +29,7 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 | Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
 | Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme` |
 | Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
-| AI & Voice | Vercel AI Gateway via server proxy `api/ai/[...path].js`, model pinned to `meta/muse-ember` + Deepgram nova-2 STT + aura TTS | AI key is server-side (`VERCEL_AI_GATEWAY_KEY`); browser holds no gateway key. Deepgram key remains client-side for now. |
+| AI & Voice | Vercel AI Gateway via server proxy `api/ai/chat/completions.js`, model pinned to `meta/muse-ember` + Deepgram nova-2 STT + aura TTS | AI key is server-side (`VERCEL_AI_GATEWAY_KEY`); browser holds no gateway key. Deepgram key remains client-side for now. |
 | Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
 | CDN (progressive enhancement only) | KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
@@ -49,7 +49,7 @@ Desktop/study-forge-pwa/     # edit here
 ├── styles.css               # neo-brutalist theme via CSS vars, mobile-first
 ├── sw.js                    # network-first worker; CACHE_NAME bumped every release
 ├── manifest.json            # StudyForge identity + icons[]
-├── api/ai/[...path].js      # server-side Vercel AI Gateway proxy (key + meta/muse-ember pin)
+├── api/ai/chat/completions.js      # server-side Vercel AI Gateway proxy (key + meta/muse-ember pin)
 ├── loader-lab.html          # standalone 26-option flashcard loader lab (not in nav)
 ├── icons/                   # generated from logo.png (book+flame brand); app.png/logo.jpg are unused leftovers
 ├── serve-pwa.js             # dev-only static server (never deployed; mirrors /api/ai proxy)
@@ -80,7 +80,7 @@ Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state 
 - **Today engine is the hub.** `getTodayAgenda(state, now)` (pure, injectable date — always unit-test it)
   feeds greeting, today's subjects, focus-task matching (goal title prefix `ALIAS · …`), sprint-staleness.
 - **AI Layer (Vercel AI Gateway Engine · meta/muse-ember only):**
-  - **Server-side proxy:** `api/ai/[...path].js` (Vercel Node function) proxies `/api/ai/*` to `https://ai-gateway.vercel.sh/v1/*`, injects the gateway key, and pins `model: meta/muse-ember` on every request. `serve-pwa.js` mirrors this locally.
+  - **Server-side proxy:** `api/ai/chat/completions.js` (Vercel Node function) proxies `/api/ai/*` to `https://ai-gateway.vercel.sh/v1/*`, injects the gateway key, and pins `model: meta/muse-ember` on every request. `serve-pwa.js` mirrors this locally.
   - **API credentials:** `VERCEL_AI_GATEWAY_KEY` (or `AI_GATEWAY_API_KEY`) must be set in Vercel Project Settings. The browser never receives an AI gateway key. Deepgram voice can remain client-side for now.
   - **Academic Grounding:** `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Always maintains "StudyForged" tutor identity.
   - **Subject data:** flashcard/quiz metadata is derived from `syllabus.js` (`SF_SEM1_SUBJECTS` + `SF_FACULTY`); never reintroduce a local subject table.
@@ -112,7 +112,7 @@ Things to NEVER do:
 - Never edit `study-forge-deploy/` by hand (rebuild it) or `study-forge-real-app/` at all.
 - Never ship without bumping all three versions (§4); never rename `version.json` fields.
 - Never add/remove bottom-nav tabs, change landing tab, or reorder nav without explicit approval (sore spot — see §7).
-- Never add backend/auth/database/bundler/build step without approval — static files only. Exception: the approved server-side AI proxy at `api/ai/[...path].js`; do not expand it into a general backend.
+- Never add backend/auth/database/bundler/build step without approval — static files only. Exception: the approved server-side AI proxy at `api/ai/chat/completions.js`; do not expand it into a general backend.
 - Never trust campus Wi-Fi for phone↔PC; always offer the USB path.
 - Never paste API keys into chat/outputs; never commit new secrets; flag key rotation before any public share.
 - Never present 2025-scheme syllabus content as current — user gathers official 2026 syllabi first (syllabus viewer was removed for exactly this; restore only on their data).
@@ -133,7 +133,7 @@ Project constraints:
 ```powershell
 # Server-side AI key (Vercel Project Settings → Environment Variables)
 # Name: VERCEL_AI_GATEWAY_KEY  Value: vck_...   (Production + Preview)
-# The fallback in api/ai/[...path].js keeps the app alive until the env var is set.
+# The fallback in api/ai/chat/completions.js keeps the app alive until the env var is set.
 
 # Deploy loop: commit and push to GitHub (auto-deploys to Vercel)
 git add .
@@ -172,12 +172,15 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.59):
+Recent major changes (Nov 2026, now v0.6.60):
+- v0.6.60 (Build 120):
+  - AI 404 fix: Vercel Functions do not route bracketed catch-all API filenames in this plain static project. Moved the proxy from `api/ai/[...path].js` to the exact route `api/ai/chat/completions.js`; client URL and server-side key/model behavior unchanged.
+  - Triple bump `v0.6.60` / `versionCode: 120` / `CACHE_NAME: study-forge-v0.6.60`.
 - v0.6.59 (Build 119):
   - AI proxy origin fix: production actually serves `study-forged.vercel.app` (hyphenated) as well as `studyforged.vercel.app`; both are now allowed. Netlify proxy targets the hyphenated live domain.
   - Triple bump `v0.6.59` / `versionCode: 119` / `CACHE_NAME: study-forge-v0.6.59`.
 - v0.6.58 (Build 118):
-  - **Server-side AI gateway**: new `api/ai/[...path].js` Vercel function proxies `/api/ai/*` to Vercel AI Gateway, injects the key server-side, and pins `meta/muse-ember` for every request. The browser no longer receives any gateway key; client-side key fields and `text.pollinations.ai` failovers were removed. Set `VERCEL_AI_GATEWAY_KEY` in Vercel Project Settings (server-only fallback exists for continuity).
+  - **Server-side AI gateway**: new `api/ai/chat/completions.js` Vercel function proxies `/api/ai/*` to Vercel AI Gateway, injects the key server-side, and pins `meta/muse-ember` for every request. The browser no longer receives any gateway key; client-side key fields and `text.pollinations.ai` failovers were removed. Set `VERCEL_AI_GATEWAY_KEY` in Vercel Project Settings (server-only fallback exists for continuity).
   - **Flashcard data fixed**: `FC_SUBJECTS` is now derived from official `syllabus.js` (`SF_SEM1_SUBJECTS` + `SF_FACULTY`) instead of stale 2025 codes; PHL is Engineering Physics–I (ICT-111T), BEE/SMT/EM codes corrected, all 9 subjects supported, unknown input now resolves to a neutral General context instead of silently becoming PPS.
   - **Flashcards**: real Stop/cancel via AbortController; 8,000-token budget + `reasoning_effort: 'minimal'`; accepts `delta.text`; storage quota errors surfaced; stop/partial decks remain usable and saved.
   - Cheatsheet fit checks both width and height; cheatsheet remains under active development.

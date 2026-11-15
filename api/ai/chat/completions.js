@@ -1,5 +1,5 @@
-// Server-side Vercel AI Gateway proxy.
-// The browser never sees the gateway key; every AI tool calls /api/ai/*.
+// Server-side Vercel AI Gateway proxy for POST /api/ai/chat/completions.
+// The browser never sees the gateway key; every AI tool calls /api/ai/chat/completions.
 // Model is pinned to meta/muse-ember for the whole app.
 import https from 'node:https';
 
