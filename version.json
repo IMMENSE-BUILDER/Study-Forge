@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 120,
-  "latest": "v0.6.60",
-  "notes": "Fix AI 404: Vercel Functions do not support the bracketed catch-all route; moved proxy to exact api/ai/chat/completions.js.",
+  "versionCode": 121,
+  "latest": "v0.6.61",
+  "notes": "AI proxy 401 resilience: a rejected env key now retries once with the server fallback; 404 route fix retained from v0.6.60.",
   "apkUrl": ""
 }

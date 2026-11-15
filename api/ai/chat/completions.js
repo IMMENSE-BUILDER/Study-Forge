@@ -19,12 +19,11 @@ const FALLBACK_KEY = (() => {
   }
 })();
 
-function serverKey() {
-  return process.env.VERCEL_AI_GATEWAY_KEY ||
-    process.env.AI_GATEWAY_API_KEY ||
-    process.env.VERCEL_AI_KEY ||
-    FALLBACK_KEY;
-}
+const ENV_KEY = process.env.VERCEL_AI_GATEWAY_KEY ||
+  process.env.AI_GATEWAY_API_KEY ||
+  process.env.VERCEL_AI_KEY ||
+  '';
+const KEY_CHAIN = [ENV_KEY, FALLBACK_KEY].filter((k, i, arr) => k && arr.indexOf(k) === i);
 
 function json(res, status, message) {
   res.statusCode = status;
@@ -57,8 +56,7 @@ export default async function handler(req, res) {
     return json(res, 405, 'Method not allowed');
   }
 
-  const key = serverKey();
-  if (!key) {
+  if (!KEY_CHAIN.length) {
     return json(res, 503, 'AI gateway key is not configured on the server.');
   }
 
@@ -96,41 +94,53 @@ export default async function handler(req, res) {
     } catch (e) {}
   }
 
-  const headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    Accept: req.headers.accept || 'text/event-stream',
-    Authorization: `Bearer ${key}`,
-    'Accept-Encoding': 'identity'
-  };
-  if (body) headers['Content-Length'] = Buffer.byteLength(body);
+  function attemptKey(index) {
+    const key = KEY_CHAIN[index];
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Accept: req.headers.accept || 'text/event-stream',
+      Authorization: `Bearer ${key}`,
+      'Accept-Encoding': 'identity'
+    };
+    if (body) headers['Content-Length'] = Buffer.byteLength(body);
 
-  const proxyReq = https.request(
-    {
-      hostname: GATEWAY_HOST,
-      port: 443,
-      path: targetPath,
-      method: 'POST',
-      headers
-    },
-    (upstream) => {
-      const outHeaders = {
-        'Content-Type': upstream.headers['content-type'] || 'application/json; charset=utf-8',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'X-Accel-Buffering': 'no'
-      };
-      res.writeHead(upstream.statusCode || 502, outHeaders);
-      if (typeof res.flushHeaders === 'function') res.flushHeaders();
-      upstream.pipe(res);
-    }
-  );
+    const proxyReq = https.request(
+      {
+        hostname: GATEWAY_HOST,
+        port: 443,
+        path: targetPath,
+        method: 'POST',
+        headers
+      },
+      (upstream) => {
+        // If the env key is rejected but the server fallback still works, retry once.
+        if ((upstream.statusCode === 401 || upstream.statusCode === 403) && index + 1 < KEY_CHAIN.length) {
+          console.warn(`[ai-proxy] key ${index === 0 ? 'env' : 'fallback'} rejected (${upstream.statusCode}); retrying with ${index === 0 ? 'fallback' : 'next'} key`);
+          upstream.resume();
+          attemptKey(index + 1);
+          return;
+        }
+        const outHeaders = {
+          'Content-Type': upstream.headers['content-type'] || 'application/json; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'X-Accel-Buffering': 'no'
+        };
+        res.writeHead(upstream.statusCode || 502, outHeaders);
+        if (typeof res.flushHeaders === 'function') res.flushHeaders();
+        upstream.pipe(res);
+      }
+    );
 
-  proxyReq.on('error', (err) => {
-    if (!res.headersSent) json(res, 502, `AI proxy error: ${err.message}`);
-    else res.end();
-  });
+    proxyReq.on('error', (err) => {
+      if (!res.headersSent) json(res, 502, `AI proxy error: ${err.message}`);
+      else res.end();
+    });
 
-  if (body) proxyReq.write(body);
-  proxyReq.end();
+    if (body) proxyReq.write(body);
+    proxyReq.end();
+  }
+
+  attemptKey(0);
 }

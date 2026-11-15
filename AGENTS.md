@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.60** [build 120]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.61** [build 121]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,10 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.60):
+Recent major changes (Nov 2026, now v0.6.61):
+- v0.6.61 (Build 121):
+  - AI 401 resilience: if `VERCEL_AI_GATEWAY_KEY` is present but rejected (401/403), the server proxy now retries once with the server-side fallback key and logs which key was rejected (never the value). Production 404 was already fixed in v0.6.60 with the exact function route.
+  - Triple bump `v0.6.61` / `versionCode: 121` / `CACHE_NAME: study-forge-v0.6.61`.
 - v0.6.60 (Build 120):
   - AI 404 fix: Vercel Functions do not route bracketed catch-all API filenames in this plain static project. Moved the proxy from `api/ai/[...path].js` to the exact route `api/ai/chat/completions.js`; client URL and server-side key/model behavior unchanged.
   - Triple bump `v0.6.60` / `versionCode: 120` / `CACHE_NAME: study-forge-v0.6.60`.
