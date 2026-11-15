@@ -1,5 +1,5 @@
 # Vercel handles /api/ai/* through api/ai/[...path].js (server-side key).
 # Netlify backup proxies AI through the Vercel function so it never needs a client key.
-/api/ai/* https://studyforged.vercel.app/api/ai/:splat 200
+/api/ai/* https://study-forged.vercel.app/api/ai/:splat 200
 /.well-known/assetlinks.json /.well-known/assetlinks.json 200
 /* /index.html 200

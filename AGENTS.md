@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://studyforged.vercel.app` (and `https://studyforged.netlify.app`) (currently **v0.6.58** [build 118]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.59** [build 119]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,10 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.58):
+Recent major changes (Nov 2026, now v0.6.59):
+- v0.6.59 (Build 119):
+  - AI proxy origin fix: production actually serves `study-forged.vercel.app` (hyphenated) as well as `studyforged.vercel.app`; both are now allowed. Netlify proxy targets the hyphenated live domain.
+  - Triple bump `v0.6.59` / `versionCode: 119` / `CACHE_NAME: study-forge-v0.6.59`.
 - v0.6.58 (Build 118):
   - **Server-side AI gateway**: new `api/ai/[...path].js` Vercel function proxies `/api/ai/*` to Vercel AI Gateway, injects the key server-side, and pins `meta/muse-ember` for every request. The browser no longer receives any gateway key; client-side key fields and `text.pollinations.ai` failovers were removed. Set `VERCEL_AI_GATEWAY_KEY` in Vercel Project Settings (server-only fallback exists for continuity).
   - **Flashcard data fixed**: `FC_SUBJECTS` is now derived from official `syllabus.js` (`SF_SEM1_SUBJECTS` + `SF_FACULTY`) instead of stale 2025 codes; PHL is Engineering Physics–I (ICT-111T), BEE/SMT/EM codes corrected, all 9 subjects supported, unknown input now resolves to a neutral General context instead of silently becoming PPS.

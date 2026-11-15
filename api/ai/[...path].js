@@ -70,7 +70,7 @@ export default async function handler(req, res) {
   // Light abuse guard: only the app origins (or same-origin server-to-server proxy) may call.
   const origin = String(req.headers.origin || '');
   if (origin) {
-    const allowed = /^https:\/\/(studyforged\.vercel\.app|studyforged\.netlify\.app)$/i.test(origin) ||
+    const allowed = /^https:\/\/(study-forged\.vercel\.app|studyforged\.vercel\.app|studyforged\.netlify\.app)$/i.test(origin) ||
       /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(origin);
     if (!allowed) return json(res, 403, 'Origin not allowed');
   }

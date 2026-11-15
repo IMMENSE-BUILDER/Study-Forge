@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 118,
-  "latest": "v0.6.58",
-  "notes": "Server-side AI gateway (browser holds no key), meta/muse-ember pinned app-wide, flashcard filters derived from official syllabus.js, flashcard Stop/cancel + 8k budget, stricter storage handling, both-axis cheatsheet fit.",
+  "versionCode": 119,
+  "latest": "v0.6.59",
+  "notes": "Allow hyphenated production origin study-forged.vercel.app in the AI proxy + Netlify proxy target; server-side muse-ember flow unchanged.",
   "apkUrl": ""
 }
