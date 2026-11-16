@@ -3505,13 +3505,15 @@ function initAskAI() {
     let systemPrompt = `${AI_SYSTEM_PROMPT}${subjectContext ? `\n\n${subjectContext}` : ''}${userContext ? `\n\nStudent Live Context:\n${userContext}` : ''}`;
     if (window.activeCheatsheetState) {
       const s = window.activeCheatsheetState;
+      const activeDocJson = s.doc ? JSON.stringify({ title: s.doc.title, boxes: s.doc.boxes, missing: s.doc.missing || [] }) : '';
       systemPrompt += `\n\n[ACTIVE CHEATSHEET ITERATION CONTEXT]\n` +
         `The student currently has an active cheatsheet open in the pop-up viewer:\n` +
         `- Title: ${s.title}\n` +
         `- Subject: ${s.alias}\n` +
         `- Subtitle: ${s.subtitle}\n` +
-        (s.doc && Array.isArray(s.doc.boxes) ? `- Current Cards (${s.doc.boxes.length}): ${s.doc.boxes.map((b, i) => `Card ${i+1}: ${b.title}`).join(', ')}\n` : '') +
-        `When the student asks to modify, update, shorten, add formulas, or rephrase cards on this cheatsheet, maintain technical accuracy and dense syllabus coverage. Respond with a concise explanation AND an updated JSON block containing {"title": "${s.title}", "boxes": [...]}. The app will automatically detect this JSON and refresh the student's pop-up viewer live!`;
+        (activeDocJson ? `- Current sheet JSON: ${activeDocJson}\n` : '') +
+        `When the student asks to change, tweak, shorten, add formulas, add/remove cards, or reorder, return ONLY a patch JSON block of the form {"patches":[{"op":"replace","card":4,"box":{...}}]} (ops: replace, add, remove, swap, edit, theme). Use 1-based card numbers from the current sheet. Never re-emit unchanged cards. If a full rewrite is unavoidable, return {"title":"...","boxes":[...]}.\n` +
+        `The app validates and applies patches, then refreshes the pop-up viewer live.`;
     }
     // Sufficient token budget to accommodate reasoning tokens (reasoning_details) and full response
     const maxTokens = 3500;
@@ -3977,15 +3979,22 @@ function initAskAI() {
     addBotActionButtons(botMsg, finalText, makeRetryHandler(botMsg, hasText ? text.trim() : '', imageToSend));
     chatArea.scrollTop = chatArea.scrollHeight;
 
-    // Check if the reply contains an updated cheatsheet JSON (conversational iteration)
+    // Check if the reply contains cheatsheet patches or an updated sheet JSON.
     if (window.activeCheatsheetState && typeof sheetParseDoc === 'function' && typeof updateActiveCheatsheet === 'function') {
       try {
-        const parsedDoc = sheetParseDoc(finalText);
-        if (parsedDoc && Array.isArray(parsedDoc.boxes) && parsedDoc.boxes.length >= 3) {
-          updateActiveCheatsheet(parsedDoc, botMsg);
+        const patches = typeof sfParsePatchPayload === 'function' ? sfParsePatchPayload(finalText) : null;
+        if (patches && patches.length && window.activeCheatsheetState.doc) {
+          const patchedDoc = sfApplyPatches(window.activeCheatsheetState.doc, patches);
+          await updateActiveCheatsheet(patchedDoc, botMsg);
+        } else {
+          const parsedDoc = sheetParseDoc(finalText);
+          if (parsedDoc && Array.isArray(parsedDoc.boxes) && parsedDoc.boxes.length >= 3) {
+            await updateActiveCheatsheet(parsedDoc, botMsg);
+          }
         }
       } catch (err) {
         console.warn('Cheatsheet update parse check:', err);
+        showToast('Cheatsheet patch rejected — sheet left unchanged.');
       }
     }
 
@@ -4640,6 +4649,8 @@ function initAskAI() {
     document.body.appendChild(modal);
     requestAnimationFrame(() => {
       const sheetEl = modal.querySelector('.cheatsheet-sheet');
+      const sfEl = modal.querySelector('.sf-sheet');
+      if (sfEl) sfActivate(sfEl);
       if (sheetEl) fitSheetInView(sheetEl);
     });
 
@@ -4683,16 +4694,26 @@ function initAskAI() {
   }
 
   // Handle in-chat iterative updates to the active cheatsheet
-  function updateActiveCheatsheet(newDoc, botMsg) {
+  async function updateActiveCheatsheet(newDoc, botMsg) {
     const state = window.activeCheatsheetState;
     if (!state) return;
     state.doc = newDoc;
     if (newDoc.title) state.title = newDoc.title;
 
-    // Rebuild sheet DOM
-    const newSheetDOM = buildSheetDOM(newDoc, state.uA || 0, state.alias);
+    // Rebuild sheet DOM using the same paper engine (duplex state keeps both units).
+    let newSheetDOM;
+    if (state.isDuplex) {
+      const docs = Array.isArray(state.docs) ? state.docs.slice() : [newDoc, newDoc];
+      docs[0] = newDoc;
+      state.docs = docs;
+      newSheetDOM = await buildSfSheet(docs, true, state.uA || 0, state.uB || 1, state.alias, botMsg);
+    } else {
+      state.docs = [newDoc];
+      newSheetDOM = await buildSheetDOM(newDoc, state.uA || 0, state.alias, botMsg);
+    }
     stripAdviceNodes(newSheetDOM);
     state.sheetDOM = newSheetDOM;
+    sfPersistActiveDoc(state);
 
     // Rebuild standalone HTML & Blob
     const standaloneHTML = generateStandaloneSheetHTML(newSheetDOM, state.title, getUnitPaletteClass(state.uA || 0));
@@ -5063,7 +5084,7 @@ function initAskAI() {
       }
 
       if (validBoxes.length >= 3) {
-        return { title, boxes: validBoxes };
+        return { title, boxes: validBoxes, missing: [] };
       }
       return null;
     }
@@ -5080,10 +5101,74 @@ function initAskAI() {
       if (valid.length >= 30) break;
     }
     if (valid.length < 3) return null;
-    return { title, boxes: valid };
+    const missing = (Array.isArray(doc.missing) ? doc.missing : [])
+      .map(x => sheetClip(x, 120))
+      .filter(Boolean)
+      .slice(0, 30);
+    return { title, boxes: valid, missing };
   }
 
-  // ── Cheatsheet Layout & Leveling Engine (Skill Port) ──
+  // ── Cheatsheet edit patches (chat iteration, per reference/patch-ops.md) ──
+  function sfParsePatchPayload(raw) {
+    const text = String(raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end <= start) return null;
+    try {
+      const doc = JSON.parse(text.slice(start, end + 1));
+      return (doc && Array.isArray(doc.patches)) ? doc.patches : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function sfApplyPatches(doc, patches) {
+    if (!doc || !Array.isArray(doc.boxes) || !Array.isArray(patches) || !patches.length) {
+      throw new Error('No active cheatsheet document to patch');
+    }
+    let boxes = doc.boxes.slice();
+    let theme = doc.theme || null;
+    const validBox = (raw) => {
+      const b = normalizeSheetBox(raw);
+      if (!b) throw new Error('Invalid card in patch');
+      if (/^\s*\d+[.)]?\s/.test(b.title)) throw new Error('Patch card title must not be numbered');
+      if (/\b(traps?|tips?|tricks?|hacks?|warnings?|pitfalls?|remember|notes?|pro tips?|keep in mind|watch out|common mistakes?|careful)\b/i.test(JSON.stringify(b))) {
+        throw new Error('Patch card contains banned advice text');
+      }
+      return b;
+    };
+    const idx = (n) => {
+      const i = Number(n) - 1;
+      if (!Number.isInteger(i) || i < 0 || i >= boxes.length) throw new Error('Patch card index out of range');
+      return i;
+    };
+    patches.forEach((p) => {
+      if (!p || typeof p !== 'object') throw new Error('Invalid patch');
+      const op = p.op;
+      if (op === 'replace') boxes[idx(p.card)] = validBox(p.box);
+      else if (op === 'add') {
+        if (boxes.length >= 24) throw new Error('Max 24 cards per unit');
+        const at = p.after == null ? boxes.length : Math.min(boxes.length, Number(p.after));
+        boxes.splice(at, 0, validBox(p.box));
+      } else if (op === 'remove') boxes.splice(idx(p.card), 1);
+      else if (op === 'swap') {
+        const a = idx(p.a), b = idx(p.b);
+        const t = boxes[a]; boxes[a] = boxes[b]; boxes[b] = t;
+      } else if (op === 'edit') {
+        const i = idx(p.card);
+        if (!p.set || typeof p.set !== 'object') throw new Error('Patch edit needs set');
+        boxes[i] = validBox({ ...boxes[i], ...p.set });
+      } else if (op === 'theme') {
+        theme = String(p.palette || '').match(/^u[1-4]$/) ? p.palette : theme;
+      } else {
+        throw new Error('Unknown patch op');
+      }
+    });
+    if (boxes.length < 3) throw new Error('Cheatsheet needs at least 3 cards');
+    return { ...doc, boxes, theme };
+  }
+
+
   function getRomanNumeral(idx) {
     const r = ['I', 'II', 'III', 'IV', 'V', 'VI'];
     return r[idx] || String(idx + 1);
@@ -5352,200 +5437,256 @@ function initAskAI() {
     return card;
   }
 
-  // Single-unit 4-column balanced A4 landscape sheet
-  function buildSheetDOM(doc, unitIdx, alias) {
-    const s = sheetSubjects().find(x => x.alias === alias);
-    const fac = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY[alias]) ? SF_FACULTY[alias].faculty : '';
-    const code = (s && s.code) || alias;
-    const rU = getRomanNumeral(unitIdx);
-    const pal = getUnitPaletteClass(unitIdx);
+  // ── A4 paper engine (cheatsheet-layout skill) ──
+  const SF_ZMIN = 0.6;
+  const SF_ZMAX = 1.25;
 
-    const sheet = document.createElement('div');
-    sheet.className = `cheatsheet-sheet ${pal}`;
+  function sfRaf2() {
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
 
-    const scale = document.createElement('div');
-    scale.className = 'sheet-scale';
-    scale.style.setProperty('--z', '1');
-    sheet.appendChild(scale);
-
+  function sfCreateHalf({ unitClass, unitKey, title, subtitle, side, k }) {
+    const half = document.createElement('div');
+    half.className = `sf-half ${side} ${unitClass}${k === 4 ? ' sf-single' : ''}`;
+    half.dataset.unit = unitKey;
+    half.style.setProperty('--hw', k === 4 ? '282.8mm' : '139.65mm');
+    const hz = document.createElement('div');
+    hz.className = 'sf-hz';
+    hz.style.setProperty('--z', '1');
     const banner = document.createElement('div');
-    banner.className = 'banner';
+    banner.className = 'sf-banner';
     const bTitle = document.createElement('div');
-    bTitle.textContent = `UNIT ${rU} · ${doc.title || ('UNIT ' + rU)}`;
+    bTitle.textContent = title;
     const bSub = document.createElement('span');
-    bSub.textContent = `${code} · ${fac || 'B.Tech IT'}`;
+    bSub.textContent = subtitle;
     banner.append(bTitle, bSub);
-    scale.appendChild(banner);
+    hz.appendChild(banner);
 
     const cols = document.createElement('div');
-    cols.className = 'cols';
+    cols.className = 'sf-cols';
+    cols.style.setProperty('--k', String(k));
     const colEls = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < k; i++) {
       const c = document.createElement('div');
-      c.className = 'col';
+      c.className = 'sf-col';
       colEls.push(c);
       cols.appendChild(c);
     }
-    scale.appendChild(cols);
-
-    const cards = (doc.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
-    const heights = measureCardHeights(cards, 220);
-    const bins = packCards(heights, 4);
-
-    let seq = 1;
-    bins.forEach((binCards, colIdx) => {
-      binCards.forEach(idx => {
-        const c = cards[idx];
-        const bdg = c.querySelector('.n');
-        if (bdg) bdg.textContent = String(seq++);
-        colEls[colIdx].appendChild(c);
-      });
-    });
-
-    return sheet;
+    hz.appendChild(cols);
+    half.appendChild(hz);
+    return { half, hz, cols, colEls };
   }
 
-  // Two-page Duplex A4 landscape sheet (Front: uA | uB, Back: uB | uA reversed blueprint)
-  function buildDuplexSheetDOM(docA, docB, uA, uB, alias) {
+  // Skill sfFitUnit: measure one unit's cards at a candidate zoom, pack into 4 columns.
+  function sfFitUnit(halves, cards) {
+    if (!halves.length || !cards.length) return;
+    const cols = halves.flatMap(h => h.colEls);
+    const setZ = (z) => halves.forEach(h => h.hz.style.setProperty('--z', String(z)));
+    const test = (z) => {
+      setZ(z);
+      const rowGap = parseFloat(getComputedStyle(cols[0]).rowGap) || 0;
+      const cap = cols[0].getBoundingClientRect().height + rowGap * z;
+      const hs = cards.map(card => {
+        const mb = parseFloat(getComputedStyle(card).marginBottom) || 0;
+        return card.getBoundingClientRect().height + mb * z + rowGap * z;
+      });
+      const bins = packCards(hs, 4);
+      const max = Math.max(...bins.map(bin => bin.reduce((sum, idx) => sum + hs[idx], 0)));
+      return { fit: max <= cap - 1, bins };
+    };
+
+    let result = test(SF_ZMAX);
+    let chosen = result.fit ? SF_ZMAX : null;
+    if (!chosen) {
+      let lo = SF_ZMIN, hi = SF_ZMAX;
+      for (let i = 0; i < 14; i++) {
+        const mid = (lo + hi) / 2;
+        const r = test(mid);
+        if (r.fit) { chosen = mid; result = r; lo = mid; }
+        else { hi = mid; }
+      }
+    }
+    if (chosen == null) {
+      chosen = SF_ZMIN;
+      result = test(SF_ZMIN);
+    }
+    setZ(chosen);
+    cols.forEach(col => { col.textContent = ''; });
+    result.bins.forEach((bin, colIdx) => {
+      bin.forEach(idx => cols[colIdx].appendChild(cards[idx]));
+    });
+    let n = 1;
+    result.bins.forEach(bin => bin.forEach(idx => {
+      const badge = cards[idx].querySelector('.n');
+      if (badge) badge.textContent = String(n++);
+    }));
+  }
+
+  function sfActivate(root) {
+    if (!root || root.dataset.sfActive === '1') return;
+    root.dataset.sfActive = '1';
+    const host = root.querySelector('.sf-host');
+    const pages = root.querySelector('.sf-pages');
+    if (!host || !pages) return;
+    const MM = 96 / 25.4;
+
+    function layout() {
+      const visible = Array.from(pages.querySelectorAll('.sf-paper'))
+        .filter(p => getComputedStyle(p).display !== 'none');
+      const hostW = host.clientWidth || 1;
+      if (!visible.length) return;
+      const paperW = 297 * MM;
+      const paperH = 210 * MM;
+      const gap = 6 * MM;
+      const s = Math.min(3.5, Math.max(0.05, hostW / paperW));
+      pages.style.transform = `scale(${s})`;
+      pages.style.marginLeft = `${Math.max(0, (hostW - paperW * s) / 2)}px`;
+      host.style.height = `${(paperH * visible.length + gap * Math.max(0, visible.length - 1)) * s}px`;
+    }
+
+    root.querySelectorAll('.sf-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        root.dataset.view = tab.dataset.view || '1';
+        root.querySelectorAll('.sf-tab').forEach(t => t.classList.toggle('active', t === tab));
+        layout();
+      });
+    });
+    if ('ResizeObserver' in window) {
+      try {
+        const ro = new ResizeObserver(layout);
+        ro.observe(host);
+        root._sfRO = ro;
+      } catch (e) {}
+    }
+    requestAnimationFrame(layout);
+  }
+
+  function sfPersistActiveDoc(state) {
+    if (!state || !state.alias) return;
+    try {
+      const key = 'sf_cheatsheet_docs';
+      const map = JSON.parse(localStorage.getItem(key) || '{}') || {};
+      const id = `${state.alias}|${state.uA}|${state.uB}|${state.isDuplex ? 'duplex' : 'single'}`;
+      map[id] = {
+        alias: state.alias,
+        uA: state.uA,
+        uB: state.uB,
+        isDuplex: !!state.isDuplex,
+        docs: state.docs || (state.doc ? [state.doc] : []),
+        missing: (state.docs || []).flatMap(d => d && Array.isArray(d.missing) ? d.missing : []),
+        updatedAt: Date.now()
+      };
+      localStorage.setItem(key, JSON.stringify(map));
+    } catch (e) {}
+  }
+
+  async function buildSfSheet(docs, isDuplex, uA, uB, alias, probeParent) {
     const s = sheetSubjects().find(x => x.alias === alias);
     const fac = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY[alias]) ? SF_FACULTY[alias].faculty : '';
     const code = (s && s.code) || alias;
-    const rA = getRomanNumeral(uA);
-    const rB = getRomanNumeral(uB);
-    const palA = getUnitPaletteClass(uA);
-    const palB = getUnitPaletteClass(uB);
-
     const root = document.createElement('div');
-    root.className = 'cheatsheet-sheet duplex-sheet';
+    root.className = 'sf-sheet';
+    root.dataset.view = '1';
 
-    const tabs = document.createElement('div');
-    tabs.className = 'duplex-tabs';
-    const tab1 = document.createElement('button');
-    tab1.type = 'button';
-    tab1.className = 'duplex-tab active';
-    tab1.textContent = `📄 Page 1: Front (Unit ${rA} | Unit ${rB})`;
-    const tab2 = document.createElement('button');
-    tab2.type = 'button';
-    tab2.className = 'duplex-tab';
-    tab2.textContent = `📄 Page 2: Back (Unit ${rB} | Unit ${rA})`;
-    const tabBoth = document.createElement('button');
-    tabBoth.type = 'button';
-    tabBoth.className = 'duplex-tab';
-    tabBoth.textContent = '📑 Both Pages (Print Preview)';
-    tabs.append(tab1, tab2, tabBoth);
-    root.appendChild(tabs);
-
-    const cardsA = (docA.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
-    const heightsA = measureCardHeights(cardsA, 220);
-    const binsA = packCards(heightsA, 4);
-
-    const cardsB = (docB.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
-    const heightsB = measureCardHeights(cardsB, 220);
-    const binsB = packCards(heightsB, 4);
-
-    // Renumber Unit A cards 1..N
-    let seqA = 1;
-    [0, 1, 2, 3].forEach(k => {
-      (binsA[k] || []).forEach(idx => {
-        const bdg = cardsA[idx].querySelector('.n');
-        if (bdg) bdg.textContent = String(seqA++);
-      });
-    });
-    // Renumber Unit B cards 1..N
-    let seqB = 1;
-    [0, 1, 2, 3].forEach(k => {
-      (binsB[k] || []).forEach(idx => {
-        const bdg = cardsB[idx].querySelector('.n');
-        if (bdg) bdg.textContent = String(seqB++);
-      });
-    });
-
-    function createHalfUnit(unitClass, title, subtitle, colCards1, colCards2) {
-      const half = document.createElement('div');
-      half.className = `half-unit ${unitClass}`;
-      half.setAttribute('data-unit', unitClass);
-      const scale = document.createElement('div');
-      scale.className = 'unit-scale';
-      scale.style.setProperty('--z', '1');
-      half.appendChild(scale);
-
-      const banner = document.createElement('div');
-      banner.className = 'banner';
-      const bTitle = document.createElement('div');
-      bTitle.textContent = title;
-      const bSub = document.createElement('span');
-      bSub.textContent = subtitle;
-      banner.append(bTitle, bSub);
-      scale.appendChild(banner);
-
-      const cols = document.createElement('div');
-      cols.className = 'cols';
-      const col1 = document.createElement('div');
-      col1.className = 'col';
-      colCards1.forEach(c => col1.appendChild(c));
-      const col2 = document.createElement('div');
-      col2.className = 'col';
-      colCards2.forEach(c => col2.appendChild(c));
-      cols.append(col1, col2);
-      scale.appendChild(cols);
-      return half;
+    if (isDuplex) {
+      const tabs = document.createElement('div');
+      tabs.className = 'sf-tabs';
+      const mkTab = (view, label, active) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'sf-tab' + (active ? ' active' : '');
+        b.dataset.view = view;
+        b.textContent = label;
+        return b;
+      };
+      tabs.append(
+        mkTab('1', `📄 Front (Unit ${getRomanNumeral(uA)} | Unit ${getRomanNumeral(uB)})`, true),
+        mkTab('2', `📄 Back (Unit ${getRomanNumeral(uB)} | Unit ${getRomanNumeral(uA)})`, false),
+        mkTab('both', '📑 Both Pages', false)
+      );
+      root.appendChild(tabs);
     }
 
-    // Page 1: Unit A (bins 0, 1) on Left | Unit B (bins 0, 1) on Right
-    const page1 = document.createElement('div');
-    page1.className = 'duplex-page page-1';
-    const halfA_front = createHalfUnit(
-      palA,
-      `UNIT ${rA} · ${docA.title || 'UNIT ' + rA}`,
-      `${code} · ${fac || 'B.Tech IT'}`,
-      (binsA[0] || []).map(i => cardsA[i]),
-      (binsA[1] || []).map(i => cardsA[i])
-    );
-    const halfB_front = createHalfUnit(
-      palB,
-      `UNIT ${rB} · ${docB.title || 'UNIT ' + rB}`,
-      `${code} · ${fac || 'B.Tech IT'}`,
-      (binsB[0] || []).map(i => cardsB[i]),
-      (binsB[1] || []).map(i => cardsB[i])
-    );
-    page1.append(halfA_front, halfB_front);
+    const host = document.createElement('div');
+    host.className = 'sf-host';
+    const pages = document.createElement('div');
+    pages.className = 'sf-pages';
+    host.appendChild(pages);
+    root.appendChild(host);
 
-    // Page 2: Unit B (bins 2, 3) on Left | Unit A (bins 2, 3) on Right (Short-Edge Duplex Flip)
-    const page2 = document.createElement('div');
-    page2.className = 'duplex-page page-2';
-    page2.style.display = 'none';
-    const halfB_back = createHalfUnit(
-      palB,
-      `UNIT ${rB} · ${docB.title || 'UNIT ' + rB} (contd.)`,
-      `${code} · ${fac || 'B.Tech IT'}`,
-      (binsB[2] || []).map(i => cardsB[i]),
-      (binsB[3] || []).map(i => cardsB[i])
-    );
-    const halfA_back = createHalfUnit(
-      palA,
-      `UNIT ${rA} · ${docA.title || 'UNIT ' + rA} (contd.)`,
-      `${code} · ${fac || 'B.Tech IT'}`,
-      (binsA[2] || []).map(i => cardsA[i]),
-      (binsA[3] || []).map(i => cardsA[i])
-    );
-    page2.append(halfB_back, halfA_back);
+    const mkPaper = () => {
+      const p = document.createElement('div');
+      p.className = 'sf-paper';
+      pages.appendChild(p);
+      return p;
+    };
 
-    root.append(page1, page2);
+    let sfUnits;
 
-    tab1.addEventListener('click', () => {
-      tab1.classList.add('active'); tab2.classList.remove('active'); tabBoth.classList.remove('active');
-      page1.style.display = ''; page2.style.display = 'none';
-    });
-    tab2.addEventListener('click', () => {
-      tab2.classList.add('active'); tab1.classList.remove('active'); tabBoth.classList.remove('active');
-      page1.style.display = 'none'; page2.style.display = '';
-    });
-    tabBoth.addEventListener('click', () => {
-      tabBoth.classList.add('active'); tab1.classList.remove('active'); tab2.classList.remove('active');
-      page1.style.display = ''; page2.style.display = '';
-    });
+    if (!isDuplex) {
+      const doc = docs[0];
+      const pal = (doc && doc.theme) || getUnitPaletteClass(uA);
+      const rU = getRomanNumeral(uA);
+      const paper = mkPaper();
+      const h = sfCreateHalf({
+        unitClass: pal, unitKey: pal, side: 'sf-single',
+        title: `UNIT ${rU} · ${doc.title || ('UNIT ' + rU)}`,
+        subtitle: `${code} · ${fac || 'B.Tech IT'}`,
+        k: 4
+      });
+      paper.appendChild(h.half);
+      const cards = (doc.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
+      cards.forEach(card => h.colEls[0].appendChild(card));
+      sfUnits = [{ halves: [h], cards }];
+    } else {
+      const rA = getRomanNumeral(uA);
+      const rB = getRomanNumeral(uB);
+      const palA = (docA && docA.theme) || getUnitPaletteClass(uA);
+      const palB = (docB && docB.theme) || getUnitPaletteClass(uB);
+      const docA = docs[0];
+      const docB = docs[1];
 
+      const page1 = mkPaper();
+      const a1 = sfCreateHalf({ unitClass: palA, unitKey: 'A', side: 'left', title: `UNIT ${rA} · ${docA.title || ('UNIT ' + rA)}`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
+      const b1 = sfCreateHalf({ unitClass: palB, unitKey: 'B', side: 'right', title: `UNIT ${rB} · ${docB.title || ('UNIT ' + rB)}`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
+      page1.append(a1.half, b1.half);
+
+      const page2 = mkPaper();
+      const b2 = sfCreateHalf({ unitClass: palB, unitKey: 'B', side: 'left', title: `UNIT ${rB} · ${docB.title || ('UNIT ' + rB)} (contd.)`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
+      const a2 = sfCreateHalf({ unitClass: palA, unitKey: 'A', side: 'right', title: `UNIT ${rA} · ${docA.title || ('UNIT ' + rA)} (contd.)`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
+      page2.append(b2.half, a2.half);
+
+      const cardsA = (docA.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
+      const cardsB = (docB.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
+      cardsA.forEach(card => a1.colEls[0].appendChild(card));
+      cardsB.forEach(card => b1.colEls[0].appendChild(card));
+      sfUnits = [
+        { halves: [a1, a2], cards: cardsA },
+        { halves: [b1, b2], cards: cardsB }
+      ];
+    }
+
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;left:-20000px;top:0;width:297mm;visibility:hidden;';
+    probe.appendChild(root);
+    (probeParent || document.body).appendChild(probe);
+    root.dataset.view = 'both';
+    await sfRaf2();
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    await sfRaf2();
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    sfUnits.forEach(unit => sfFitUnit(unit.halves, unit.cards));
+    root.dataset.view = '1';
+    probe.remove();
     return root;
+  }
+
+  async function buildSheetDOM(doc, unitIdx, alias, probeParent) {
+    return buildSfSheet([doc], false, unitIdx, 0, alias, probeParent);
+  }
+
+  async function buildDuplexSheetDOM(docA, docB, uA, uB, alias, probeParent) {
+    return buildSfSheet([docA, docB], true, uA, uB, alias, probeParent);
   }
 
   // Generates complete, self-contained standalone HTML for export / copy
@@ -5587,6 +5728,26 @@ pre { background: #fff; border: 0.4pt solid var(--line); border-radius: 2pt; pad
 .unit-scale { width: calc(100% / var(--z, 1)); height: calc(100% / var(--z, 1)); zoom: var(--z, 1); padding: 3.5mm; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; }
 .cheatsheet-sheet { width: 297mm; height: 210mm; padding: 0; box-sizing: border-box; background: #fff; overflow: hidden; }
 .duplex-tabs { display: none !important; }
+.sf-sheet { width: 297mm; color: #14202e; }
+.sf-tabs { display: none !important; }
+.sf-host { width: 297mm; overflow: hidden; }
+.sf-pages { width: 297mm; display: flex; flex-direction: column; gap: 6mm; }
+.sf-paper { width: 297mm; height: 210mm; position: relative; padding: 3.5mm; box-sizing: border-box; background: #fff; overflow: hidden; page-break-after: always; break-after: page; }
+.sf-half { position: absolute; top: 3.5mm; width: 143.25mm; height: 203mm; padding: 1.5mm; border: 0.3mm solid var(--line); box-sizing: border-box; overflow: hidden; background: #fff; }
+.sf-half.left { left: 3.5mm; }
+.sf-half.right { left: 150.25mm; }
+.sf-half.sf-single { left: 5.3mm; width: 286.4mm; }
+.sf-half.sf-single .sf-hz { width: calc(282.8mm / var(--z, 1)); }
+.sf-hz { width: calc(var(--hw, 139.65mm) / var(--z, 1)); height: calc(199.4mm / var(--z, 1)); transform: scale(var(--z, 1)); transform-origin: top left; }
+.sf-banner { background: linear-gradient(90deg, var(--g1), var(--g2)); color: #fff; font-weight: 700; font-size: 8pt; padding: 2.2pt 6pt; border-radius: 2.5pt; margin-bottom: 3pt; display: flex; justify-content: space-between; align-items: center; }
+.sf-banner span { font-weight: 400; font-size: 6pt; opacity: 0.9; }
+.sf-cols { display: grid; grid-template-columns: repeat(var(--k, 2), 1fr); gap: 2.4mm; height: calc(100% - 15pt); grid-template-rows: minmax(0, 1fr); }
+.sf-col { display: flex; flex-direction: column; gap: 2.5pt; min-height: 0; overflow: hidden; }
+.sf-sheet .card { flex: none; }
+@media print {
+  .sf-sheet[data-view="1"] .sf-paper:nth-of-type(2),
+  .sf-sheet[data-view="2"] .sf-paper:nth-of-type(1) { display: block !important; }
+}
 @media screen {
   .floating-print-bar { position: fixed; bottom: 18px; right: 18px; background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 9999px; box-shadow: 0 4px 20px rgba(0,0,0,0.35); display: flex; align-items: center; gap: 12px; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; }
   .floating-print-bar button { background: #2563eb; color: #fff; border: none; border-radius: 9999px; padding: 7px 15px; font-weight: 700; font-size: 12px; cursor: pointer; box-shadow: 0 2px 8px rgba(37,99,235,0.4); }
@@ -5754,14 +5915,14 @@ ${unitCtx}
     TASK: Emit ONE ultra-dense, print-packed revision cheatsheet strictly following the cheatsheet-layout skill as raw JSON (no fences, no commentary) covering EVERY single subtopic in the syllabus above.
 
     STRICT SKILL DENSITY RULES:
-    - PACKED INFORMATION DENSITY: Generate exactly 22 to 24 dense, exhaustive topic cards covering EVERY subtopic in the syllabus.
+    - PACKED INFORMATION DENSITY: Generate 18 to 22 dense, exhaustive topic cards covering EVERY subtopic in the syllabus (24 absolute max).
     - ZERO ADVICE BOXES: Never write advice, tips, tricks, warnings, hacks, remember, or pitfalls. BANNED: trap, tip, trick, warning, note, pro tip, careful. Zero fluff. Every square millimeter must be examinable technical content: definitions, derivations, formulas, numerical examples, and tables.
     - CORRECT FORMS, NOT SOLVING STEPS: Examples show the final correct form/result directly (e.g. "Eg. m = 1000 kg, v = 20 m/s -> K = 200 kJ").
     - FULL COVERAGE: Every single syllabus topic, formula, law, algorithm, and conversion gets an explicit card.
     - MICRO-NOTE BREVITY: High-yield fragments, never filler prose. Abbreviations: w/, thru, b/w, ->, ↑ ↓, Δ, ∴, ∵, ≈, ∝, ≤ ≥ ≠.
 
     STRICT JSON SCHEMA:
-    {"title": "UNIT N — NAME", "boxes": [ <22-24 dense box objects covering every subtopic in syllabus order> ]}
+    {"title": "UNIT N - NAME", "boxes": [ <18-22 dense box objects covering every subtopic in syllabus order> ], "missing": [ <syllabus topics intentionally omitted, if any> ]}
 
 BOX STRUCTURE:
 Each box represents one topic card:
@@ -5790,8 +5951,8 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         { role: 'user', content: `Generate the 1-page cheatsheet JSON for ${alias} Unit ${unitIdx + 1}. Full unit coverage, print-dense.` }
       ],
       stream: false,
-      temperature: 0.2,
-      max_tokens: 16000,
+      temperature: 0.3,
+      max_tokens: 8000,
       reasoning: { effort: 'minimal' },
       reasoning_effort: 'minimal'
     };
@@ -5900,26 +6061,18 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
           fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal),
           fetchUnitCheatsheetDoc(alias, uB, sheetAbort.signal)
         ]);
-        sheetDOM = buildDuplexSheetDOM(docA, docB, uA, uB, alias);
+        sheetDOM = await buildDuplexSheetDOM(docA, docB, uA, uB, alias, botMsg);
         sheetTitle = `${alias} Units ${uA + 1} & ${uB + 1} Duplex Cheatsheet`;
         unitClass = getUnitPaletteClass(uA);
       } else {
         singleDoc = await fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal);
-        sheetDOM = buildSheetDOM(singleDoc, uA, alias);
+        sheetDOM = await buildSheetDOM(singleDoc, uA, alias, botMsg);
         sheetTitle = `${alias} Unit ${uA + 1} Cheatsheet`;
         unitClass = getUnitPaletteClass(uA);
       }
 
       botMsg.innerHTML = '';
       stripAdviceNodes(sheetDOM);
-
-      // Fit before exporting so the print blob and pop-up share the same zoom.
-      const fitScratch = document.createElement('div');
-      fitScratch.style.cssText = 'position:absolute;left:-99999px;top:0;width:1123px;height:794px;overflow:hidden;visibility:hidden;';
-      fitScratch.appendChild(sheetDOM);
-      document.body.appendChild(fitScratch);
-      fitSheetInView(sheetDOM);
-      fitScratch.remove();
 
       // Generate standalone print HTML blob for direct external viewing/download (zero in-app DOM clutter)
       const standaloneHTML = generateStandaloneSheetHTML(sheetDOM, sheetTitle, unitClass);
@@ -5933,6 +6086,7 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         subtitle: isDuplex ? ('Units ' + (uA + 1) + ' & ' + (uB + 1)) : ('Unit ' + (uA + 1)),
         faculty: 'B.Tech IT · Semester 1',
         doc: isDuplex ? docA : singleDoc,
+        docs: isDuplex ? [docA, docB] : [singleDoc],
         sheetDOM: sheetDOM,
         html: standaloneHTML,
         pdfUrl: blobUrl,
@@ -5941,6 +6095,7 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         uB,
         isMaster: false
       };
+      sfPersistActiveDoc(window.activeCheatsheetState);
 
       let cardsDesc = '';
       const activeDoc = isDuplex ? docA : singleDoc;

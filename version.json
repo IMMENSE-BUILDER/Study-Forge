@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 124,
-  "latest": "v0.6.64",
-  "notes": "Cheatsheet card columns use margin-only spacing (no flex gap) so the skill fit calculation matches rendered height exactly.",
+  "versionCode": 125,
+  "latest": "v0.6.65",
+  "notes": "In-app cheatsheet engine migrated to the updated cheatsheet-layout skill: sf-paper/sf-half/sf-hz geometry, 297x210 fixed paper, host scaling, sfFitUnit 0.6-1.25 font-wait fit, 18-22 cards, missing array, persisted docs and chat patch ops.",
   "apkUrl": ""
 }
