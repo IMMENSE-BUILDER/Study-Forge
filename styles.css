@@ -5758,7 +5758,7 @@ label {
   min-height: 0;
   display: flex !important;
   flex-direction: column !important;
-  gap: 2.5pt;
+  gap: 0 !important;
 }
 
 /* Skill layout is fixed: keep 4 columns for single, 2x2 for duplex at every width.

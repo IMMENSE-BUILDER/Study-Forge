@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 123,
-  "latest": "v0.6.63",
-  "notes": "Cheatsheet layout now follows the cheatsheet-layout skill: per-unit zoom wrappers, 4-column duplex geometry (2 pages x 2 columns per unit), skill card spacing, hidden page-2 print fix.",
+  "versionCode": 124,
+  "latest": "v0.6.64",
+  "notes": "Cheatsheet card columns use margin-only spacing (no flex gap) so the skill fit calculation matches rendered height exactly.",
   "apkUrl": ""
 }
