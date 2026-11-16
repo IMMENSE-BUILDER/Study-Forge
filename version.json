@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 129,
-  "latest": "v0.6.69",
-  "notes": "Cheatsheet density guard: hard cap at 24 cards per unit and a mandatory 18-22 card prompt. Print CSS already unified with the live fit (v0.6.68).",
+  "versionCode": 130,
+  "latest": "v0.6.70",
+  "notes": "Cheatsheet card numbering now matches the visible sheet: the AI context and patch ops use display numbers, mapped back to source boxes. Undo stack and strict patch validation included.",
   "apkUrl": ""
 }

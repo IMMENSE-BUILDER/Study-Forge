@@ -3508,7 +3508,8 @@ function initAskAI() {
       const activeDocs = Array.isArray(s.docs) ? s.docs : (s.doc ? [s.doc] : []);
       const docsJson = activeDocs.map((d, i) => {
         const unitLabel = activeDocs.length > 1 ? `Unit ${i + 1}` : 'Unit';
-        return `- ${unitLabel} JSON: ${JSON.stringify({ title: d.title, boxes: d.boxes, missing: d.missing || [] })}`;
+        const ordered = typeof sfOrderedDoc === 'function' ? sfOrderedDoc(d, s.orders && s.orders[i]) : d;
+        return `- ${unitLabel} JSON: ${JSON.stringify({ title: ordered.title, boxes: ordered.boxes, missing: ordered.missing || [] })}`;
       }).join('\n');
       systemPrompt += `\n\n[ACTIVE CHEATSHEET ITERATION CONTEXT]\n` +
         `The student currently has an active cheatsheet open in the pop-up viewer:\n` +
@@ -3991,7 +3992,7 @@ function initAskAI() {
         if (patches && patches.length) {
           const baseDocs = Array.isArray(state.docs) ? state.docs : (state.doc ? [state.doc] : []);
           if (!baseDocs.length) throw new Error('No active cheatsheet document');
-          const patchedDocs = sfApplyPatchBatch(baseDocs, patches, 0);
+          const patchedDocs = sfApplyPatchBatch(baseDocs, patches, 0, state.orders);
           await updateActiveCheatsheet(patchedDocs, botMsg);
         } else {
           const parsedDoc = sheetParseDoc(finalText);
@@ -4736,6 +4737,7 @@ function initAskAI() {
     }
     stripAdviceNodes(newSheetDOM);
     state.sheetDOM = newSheetDOM;
+    state.orders = Array.isArray(newSheetDOM._sfOrders) ? newSheetDOM._sfOrders : null;
     sfPersistActiveDoc(state);
 
     // Rebuild standalone HTML & Blob
@@ -5292,7 +5294,8 @@ function initAskAI() {
   }
 
   // Duplex patches may target a unit with {"unit": 1|2}; default is Unit I.
-  function sfApplyPatchBatch(docs, patches, defaultUnit) {
+  // Patch card numbers are display numbers; `orders` maps them back to boxes.
+  function sfApplyPatchBatch(docs, patches, defaultUnit, orders) {
     if (!Array.isArray(docs) || !docs.length) throw new Error('No active cheatsheet document to patch');
     const working = docs.map(d => ({
       ...d,
@@ -5303,13 +5306,37 @@ function initAskAI() {
       const rawUnit = (p && p.unit != null) ? Number(p.unit) : (fallback + 1);
       const ui = rawUnit - 1;
       if (!Number.isInteger(ui) || ui < 0 || ui >= working.length) throw new Error('Patch unit out of range');
-      working[ui] = sfApplyPatches(working[ui], [p]);
+      const order = Array.isArray(orders) ? orders[ui] : null;
+      working[ui] = sfApplyPatches(working[ui], [sfMapDisplayPatch(p, order)]);
     });
     return working;
   }
 
   function sfCloneDocs(docs) {
     try { return JSON.parse(JSON.stringify(docs)); } catch (e) { return docs.slice(); }
+  }
+
+  // Display order = the visible badge order after column packing. The sheet is
+  // numbered 1..N in that order, so the model and patch ops must use it too.
+  function sfOrderedDoc(doc, order) {
+    if (!doc || !Array.isArray(order) || !order.length || !Array.isArray(doc.boxes)) return doc;
+    const boxes = order.map(i => doc.boxes[i]).filter(Boolean);
+    return { ...doc, boxes };
+  }
+
+  function sfMapDisplayPatch(patch, order) {
+    if (!patch || !Array.isArray(order) || !order.length) return patch;
+    const toBox = (n) => {
+      const v = Number(n);
+      if (!Number.isInteger(v) || v < 1 || v > order.length) return n;
+      return order[v - 1] + 1;
+    };
+    const p = { ...patch };
+    if (p.card != null) p.card = toBox(p.card);
+    if (p.a != null) p.a = toBox(p.a);
+    if (p.b != null) p.b = toBox(p.b);
+    if (p.after != null) p.after = Number(p.after) === 0 ? 0 : toBox(p.after);
+    return p;
   }
 
   function sfPickUnitForDoc(state, doc) {
@@ -5999,8 +6026,9 @@ function initAskAI() {
   }
 
   // Skill sfFitUnit: measure one unit's cards at a candidate zoom, pack into 4 columns.
+  // Returns the display order (box indices) so chat patches can use badge numbers.
   function sfFitUnit(halves, cards) {
-    if (!halves.length || !cards.length) return;
+    if (!halves.length || !cards.length) return [];
     const cols = halves.flatMap(h => h.colEls);
     const setZ = (z) => halves.forEach(h => h.hz.style.setProperty('--z', String(z)));
     const test = (z) => {
@@ -6037,10 +6065,13 @@ function initAskAI() {
       bin.forEach(idx => cols[colIdx].appendChild(cards[idx]));
     });
     let n = 1;
+    const order = [];
     result.bins.forEach(bin => bin.forEach(idx => {
+      order.push(idx);
       const badge = cards[idx].querySelector('.n');
       if (badge) badge.textContent = String(n++);
     }));
+    return order;
   }
 
   function sfActivate(root) {
@@ -6201,7 +6232,8 @@ function initAskAI() {
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
     await sfRaf2();
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    sfUnits.forEach(unit => sfFitUnit(unit.halves, unit.cards));
+    const sfOrders = sfUnits.map(unit => sfFitUnit(unit.halves, unit.cards));
+    root._sfOrders = sfOrders;
     root.dataset.view = '1';
     probe.remove();
     return root;
@@ -6579,6 +6611,7 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         faculty: 'B.Tech IT · Semester 1',
         doc: isDuplex ? docA : singleDoc,
         docs: isDuplex ? [docA, docB] : [singleDoc],
+        orders: Array.isArray(sheetDOM._sfOrders) ? sheetDOM._sfOrders : null,
         sheetDOM: sheetDOM,
         html: standaloneHTML,
         pdfUrl: blobUrl,
@@ -6594,8 +6627,9 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       const activeDocs = isDuplex ? [docA, docB] : [singleDoc];
       activeDocs.forEach((d, di) => {
         if (!d || !Array.isArray(d.boxes)) return;
+        const ordered = sfOrderedDoc(d, window.activeCheatsheetState.orders && window.activeCheatsheetState.orders[di]);
         const unitLine = activeDocs.length > 1 ? `Unit ${di + 1} cards:` : 'Cards currently on sheet:';
-        cardsDesc += `${unitLine}\n` + d.boxes.map((b, i) => `Card ${i + 1}: [${b.title}] (Layout: ${b.layout || 'standard'}) ${b.desc || ''} | Formula: ${b.eq || ''} | Ex: ${b.example || ''}`).join('\n') + '\n\n';
+        cardsDesc += `${unitLine}\n` + (ordered.boxes || []).map((b, i) => `Card ${i + 1}: [${b.title}] (Layout: ${b.layout || 'standard'}) ${b.desc || ''} | Formula: ${b.eq || ''} | Ex: ${b.example || ''}`).join('\n') + '\n\n';
       });
 
       chatHistory.push({
