@@ -5641,10 +5641,10 @@ function initAskAI() {
     } else {
       const rA = getRomanNumeral(uA);
       const rB = getRomanNumeral(uB);
-      const palA = (docA && docA.theme) || getUnitPaletteClass(uA);
-      const palB = (docB && docB.theme) || getUnitPaletteClass(uB);
       const docA = docs[0];
       const docB = docs[1];
+      const palA = (docA && docA.theme) || getUnitPaletteClass(uA);
+      const palB = (docB && docB.theme) || getUnitPaletteClass(uB);
 
       const page1 = mkPaper();
       const a1 = sfCreateHalf({ unitClass: palA, unitKey: 'A', side: 'left', title: `UNIT ${rA} · ${docA.title || ('UNIT ' + rA)}`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });

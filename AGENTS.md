@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.65** [build 125]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.66** [build 126]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,10 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.65):
+Recent major changes (Nov 2026, now v0.6.66):
+- v0.6.66 (Build 126):
+  - Fixed duplex `sf` engine crash: `docA`/`docB` were referenced before declaration in `buildSfSheet`. Single-unit sf paper live-verified at 1123×794 with 4 balanced columns.
+  - Triple bump `v0.6.66` / `versionCode: 126` / `CACHE_NAME: study-forge-v0.6.66`.
 - v0.6.65 (Build 125):
   - **Updated cheatsheet engine adopted** from `cheatsheet-layout (1)` / `reference/studyforge-engine.md`: fixed `.sf-paper` 297×210 mm, `.sf-half` 143.25 mm duplex / 286.4 mm single, `.sf-hz` zoomed content, `.sf-cols`/`.sf-col` layout, `.sf-host` screen scaling.
   - `sfFitUnit`: off-screen probe inside the chat bubble, waits for fonts, measures visual card heights + row gap, binary-searches 0.6–1.25, packs four columns per unit, renumbers cards, applies one zoom per unit.
