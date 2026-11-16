@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.67** [build 127]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.68** [build 128]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,14 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.67):
+Recent major changes (Nov 2026, now v0.6.68):
+- v0.6.68 (Build 128):
+  - **One paper stylesheet for screen and print**: `SF_ENGINE_CSS` in `script.js` is injected into the app and embedded verbatim in the standalone print HTML. Card padding, table cells, chips, equations and margins are now identical in the live fit and the printed file, fixing silent print clipping (columns were overflowing by ~60–80 px).
+  - `.sf-hz` is a flex column and `.sf-cols` fills the space under the banner (`flex:1; min-height:0`), removing the ~2 pt bottom clip from `calc(100% - 15pt)`.
+  - Duplex chat patches can target `"unit": 1|2`; patch validation mirrors `scripts/validate_cards.py` (layout, row counts, banned words, 22-char tokens, no numbered titles), and a version stack powers **↩ Undo last edit**.
+  - `missing` topics from the AI are stored with the doc and shown in the export card.
+  - Removed the duplicate `.sf-*` block from `styles.css`; the engine stylesheet is the single source of truth.
+  - Triple bump `v0.6.68` / `versionCode: 128` / `CACHE_NAME: study-forge-v0.6.68`.
 - v0.6.67 (Build 127):
   - Duplex banner title cleanup: `sfUnitTitle()` strips `UNIT N —` from the AI title before rendering `UNIT I/II · title`, removing the duplicated unit number seen in live output.
   - Triple bump `v0.6.67` / `versionCode: 127` / `CACHE_NAME: study-forge-v0.6.67`.

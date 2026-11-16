@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 127,
-  "latest": "v0.6.67",
-  "notes": "Cheatsheet duplex banners no longer duplicate the unit number: sfUnitTitle strips 'UNIT N —' before rendering 'UNIT I/II · title'.",
+  "versionCode": 128,
+  "latest": "v0.6.68",
+  "notes": "Cheatsheet print fidelity: one SF_ENGINE_CSS source drives both the live fit and the standalone print HTML (cards, tables, chips, margins identical), flex columns remove bottom clipping, duplex patches target Unit I/II, patch validation mirrors validate_cards.py, undo stack added, missing topics surfaced.",
   "apkUrl": ""
 }

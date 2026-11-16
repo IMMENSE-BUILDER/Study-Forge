@@ -3505,14 +3505,18 @@ function initAskAI() {
     let systemPrompt = `${AI_SYSTEM_PROMPT}${subjectContext ? `\n\n${subjectContext}` : ''}${userContext ? `\n\nStudent Live Context:\n${userContext}` : ''}`;
     if (window.activeCheatsheetState) {
       const s = window.activeCheatsheetState;
-      const activeDocJson = s.doc ? JSON.stringify({ title: s.doc.title, boxes: s.doc.boxes, missing: s.doc.missing || [] }) : '';
+      const activeDocs = Array.isArray(s.docs) ? s.docs : (s.doc ? [s.doc] : []);
+      const docsJson = activeDocs.map((d, i) => {
+        const unitLabel = activeDocs.length > 1 ? `Unit ${i + 1}` : 'Unit';
+        return `- ${unitLabel} JSON: ${JSON.stringify({ title: d.title, boxes: d.boxes, missing: d.missing || [] })}`;
+      }).join('\n');
       systemPrompt += `\n\n[ACTIVE CHEATSHEET ITERATION CONTEXT]\n` +
         `The student currently has an active cheatsheet open in the pop-up viewer:\n` +
         `- Title: ${s.title}\n` +
         `- Subject: ${s.alias}\n` +
         `- Subtitle: ${s.subtitle}\n` +
-        (activeDocJson ? `- Current sheet JSON: ${activeDocJson}\n` : '') +
-        `When the student asks to change, tweak, shorten, add formulas, add/remove cards, or reorder, return ONLY a patch JSON block of the form {"patches":[{"op":"replace","card":4,"box":{...}}]} (ops: replace, add, remove, swap, edit, theme). Use 1-based card numbers from the current sheet. Never re-emit unchanged cards. If a full rewrite is unavoidable, return {"title":"...","boxes":[...]}.\n` +
+        (docsJson ? `${docsJson}\n` : '') +
+        `When the student asks to change, tweak, shorten, add formulas, add/remove cards, or reorder, return ONLY a patch JSON block of the form {"patches":[{"op":"replace","card":4,"box":{...}}]} (ops: replace, add, remove, swap, edit, theme). Use 1-based card numbers from the current sheet. Add "unit": 1 or 2 to each patch when the sheet has two units. Never re-emit unchanged cards. If a full rewrite is unavoidable, return {"title":"...","boxes":[...]}.\n` +
         `The app validates and applies patches, then refreshes the pop-up viewer live.`;
     }
     // Sufficient token budget to accommodate reasoning tokens (reasoning_details) and full response
@@ -3982,14 +3986,24 @@ function initAskAI() {
     // Check if the reply contains cheatsheet patches or an updated sheet JSON.
     if (window.activeCheatsheetState && typeof sheetParseDoc === 'function' && typeof updateActiveCheatsheet === 'function') {
       try {
+        const state = window.activeCheatsheetState;
         const patches = typeof sfParsePatchPayload === 'function' ? sfParsePatchPayload(finalText) : null;
-        if (patches && patches.length && window.activeCheatsheetState.doc) {
-          const patchedDoc = sfApplyPatches(window.activeCheatsheetState.doc, patches);
-          await updateActiveCheatsheet(patchedDoc, botMsg);
+        if (patches && patches.length) {
+          const baseDocs = Array.isArray(state.docs) ? state.docs : (state.doc ? [state.doc] : []);
+          if (!baseDocs.length) throw new Error('No active cheatsheet document');
+          const patchedDocs = sfApplyPatchBatch(baseDocs, patches, 0);
+          await updateActiveCheatsheet(patchedDocs, botMsg);
         } else {
           const parsedDoc = sheetParseDoc(finalText);
           if (parsedDoc && Array.isArray(parsedDoc.boxes) && parsedDoc.boxes.length >= 3) {
-            await updateActiveCheatsheet(parsedDoc, botMsg);
+            if (state.isDuplex) {
+              const docs = Array.isArray(state.docs) ? state.docs.slice() : [];
+              if (!docs.length) throw new Error('No active cheatsheet document');
+              docs[sfPickUnitForDoc(state, parsedDoc)] = parsedDoc;
+              await updateActiveCheatsheet(docs, botMsg);
+            } else {
+              await updateActiveCheatsheet([parsedDoc], botMsg);
+            }
           }
         }
       } catch (err) {
@@ -4694,22 +4708,31 @@ function initAskAI() {
   }
 
   // Handle in-chat iterative updates to the active cheatsheet
-  async function updateActiveCheatsheet(newDoc, botMsg) {
+  async function updateActiveCheatsheet(nextDocs, botMsg, opts) {
+    opts = opts || {};
     const state = window.activeCheatsheetState;
     if (!state) return;
-    state.doc = newDoc;
-    if (newDoc.title) state.title = newDoc.title;
 
-    // Rebuild sheet DOM using the same paper engine (duplex state keeps both units).
+    const docs = (Array.isArray(nextDocs) ? nextDocs : [nextDocs]).filter(Boolean);
+    if (!docs.length) return;
+    if (!opts.skipHistory) {
+      state.versions = Array.isArray(state.versions) ? state.versions : [];
+      state.versions.push({
+        docs: sfCloneDocs(state.docs || (state.doc ? [state.doc] : [])),
+        title: state.title
+      });
+      if (state.versions.length > 20) state.versions.shift();
+    }
+    state.docs = docs;
+    state.doc = docs[0];
+    if (docs[0] && docs[0].title) state.title = docs[0].title;
+
+    // Rebuild sheet DOM using the same paper engine (duplex keeps both units).
     let newSheetDOM;
     if (state.isDuplex) {
-      const docs = Array.isArray(state.docs) ? state.docs.slice() : [newDoc, newDoc];
-      docs[0] = newDoc;
-      state.docs = docs;
       newSheetDOM = await buildSfSheet(docs, true, state.uA || 0, state.uB || 1, state.alias, botMsg);
     } else {
-      state.docs = [newDoc];
-      newSheetDOM = await buildSheetDOM(newDoc, state.uA || 0, state.alias, botMsg);
+      newSheetDOM = await buildSheetDOM(docs[0], state.uA || 0, state.alias, botMsg);
     }
     stripAdviceNodes(newSheetDOM);
     state.sheetDOM = newSheetDOM;
@@ -4721,17 +4744,22 @@ function initAskAI() {
     state.pdfUrl = URL.createObjectURL(blob);
     state.html = standaloneHTML;
 
+    const missing = docs.flatMap(d => (Array.isArray(d && d.missing) ? d.missing : []));
+    const cardCount = docs.reduce((n, d) => n + ((d && Array.isArray(d.boxes)) ? d.boxes.length : 0), 0);
+
     // Render an update card in chat
     const updatedCard = buildSheetExportCard({
       title: state.title,
       subtitle: (state.subtitle || '') + ' · Updated via AI Iteration',
       faculty: state.faculty || 'B.Tech IT · Semester 1',
-      badge: `✨ ITERATED & UPDATED · ${newDoc.boxes.length} DENSE TOPIC CARDS`,
+      badge: `✨ ITERATED & UPDATED · ${cardCount} DENSE TOPIC CARDS`,
       pdfUrl: state.pdfUrl,
       sheetDOM: newSheetDOM,
       html: standaloneHTML,
       filename: (state.alias || 'sheet') + '-updated-cheatsheet.html',
-      isMaster: false
+      isMaster: false,
+      missing,
+      onUndo: () => sfUndoActiveSheet(botMsg)
     });
     if (botMsg) {
       botMsg.appendChild(updatedCard);
@@ -4750,11 +4778,25 @@ function initAskAI() {
         pdfUrl: state.pdfUrl,
         sheetDOM: newSheetDOM,
         html: standaloneHTML,
-        badge: `✨ ITERATED & UPDATED · ${newDoc.boxes.length} DENSE TOPIC CARDS`,
+        badge: `✨ ITERATED & UPDATED · ${cardCount} DENSE TOPIC CARDS`,
         isMaster: false
       });
     }
-    showToast('Cheatsheet updated with your changes! 🎨');
+    showToast(opts.toast || 'Cheatsheet updated with your changes! 🎨');
+  }
+
+  async function sfUndoActiveSheet(botMsg) {
+    const state = window.activeCheatsheetState;
+    if (!state || !Array.isArray(state.versions) || !state.versions.length) {
+      showToast('No cheatsheet edit to undo.');
+      return;
+    }
+    const snap = state.versions[state.versions.length - 1];
+    await updateActiveCheatsheet(snap.docs, botMsg, {
+      skipHistory: true,
+      toast: 'Reverted the last cheatsheet edit ↩'
+    });
+    state.versions.pop();
   }
 
   // Clean Cheatsheet Export & Launch Card with In-App Pop-Up Window Hand-off
@@ -4818,9 +4860,27 @@ function initAskAI() {
     });
 
     row.append(dlBtn, printBtn);
+
+    if (typeof opts.onUndo === 'function') {
+      const undoBtn = document.createElement('button');
+      undoBtn.type = 'button';
+      undoBtn.className = 'btn-export-secondary';
+      undoBtn.innerHTML = '↩ Undo last edit';
+      undoBtn.addEventListener('click', () => opts.onUndo());
+      row.appendChild(undoBtn);
+    }
+
     actions.appendChild(row);
 
     root.appendChild(actions);
+
+    if (Array.isArray(opts.missing) && opts.missing.length) {
+      const gaps = document.createElement('div');
+      gaps.className = 'sheet-export-info';
+      gaps.innerHTML = '<span>⚠️ <strong>Not covered on this sheet:</strong> ' +
+        opts.missing.map(escapeHtml).join(' · ') + '</span>';
+      root.appendChild(gaps);
+    }
 
     const footer = document.createElement('div');
     footer.className = 'sheet-export-info';
@@ -4939,7 +4999,8 @@ function initAskAI() {
   }
   function normalizeSheetBox(raw) {
     if (!raw || typeof raw !== 'object') return null;
-    const title = sheetClip(raw.title, 80);
+    // The app draws the number badge; a model-supplied prefix would duplicate it.
+    const title = sheetClip(raw.title, 80).replace(/^\s*\d+[.)]?\s+/, '');
     // Advice-titled boxes (TIPS, TRAPS, ...) die with the whole box.
     if (!title || sheetIsAdvice(title) || /^(exam\s+)?(tips?|tricks?|hacks?|traps?|warnings?|important notes?|things to remember|key points|to remember)\b/i.test(title)) return null;
     const layout = SHEET_LAYOUTS.includes(raw.layout) ? raw.layout : 'table';
@@ -4951,10 +5012,10 @@ function initAskAI() {
     if (raw.example) box.example = sheetCleanLine(raw.example, 220);
 
     if (layout === 'flow') {
-      box.steps = strArr(raw.steps, 6, 160);
+      box.steps = strArr(raw.steps, 8, 160);
       if (!box.steps.length) return null;
     } else if (layout === 'compare') {
-      const rows = (Array.isArray(raw.rows) ? raw.rows : []).slice(0, 6);
+      const rows = (Array.isArray(raw.rows) ? raw.rows : []).slice(0, 8);
       box.left = sheetClip(raw.left || 'A', 40);
       box.right = sheetClip(raw.right || 'B', 40);
       box.rows = rows.map(r => {
@@ -4964,14 +5025,14 @@ function initAskAI() {
       }).filter(r => r && (r[0] || r[1]));
       if (!box.rows.length) return null;
     } else if (layout === 'values') {
-      box.items = strArr(raw.items, 8, 120);
+      box.items = strArr(raw.items, 6, 120);
       if (!box.items.length) return null;
     } else if (layout === 'code') {
       box.code = sheetClip(raw.code, 400);
       box.notes = strArr(raw.notes, 3, 140);
       if (!box.code && !box.notes.length) return null;
     } else {
-      const rows = (Array.isArray(raw.rows) ? raw.rows : []).slice(0, 6);
+      const rows = (Array.isArray(raw.rows) ? raw.rows : []).slice(0, 8);
       box.rows = rows.map(r => {
         const a = Array.isArray(r) ? r : [r];
         if (sheetIsAdvice(a[0]) || sheetIsAdvice(a[1])) return null;
@@ -5109,6 +5170,10 @@ function initAskAI() {
   }
 
   // ── Cheatsheet edit patches (chat iteration, per reference/patch-ops.md) ──
+  const SF_PATCH_BANNED_RE = /\b(traps?|tips?|tricks?|hacks?|warnings?|pitfalls?|remember|notes?|pro tips?|keep in mind|watch out|common mistakes?|careful)\b/i;
+  const SF_PATCH_LATEX_RE = /\\[a-zA-Z]+|[_^{}]/;
+  const SF_PATCH_MAX_TOKEN = 22;
+
   function sfParsePatchPayload(raw) {
     const text = String(raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const start = text.indexOf('{');
@@ -5122,21 +5187,72 @@ function initAskAI() {
     }
   }
 
+  function sfPatchStrings(raw) {
+    const out = [];
+    ['title', 'desc', 'eq', 'example', 'left', 'right', 'code'].forEach(k => {
+      if (typeof raw[k] === 'string') out.push([k, raw[k]]);
+    });
+    ['steps', 'items', 'notes'].forEach(k => {
+      if (Array.isArray(raw[k])) raw[k].forEach(x => { if (typeof x === 'string') out.push([k, x]); });
+    });
+    if (Array.isArray(raw.rows)) {
+      raw.rows.forEach(r => {
+        if (Array.isArray(r)) r.forEach(x => { if (typeof x === 'string') out.push(['rows', x]); });
+      });
+    }
+    return out;
+  }
+
+  // Same hard checks as scripts/validate_cards.py; warnings (CAPS) never reject.
+  // `strict` applies the full row/line-count schema (replace/add); edits of an
+  // existing card only re-check the fields the user changed.
+  function sfValidatePatchBox(raw, strict) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Patch card is not an object');
+    const layout = String(raw.layout || '');
+    if (!SHEET_LAYOUTS.includes(layout)) throw new Error('Patch card layout is invalid');
+    const title = String(raw.title || '').trim();
+    if (!title) throw new Error('Patch card needs a title');
+    if (/^\s*\d+[.)]?\s/.test(title)) throw new Error('Patch card title must not be numbered');
+
+    if (strict !== false) {
+      const counts = { table: [4, 8, 'rows'], flow: [4, 8, 'steps'], compare: [4, 8, 'rows'], values: [1, 6, 'items'] };
+      if (counts[layout]) {
+        const [lo, hi, key] = counts[layout];
+        const n = Array.isArray(raw[key]) ? raw[key].length : 0;
+        if (n < lo || n > hi) throw new Error(`Patch card ${key} must have ${lo}-${hi} entries`);
+      }
+      if (layout === 'table' || layout === 'compare') {
+        if (!Array.isArray(raw.rows) || raw.rows.some(r => !Array.isArray(r) || r.length !== 2)) {
+          throw new Error('Patch table rows must be [label, value] pairs');
+        }
+      }
+      if (layout === 'compare' && (!raw.left || !raw.right)) throw new Error('Patch compare card needs left and right');
+      if (layout === 'code') {
+        if (!raw.code) throw new Error('Patch code card needs code');
+        if (String(raw.code).split('\n').length > 6) throw new Error('Patch code is longer than 6 lines');
+      }
+    }
+
+    sfPatchStrings(raw).forEach(([key, text]) => {
+      if (SF_PATCH_BANNED_RE.test(text)) throw new Error(`Patch card contains banned advice text (${key})`);
+      if (key !== 'code' && !SF_PATCH_LATEX_RE.test(text)) {
+        for (const tok of String(text).split(/\s+/)) {
+          if (tok.length > SF_PATCH_MAX_TOKEN) throw new Error(`Patch card has an unbroken string over ${SF_PATCH_MAX_TOKEN} characters`);
+        }
+      }
+    });
+
+    const box = normalizeSheetBox(raw);
+    if (!box) throw new Error('Patch card could not be normalized');
+    return box;
+  }
+
   function sfApplyPatches(doc, patches) {
     if (!doc || !Array.isArray(doc.boxes) || !Array.isArray(patches) || !patches.length) {
       throw new Error('No active cheatsheet document to patch');
     }
     let boxes = doc.boxes.slice();
     let theme = doc.theme || null;
-    const validBox = (raw) => {
-      const b = normalizeSheetBox(raw);
-      if (!b) throw new Error('Invalid card in patch');
-      if (/^\s*\d+[.)]?\s/.test(b.title)) throw new Error('Patch card title must not be numbered');
-      if (/\b(traps?|tips?|tricks?|hacks?|warnings?|pitfalls?|remember|notes?|pro tips?|keep in mind|watch out|common mistakes?|careful)\b/i.test(JSON.stringify(b))) {
-        throw new Error('Patch card contains banned advice text');
-      }
-      return b;
-    };
     const idx = (n) => {
       const i = Number(n) - 1;
       if (!Number.isInteger(i) || i < 0 || i >= boxes.length) throw new Error('Patch card index out of range');
@@ -5145,21 +5261,28 @@ function initAskAI() {
     patches.forEach((p) => {
       if (!p || typeof p !== 'object') throw new Error('Invalid patch');
       const op = p.op;
-      if (op === 'replace') boxes[idx(p.card)] = validBox(p.box);
+      if (op === 'replace') boxes[idx(p.card)] = sfValidatePatchBox(p.box);
       else if (op === 'add') {
         if (boxes.length >= 24) throw new Error('Max 24 cards per unit');
-        const at = p.after == null ? boxes.length : Math.min(boxes.length, Number(p.after));
-        boxes.splice(at, 0, validBox(p.box));
+        let at = boxes.length;
+        if (p.after != null) {
+          const n = Number(p.after);
+          if (!Number.isInteger(n) || n < 0 || n > boxes.length) throw new Error('Patch insert position out of range');
+          at = n;
+        }
+        boxes.splice(at, 0, sfValidatePatchBox(p.box));
       } else if (op === 'remove') boxes.splice(idx(p.card), 1);
       else if (op === 'swap') {
         const a = idx(p.a), b = idx(p.b);
         const t = boxes[a]; boxes[a] = boxes[b]; boxes[b] = t;
       } else if (op === 'edit') {
         const i = idx(p.card);
-        if (!p.set || typeof p.set !== 'object') throw new Error('Patch edit needs set');
-        boxes[i] = validBox({ ...boxes[i], ...p.set });
+        if (!p.set || typeof p.set !== 'object' || Array.isArray(p.set)) throw new Error('Patch edit needs set');
+        boxes[i] = sfValidatePatchBox({ ...boxes[i], ...p.set }, false);
       } else if (op === 'theme') {
-        theme = String(p.palette || '').match(/^u[1-4]$/) ? p.palette : theme;
+        const palette = String(p.palette || '');
+        if (!/^u[1-4]$/.test(palette)) throw new Error('Patch theme palette must be u1-u4');
+        theme = palette;
       } else {
         throw new Error('Unknown patch op');
       }
@@ -5168,6 +5291,32 @@ function initAskAI() {
     return { ...doc, boxes, theme };
   }
 
+  // Duplex patches may target a unit with {"unit": 1|2}; default is Unit I.
+  function sfApplyPatchBatch(docs, patches, defaultUnit) {
+    if (!Array.isArray(docs) || !docs.length) throw new Error('No active cheatsheet document to patch');
+    const working = docs.map(d => ({
+      ...d,
+      boxes: Array.isArray(d.boxes) ? d.boxes.slice() : []
+    }));
+    const fallback = Number.isInteger(defaultUnit) ? defaultUnit : 0;
+    patches.forEach((p) => {
+      const rawUnit = (p && p.unit != null) ? Number(p.unit) : (fallback + 1);
+      const ui = rawUnit - 1;
+      if (!Number.isInteger(ui) || ui < 0 || ui >= working.length) throw new Error('Patch unit out of range');
+      working[ui] = sfApplyPatches(working[ui], [p]);
+    });
+    return working;
+  }
+
+  function sfCloneDocs(docs) {
+    try { return JSON.parse(JSON.stringify(docs)); } catch (e) { return docs.slice(); }
+  }
+
+  function sfPickUnitForDoc(state, doc) {
+    if (!state || !state.isDuplex) return 0;
+    const t = String((doc && doc.title) || '').toLowerCase();
+    return /\b(unit\s*(2|ii)\b|u2\b)/.test(t) ? 1 : 0;
+  }
 
   function getRomanNumeral(idx) {
     const r = ['I', 'II', 'III', 'IV', 'V', 'VI'];
@@ -5441,6 +5590,378 @@ function initAskAI() {
   const SF_ZMIN = 0.6;
   const SF_ZMAX = 1.25;
 
+  // Single source of truth for the paper engine. The same stylesheet is used by
+  // the live sheet and by the standalone print HTML, so the fitted zoom measured
+  // in the app is exactly the zoom that prints. Do not fork these values.
+  const SF_ENGINE_CSS = `
+.sf-sheet {
+  width: 100%;
+  color: #14202e;
+  font-family: 'Carlito', 'Calibri', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 6.8pt;
+  line-height: 1.2;
+}
+
+.sf-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.sf-tab {
+  border: 1.5px solid var(--line, #cbd5e1);
+  background: var(--panel, #f1f5f9);
+  color: var(--ink, #14202e);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sf-tab.active {
+  background: var(--ac, #1a59a6);
+  border-color: var(--ac, #1a59a6);
+  color: #fff;
+}
+
+.sf-host {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sf-pages {
+  width: 297mm;
+  display: flex;
+  flex-direction: column;
+  gap: 6mm;
+  transform-origin: top left;
+  will-change: transform;
+}
+
+.sf-paper {
+  width: 297mm;
+  height: 210mm;
+  flex: none;
+  position: relative;
+  padding: 3.5mm;
+  box-sizing: border-box;
+  background: #fff;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+}
+
+.sf-half {
+  position: absolute;
+  top: 3.5mm;
+  width: 143.25mm;
+  height: 203mm;
+  padding: 1.5mm;
+  border: 0.3mm solid var(--line, #dbe5f1);
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sf-half.left { left: 3.5mm; }
+.sf-half.right { left: 150.25mm; }
+.sf-half.sf-single { left: 5.3mm; width: 286.4mm; }
+
+.sf-hz {
+  width: calc(var(--hw, 139.65mm) / var(--z, 1));
+  height: calc(199.4mm / var(--z, 1));
+  transform: scale(var(--z, 1));
+  transform-origin: top left;
+  display: flex;
+  flex-direction: column;
+}
+
+.sf-banner {
+  flex: none;
+  background: linear-gradient(90deg, var(--g1), var(--g2));
+  color: #fff;
+  font-weight: 700;
+  font-size: 8pt;
+  padding: 2.2pt 6pt;
+  border-radius: 2.5pt;
+  margin-bottom: 3pt;
+  letter-spacing: 0.1pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+}
+
+.sf-banner span {
+  font-weight: 400;
+  font-size: 6pt;
+  opacity: 0.9;
+}
+
+.sf-cols {
+  display: grid;
+  grid-template-columns: repeat(var(--k, 2), 1fr);
+  gap: 2.4mm;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.sf-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5pt;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sf-sheet .card {
+  background: var(--soft, #f4f8fd) !important;
+  border: 0.4pt solid var(--line, #dbe5f1) !important;
+  border-left: 2pt solid var(--ac2, #2f78c4) !important;
+  border-radius: 2pt !important;
+  padding: 1pt 3pt 1.2pt 3.6pt !important;
+  margin: 0 0 1.6pt 0 !important;
+  font-size: 6.6pt !important;
+  line-height: 1.18 !important;
+  color: #14202e !important;
+  box-sizing: border-box !important;
+  break-inside: avoid !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  flex: none !important;
+}
+
+.sf-sheet .card h3 {
+  font-size: 7.3pt !important;
+  color: var(--ac, #1a59a6) !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2pt !important;
+  margin: 0 0 1.2pt !important;
+  padding: 0 !important;
+  line-height: 1.15 !important;
+  text-transform: uppercase;
+}
+
+.sf-sheet .card .n {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--ac, #1a59a6) !important;
+  color: #fff !important;
+  border-radius: 2pt !important;
+  min-width: 8pt !important;
+  height: 8pt !important;
+  text-align: center !important;
+  font-size: 5.6pt !important;
+  line-height: 1 !important;
+  padding: 0 1pt !important;
+  font-weight: 800 !important;
+  flex-shrink: 0 !important;
+  margin-right: 2pt !important;
+}
+
+.sf-sheet .card b,
+.sf-sheet .card strong {
+  font-weight: 700 !important;
+  color: var(--dk, #0d2a4d) !important;
+}
+
+.sf-sheet .card p {
+  margin: 0.3pt 0 !important;
+  overflow-wrap: break-word !important;
+}
+
+.sf-sheet .card table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 1pt 0 !important;
+  font-size: 5.9pt !important;
+  line-height: 1.06 !important;
+}
+
+.sf-sheet .card th,
+.sf-sheet .card td {
+  border: 0.35pt solid var(--line, #dbe5f1) !important;
+  padding: 0.25pt 1.5pt !important;
+  text-align: left !important;
+  vertical-align: top !important;
+  background: #fff !important;
+  overflow-wrap: break-word !important;
+}
+
+.sf-sheet .card th {
+  background: var(--hd, #e1ecf9) !important;
+  color: var(--dk, #0d2a4d) !important;
+  font-weight: 700 !important;
+}
+
+.sf-sheet .card .eq {
+  background: #fff !important;
+  border: 0.4pt solid var(--line, #dbe5f1) !important;
+  border-left: 1.4pt solid var(--ac, #1a59a6) !important;
+  border-radius: 2pt !important;
+  padding: 0.8pt 3pt !important;
+  margin: 0.6pt 0 !important;
+  font-size: 6.3pt !important;
+  line-height: 1.3 !important;
+  color: var(--dk, #0d2a4d) !important;
+  overflow-x: auto !important;
+}
+
+.sf-sheet .card .ex {
+  border-left: 1.4pt solid #3f9a5a !important;
+  padding: 0.8pt 3pt !important;
+  margin: 0.6pt 0 !important;
+  background: #f0faf3 !important;
+  border-radius: 2pt !important;
+  font-size: 6.2pt !important;
+  line-height: 1.2 !important;
+}
+
+.sf-sheet .card .ex .t {
+  font-weight: 700 !important;
+  color: #256b3c !important;
+  margin-right: 3pt !important;
+}
+
+.sf-sheet .card .flow {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 1pt 0 !important;
+  margin: 0.6pt 0 !important;
+}
+
+.sf-sheet .card .chip {
+  background: #fff !important;
+  border: 0.5pt solid var(--ac2, #2f78c4) !important;
+  border-radius: 2pt !important;
+  padding: 0.4pt 2.5pt !important;
+  font-weight: 700 !important;
+  color: var(--dk, #0d2a4d) !important;
+  font-size: 5.9pt !important;
+  text-align: center !important;
+  line-height: 1.1 !important;
+}
+
+.sf-sheet .card .arr {
+  color: var(--ac2, #2f78c4) !important;
+  font-weight: 700 !important;
+  padding: 0 2pt !important;
+  font-size: 7.5pt !important;
+}
+
+.sf-sheet .card ul {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0.6pt 0 !important;
+}
+
+.sf-sheet .card li {
+  padding-left: 7.5pt !important;
+  position: relative !important;
+  margin: 0.4pt 0 !important;
+  overflow-wrap: break-word !important;
+}
+
+.sf-sheet .card li:before {
+  content: '' !important;
+  position: absolute !important;
+  left: 2pt !important;
+  top: 3.5pt !important;
+  width: 2.2pt !important;
+  height: 2.2pt !important;
+  border-radius: 50% !important;
+  background: var(--ac2, #2f78c4) !important;
+}
+
+.sf-sheet .card pre {
+  background: #fff !important;
+  border: 0.4pt solid var(--line, #dbe5f1) !important;
+  border-radius: 2pt !important;
+  padding: 1.5pt 4pt !important;
+  font-family: 'Consolas', 'Courier New', monospace !important;
+  font-size: 6pt !important;
+  line-height: 1.25 !important;
+  margin: 1.2pt 0 !important;
+  overflow-x: auto !important;
+  white-space: pre-wrap !important;
+  color: var(--dk, #0d2a4d) !important;
+}
+
+.sf-sheet .card code {
+  font-family: inherit !important;
+  font-size: inherit !important;
+}
+
+.sf-sheet .katex {
+  white-space: normal;
+}
+
+.sf-sheet .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  margin: 2pt 0;
+}
+
+.sf-sheet[data-view="1"] .sf-paper:nth-of-type(2),
+.sf-sheet[data-view="2"] .sf-paper:nth-of-type(1) {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sf-tabs { gap: 5px; }
+  .sf-tab { padding: 5px 8px; font-size: 11px; }
+}
+
+@media print {
+  .sf-tabs { display: none !important; }
+  .sf-host {
+    width: 297mm !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .sf-pages {
+    width: 297mm !important;
+    margin: 0 !important;
+    transform: none !important;
+    gap: 0 !important;
+  }
+  .sf-paper {
+    display: block !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-after: always;
+    break-after: page;
+  }
+  .sf-sheet[data-view="1"] .sf-paper:nth-of-type(2),
+  .sf-sheet[data-view="2"] .sf-paper:nth-of-type(1) {
+    display: block !important;
+  }
+}
+`;
+
+  function sfInjectEngineStyles() {
+    if (document.getElementById('sf-engine-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'sf-engine-styles';
+    style.textContent = SF_ENGINE_CSS;
+    document.head.appendChild(style);
+  }
+  sfInjectEngineStyles();
+
   function sfRaf2() {
     return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   }
@@ -5699,68 +6220,32 @@ function initAskAI() {
     const css = `
 @page { size: 297mm 210mm landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: #fff; font-family: 'Carlito', 'Calibri', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 6.8pt; line-height: 1.18; color: #14202e; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body {
+  width: 297mm;
+  background: #fff;
+  font-family: 'Carlito', 'Calibri', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 6.8pt;
+  line-height: 1.2;
+  color: #14202e;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 :root, .u1, body.u1 { --ac: #1a59a6; --ac2: #2f78c4; --soft: #f4f8fd; --line: #dbe5f1; --hd: #e1ecf9; --dk: #0d2a4d; --g1: #17407a; --g2: #2b6cb8; --mut: #46607e; }
 .u2, body.u2 { --ac: #0f6b5f; --ac2: #1d9a86; --soft: #f2faf8; --line: #cfe8e3; --hd: #dcf1ec; --dk: #0b3b35; --g1: #0b4f47; --g2: #1b8f7b; --mut: #3f6b64; }
 .u3, body.u3 { --ac: #5b21b6; --ac2: #7c3aed; --soft: #f5f3ff; --line: #ddd6fe; --hd: #ede9fe; --dk: #2e1065; --g1: #4c1d95; --g2: #6d28d9; --mut: #5b21b6; }
 .u4, body.u4 { --ac: #b45309; --ac2: #d97706; --soft: #fffbeb; --line: #fde68a; --hd: #fef3c7; --dk: #78350f; --g1: #92400e; --g2: #b45309; --mut: #78350f; }
-.banner { background: linear-gradient(90deg, var(--g1), var(--g2)); color: #fff; font-weight: 700; font-size: 8.5pt; padding: 3pt 7pt; border-radius: 3pt; margin-bottom: 3.5pt; display: flex; justify-content: space-between; align-items: center; }
-.banner span { font-weight: 400; font-size: 6.2pt; opacity: 0.92; }
-.cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.4mm; height: calc(100% - 15pt); }
-.col { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 2pt; }
-.card { background: var(--soft); border: 0.4pt solid var(--line); border-left: 2pt solid var(--ac2); border-radius: 2pt; padding: 1.6pt 3.5pt 2pt 4pt; margin-bottom: 2pt; font-size: 6.6pt; line-height: 1.18; color: #14202e; break-inside: avoid; }
-.card h3 { font-size: 7.4pt; color: var(--ac); font-weight: 700; display: flex; align-items: center; gap: 2.5pt; margin: 0 0 1.5pt; }
-.n { display: inline-block; background: var(--ac); color: #fff; border-radius: 2pt; min-width: 8pt; height: 8pt; text-align: center; font-size: 5.6pt; line-height: 8pt; padding: 0 1.2pt; font-weight: 800; flex-shrink: 0; }
-b { font-weight: 700; color: var(--dk); }
-p { margin: 0.6pt 0; overflow-wrap: break-word; }
-table { border-collapse: collapse; width: 100%; margin: 1pt 0; font-size: 6pt; line-height: 1.14; }
-th, td { border: 0.35pt solid var(--line); padding: 0.8pt 2.5pt; text-align: left; vertical-align: top; background: #fff; }
-th { background: var(--hd); color: var(--dk); font-weight: 700; }
-.eq { background: #fff; border: 0.4pt solid var(--line); border-left: 1.5pt solid var(--ac); border-radius: 2pt; padding: 1pt 3.5pt; margin: 1.2pt 0; font-size: 6.4pt; line-height: 1.35; color: var(--dk); }
-.ex { border-left: 1.5pt solid #3f9a5a; padding: 1pt 3.5pt; margin: 1.2pt 0; background: #f0faf3; border-radius: 2pt; font-size: 6.2pt; line-height: 1.25; }
-.ex .t { font-weight: 700; color: #256b3c; margin-right: 2pt; }
-.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5pt 0; margin: 1.2pt 0; }
-.chip { background: #fff; border: 0.5pt solid var(--ac2); border-radius: 2pt; padding: 0.5pt 3pt; font-weight: 700; color: var(--dk); font-size: 6pt; line-height: 1.15; }
-.arr { color: var(--ac2); font-weight: 700; padding: 0 1.5pt; font-size: 7pt; }
-ul { list-style: none; padding: 0; margin: 0.5pt 0; }
-li { padding-left: 7pt; position: relative; margin: 0.3pt 0; }
-li:before { content: ''; position: absolute; left: 1.8pt; top: 3.2pt; width: 2.2pt; height: 2.2pt; border-radius: 50%; background: var(--ac2); }
-pre { background: #fff; border: 0.4pt solid var(--line); border-radius: 2pt; padding: 1.2pt 3.5pt; font-family: monospace; font-size: 6pt; margin: 1pt 0; white-space: pre-wrap; }
-.duplex-page { width: 297mm; height: 210mm; display: grid; grid-template-columns: 146.5mm 146.5mm; gap: 3.5mm; padding: 0; box-sizing: border-box; page-break-after: always; break-after: page; background: #fff; overflow: hidden; }
-.half-unit { width: 146.5mm; height: 100%; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
-.half-unit .cols, .unit-scale .cols { grid-template-columns: 1fr 1fr; }
-.sheet-scale { width: calc(100% / var(--z, 1)); height: calc(100% / var(--z, 1)); zoom: var(--z, 1); padding: 3.5mm; box-sizing: border-box; overflow: hidden; }
-.unit-scale { width: calc(100% / var(--z, 1)); height: calc(100% / var(--z, 1)); zoom: var(--z, 1); padding: 3.5mm; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; }
-.cheatsheet-sheet { width: 297mm; height: 210mm; padding: 0; box-sizing: border-box; background: #fff; overflow: hidden; }
-.duplex-tabs { display: none !important; }
-.sf-sheet { width: 297mm; color: #14202e; }
+${SF_ENGINE_CSS}
 .sf-tabs { display: none !important; }
-.sf-host { width: 297mm; overflow: hidden; }
-.sf-pages { width: 297mm; display: flex; flex-direction: column; gap: 6mm; }
-.sf-paper { width: 297mm; height: 210mm; position: relative; padding: 3.5mm; box-sizing: border-box; background: #fff; overflow: hidden; page-break-after: always; break-after: page; }
-.sf-half { position: absolute; top: 3.5mm; width: 143.25mm; height: 203mm; padding: 1.5mm; border: 0.3mm solid var(--line); box-sizing: border-box; overflow: hidden; background: #fff; }
-.sf-half.left { left: 3.5mm; }
-.sf-half.right { left: 150.25mm; }
-.sf-half.sf-single { left: 5.3mm; width: 286.4mm; }
-.sf-half.sf-single .sf-hz { width: calc(282.8mm / var(--z, 1)); }
-.sf-hz { width: calc(var(--hw, 139.65mm) / var(--z, 1)); height: calc(199.4mm / var(--z, 1)); transform: scale(var(--z, 1)); transform-origin: top left; }
-.sf-banner { background: linear-gradient(90deg, var(--g1), var(--g2)); color: #fff; font-weight: 700; font-size: 8pt; padding: 2.2pt 6pt; border-radius: 2.5pt; margin-bottom: 3pt; display: flex; justify-content: space-between; align-items: center; }
-.sf-banner span { font-weight: 400; font-size: 6pt; opacity: 0.9; }
-.sf-cols { display: grid; grid-template-columns: repeat(var(--k, 2), 1fr); gap: 2.4mm; height: calc(100% - 15pt); grid-template-rows: minmax(0, 1fr); }
-.sf-col { display: flex; flex-direction: column; gap: 2.5pt; min-height: 0; overflow: hidden; }
-.sf-sheet .card { flex: none; }
-@media print {
-  .sf-sheet[data-view="1"] .sf-paper:nth-of-type(2),
-  .sf-sheet[data-view="2"] .sf-paper:nth-of-type(1) { display: block !important; }
-}
+.sf-sheet[data-view="1"] .sf-paper:nth-of-type(2),
+.sf-sheet[data-view="2"] .sf-paper:nth-of-type(1) { display: block !important; }
 @media screen {
+  body { margin: 0 auto; }
   .floating-print-bar { position: fixed; bottom: 18px; right: 18px; background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 9999px; box-shadow: 0 4px 20px rgba(0,0,0,0.35); display: flex; align-items: center; gap: 12px; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; }
   .floating-print-bar button { background: #2563eb; color: #fff; border: none; border-radius: 9999px; padding: 7px 15px; font-weight: 700; font-size: 12px; cursor: pointer; box-shadow: 0 2px 8px rgba(37,99,235,0.4); }
   .floating-print-bar button:hover { background: #1d4ed8; }
 }
 @media print {
   .floating-print-bar { display: none !important; }
-  .duplex-page, .duplex-page.page-1, .duplex-page.page-2 { display: grid !important; }
 }
 `;
     return `<!doctype html>
@@ -5773,6 +6258,7 @@ pre { background: #fff; border: 0.4pt solid var(--line); border-radius: 2pt; pad
 </head>
 <body class="${unitClass || 'u1'}">
 ${sheetElement.outerHTML}
+<div class="floating-print-bar">StudyForged A4 · <button type="button" onclick="window.print()">🖨 Print / Save PDF</button></div>
 </body>
 </html>`;
   }
@@ -5953,7 +6439,7 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
       model: getActiveAiModel(),
       messages: [
         { role: 'system', content: system },
-        { role: 'user', content: `Generate the 1-page cheatsheet JSON for ${alias} Unit ${unitIdx + 1}. Full unit coverage, print-dense.` }
+        { role: 'user', content: `Generate the cheatsheet JSON for ${alias} Unit ${unitIdx + 1}. Full unit coverage, print-dense, 18-22 cards.` }
       ],
       stream: false,
       temperature: 0.3,
@@ -6098,22 +6584,25 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         isDuplex,
         uA,
         uB,
+        versions: [],
         isMaster: false
       };
       sfPersistActiveDoc(window.activeCheatsheetState);
 
       let cardsDesc = '';
-      const activeDoc = isDuplex ? docA : singleDoc;
-      if (activeDoc && Array.isArray(activeDoc.boxes)) {
-        cardsDesc = activeDoc.boxes.map((b, i) => `Card ${i + 1}: [${b.title}] (Layout: ${b.layout || 'standard'}) ${b.desc || ''} | Formula: ${b.eq || ''} | Ex: ${b.example || ''}`).join('\n');
-      }
+      const activeDocs = isDuplex ? [docA, docB] : [singleDoc];
+      activeDocs.forEach((d, di) => {
+        if (!d || !Array.isArray(d.boxes)) return;
+        const unitLine = activeDocs.length > 1 ? `Unit ${di + 1} cards:` : 'Cards currently on sheet:';
+        cardsDesc += `${unitLine}\n` + d.boxes.map((b, i) => `Card ${i + 1}: [${b.title}] (Layout: ${b.layout || 'standard'}) ${b.desc || ''} | Formula: ${b.eq || ''} | Ex: ${b.example || ''}`).join('\n') + '\n\n';
+      });
 
       chatHistory.push({
         role: 'assistant',
         content: `[ACTIVE CHEATSHEET GENERATED & LOADED IN POP-UP VIEWER: "${sheetTitle}"]\n` +
           `Subject: ${alias} · Coverage: ${isDuplex ? 'Duplex Units ' + (uA + 1) + ' & ' + (uB + 1) : 'Unit ' + (uA + 1)}\n` +
-          (cardsDesc ? `Cards currently on sheet:\n${cardsDesc}\n\n` : '') +
-          `[CHEATSHEET ITERATION MODE: The student is viewing this cheatsheet in the pop-up viewer. If the student asks to change, tweak, add, shorten, or iterate on cards or formulas, explain your changes concisely and include the updated JSON block: {"title": "${sheetTitle}", "boxes": [ ...updated cards... ]}. The app will automatically detect the updated JSON and refresh the cheatsheet in the pop-up viewer.]`
+          (cardsDesc ? `${cardsDesc}` : '') +
+          `[CHEATSHEET ITERATION MODE: The student is viewing this cheatsheet in the pop-up viewer. If the student asks to change, tweak, add, shorten, or iterate on cards or formulas, reply with ONLY a patch JSON block: {"patches":[{"op":"replace","card":4,"box":{...}}]}. Ops: replace, add, remove, swap, edit, theme. Use 1-based card numbers; add "unit": 1 or 2 when the sheet has two units. Never re-emit unchanged cards. The app validates and applies the patches, then refreshes the cheatsheet in the pop-up viewer.]`
       });
 
       const exportCard = buildSheetExportCard({
@@ -6125,7 +6614,8 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
         sheetDOM: sheetDOM,
         html: standaloneHTML,
         filename: alias + '-' + (isDuplex ? ('u' + (uA + 1) + '-u' + (uB + 1)) : ('u' + (uA + 1))) + '-cheatsheet.html',
-        isMaster: false
+        isMaster: false,
+        missing: activeDocs.flatMap(d => (Array.isArray(d && d.missing) ? d.missing : []))
       });
       botMsg.appendChild(exportCard);
       chatArea.scrollTop = chatArea.scrollHeight;

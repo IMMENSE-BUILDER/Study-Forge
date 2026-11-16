@@ -5,7 +5,7 @@
 
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=flat&logo=vercel)](https://vercel.com)
 [![PWA](https://img.shields.io/badge/PWA-Installable-blue?style=flat&logo=pwa)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
-[![Version](https://img.shields.io/badge/Release-v0.6.67-emerald?style=flat)]()
+[![Version](https://img.shields.io/badge/Release-v0.6.68-emerald?style=flat)]()
 
 ---
 
