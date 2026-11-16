@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 131,
-  "latest": "v0.6.71",
-  "notes": "Cheatsheet density top-up: if a unit returns fewer than 18 cards, one extra generation pass is attempted and the denser doc is kept. Display-number patch mapping and unified print CSS remain.",
+  "versionCode": 132,
+  "latest": "v0.6.72",
+  "notes": "Cheatsheet content compliance: titles normalized to CAPS, prompt requires raw LaTeX equations and spaced plain formulas so no token exceeds 22 characters (live validator run had one long addr=... equation).",
   "apkUrl": ""
 }

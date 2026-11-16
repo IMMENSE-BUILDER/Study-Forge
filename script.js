@@ -5002,7 +5002,8 @@ function initAskAI() {
   function normalizeSheetBox(raw) {
     if (!raw || typeof raw !== 'object') return null;
     // The app draws the number badge; a model-supplied prefix would duplicate it.
-    const title = sheetClip(raw.title, 80).replace(/^\s*\d+[.)]?\s+/, '');
+    // Titles are stored in CAPS so the JSON, the validator and the sheet agree.
+    const title = sheetClip(raw.title, 80).replace(/^\s*\d+[.)]?\s+/, '').toUpperCase();
     // Advice-titled boxes (TIPS, TRAPS, ...) die with the whole box.
     if (!title || sheetIsAdvice(title) || /^(exam\s+)?(tips?|tricks?|hacks?|traps?|warnings?|important notes?|things to remember|key points|to remember)\b/i.test(title)) return null;
     const layout = SHEET_LAYOUTS.includes(raw.layout) ? raw.layout : 'table';
@@ -6463,7 +6464,8 @@ Each box represents one topic card:
 
 MICRO-NOTE STYLE: High-yield fragments, never filler sentences. Abbreviations encouraged (w/, thru, b/w, ->, ↑ ↓, Δ, ∴, ∵, ≈, ∝, ≤ ≥ ≠).
 HARD RULES:
-- NO unbroken string longer than 22 characters.
+- NO unbroken string longer than 22 characters. For plain formulas, put spaces around every operator: addr = base + ((i*n)+j) * size.
+- Every "eq" is raw LaTeX without delimiters. Never emit a long unspaced plain-text equation.
 - BANNED: trap, tip, trick, hack, warning, pitfall, remember, note, pro tip, keep in mind, watch out, common mistake, careful. ZERO advice boxes.
 - Full syllabus coverage. Fit tightly into balanced cards.
 REASONING: Keep reasoning concise and output the JSON directly.`;

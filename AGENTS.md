@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.71** [build 131]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.72** [build 132]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,10 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.71):
+Recent major changes (Nov 2026, now v0.6.72):
+- v0.6.72 (Build 132):
+  - **Content compliance**: `normalizeSheetBox` stores titles in CAPS; the prompt now requires raw-LaTeX `eq` values and spaced plain formulas so no whitespace token exceeds 22 chars. A live `validate_cards.py` run on PPS duplex had 0 errors in Unit I and one long `addr=...` equation in Unit II; this closes that case.
+  - Triple bump `v0.6.72` / `versionCode: 132` / `CACHE_NAME: study-forge-v0.6.72`.
 - v0.6.71 (Build 131):
   - **Density top-up**: if a unit returns fewer than 18 cards, `fetchUnitCheatsheetDocDense()` makes one extra pass and keeps the denser doc. Live runs had 12 and 17 cards despite the prompt.
   - Triple bump `v0.6.71` / `versionCode: 131` / `CACHE_NAME: study-forge-v0.6.71`.
