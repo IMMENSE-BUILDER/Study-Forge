@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.70** [build 130]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.71** [build 131]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,10 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.70):
+Recent major changes (Nov 2026, now v0.6.71):
+- v0.6.71 (Build 131):
+  - **Density top-up**: if a unit returns fewer than 18 cards, `fetchUnitCheatsheetDocDense()` makes one extra pass and keeps the denser doc. Live runs had 12 and 17 cards despite the prompt.
+  - Triple bump `v0.6.71` / `versionCode: 131` / `CACHE_NAME: study-forge-v0.6.71`.
 - v0.6.70 (Build 130):
   - **Display-number patches**: after column packing, the visible badge order is stored per unit (`state.orders`). The AI context lists cards in that order, and patch `card` / `a` / `b` / `after` numbers are mapped back to source boxes before applying. "Card 1" now means the card the student sees as 1.
   - Triple bump `v0.6.70` / `versionCode: 130` / `CACHE_NAME: study-forge-v0.6.70`.

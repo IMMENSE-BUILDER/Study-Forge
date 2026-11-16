@@ -6513,6 +6513,19 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
     return doc;
   }
 
+  // The skill asks for 18-22 cards; one top-up pass when the model underfills.
+  async function fetchUnitCheatsheetDocDense(alias, unitIdx, signal) {
+    let doc = await fetchUnitCheatsheetDoc(alias, unitIdx, signal);
+    if (!doc || !Array.isArray(doc.boxes) || doc.boxes.length >= 18) return doc;
+    try {
+      const retry = await fetchUnitCheatsheetDoc(alias, unitIdx, signal);
+      if (retry && Array.isArray(retry.boxes) && retry.boxes.length > doc.boxes.length) doc = retry;
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+    }
+    return doc;
+  }
+
   async function generateCheatsheet() {
     if (sheetBusy) return;
     const alias = sheetSubject ? sheetSubject.value : '';
@@ -6582,14 +6595,14 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
 
       if (isDuplex) {
         [docA, docB] = await Promise.all([
-          fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal),
-          fetchUnitCheatsheetDoc(alias, uB, sheetAbort.signal)
+          fetchUnitCheatsheetDocDense(alias, uA, sheetAbort.signal),
+          fetchUnitCheatsheetDocDense(alias, uB, sheetAbort.signal)
         ]);
         sheetDOM = await buildDuplexSheetDOM(docA, docB, uA, uB, alias, botMsg);
         sheetTitle = `${alias} Units ${uA + 1} & ${uB + 1} Duplex Cheatsheet`;
         unitClass = getUnitPaletteClass(uA);
       } else {
-        singleDoc = await fetchUnitCheatsheetDoc(alias, uA, sheetAbort.signal);
+        singleDoc = await fetchUnitCheatsheetDocDense(alias, uA, sheetAbort.signal);
         sheetDOM = await buildSheetDOM(singleDoc, uA, alias, botMsg);
         sheetTitle = `${alias} Unit ${uA + 1} Cheatsheet`;
         unitClass = getUnitPaletteClass(uA);

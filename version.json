@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 130,
-  "latest": "v0.6.70",
-  "notes": "Cheatsheet card numbering now matches the visible sheet: the AI context and patch ops use display numbers, mapped back to source boxes. Undo stack and strict patch validation included.",
+  "versionCode": 131,
+  "latest": "v0.6.71",
+  "notes": "Cheatsheet density top-up: if a unit returns fewer than 18 cards, one extra generation pass is attempted and the denser doc is kept. Display-number patch mapping and unified print CSS remain.",
   "apkUrl": ""
 }
