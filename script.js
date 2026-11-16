@@ -4203,125 +4203,14 @@ function initAskAI() {
   };
 
 
-  // Full-bleed modal viewer with multi-level zoom (100% - 350%)
+  // Master image sheets use the same gesture viewer as generated sheets.
   function openImageFullscreen(imgSrc, title, pdfUrl) {
-    const existing = document.getElementById('masterModal');
-    if (existing) existing.remove();
-
-    let zoom = 1.0;
-    const modal = document.createElement('div');
-    modal.id = 'masterModal';
-    modal.className = 'master-img-modal';
-
-    const bar = document.createElement('div');
-    bar.className = 'master-modal-bar';
-
-    const titleEl = document.createElement('div');
-    titleEl.className = 'master-modal-title';
-    titleEl.innerHTML = '<span>🔍</span> <span>' + escapeHtml(title || 'Master Cheatsheet View') + '</span>';
-
-    const tools = document.createElement('div');
-    tools.className = 'master-modal-tools';
-
-    const zoomLabel = document.createElement('span');
-    zoomLabel.style.cssText = 'font-size:12px; font-weight:700; color:#cbd5e1; min-width:48px; text-align:center;';
-    zoomLabel.textContent = '100%';
-
-    const zoomOutBtn = document.createElement('button');
-    zoomOutBtn.type = 'button';
-    zoomOutBtn.className = 'master-modal-btn';
-    zoomOutBtn.textContent = '➖ Zoom Out';
-
-    const zoomInBtn = document.createElement('button');
-    zoomInBtn.type = 'button';
-    zoomInBtn.className = 'master-modal-btn';
-    zoomInBtn.textContent = '➕ Zoom In';
-
-    const zoomFitBtn = document.createElement('button');
-    zoomFitBtn.type = 'button';
-    zoomFitBtn.className = 'master-modal-btn';
-    zoomFitBtn.textContent = '🔄 Fit';
-
-    const zoom200Btn = document.createElement('button');
-    zoom200Btn.type = 'button';
-    zoom200Btn.className = 'master-modal-btn';
-    zoom200Btn.textContent = '🔍 200% Detail';
-
-    let dlBtn = null;
-    if (pdfUrl) {
-      dlBtn = document.createElement('a');
-      dlBtn.className = 'master-modal-btn primary';
-      dlBtn.href = pdfUrl;
-      dlBtn.download = pdfUrl.split('/').pop();
-      dlBtn.target = '_blank';
-      dlBtn.innerHTML = '📥 Download PDF';
-    }
-
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.className = 'master-modal-btn';
-    closeBtn.textContent = '✕ Close';
-
-    tools.append(zoomOutBtn, zoomLabel, zoomInBtn, zoomFitBtn, zoom200Btn);
-    if (dlBtn) tools.appendChild(dlBtn);
-    tools.appendChild(closeBtn);
-
-    bar.append(titleEl, tools);
-    modal.appendChild(bar);
-
-    const body = document.createElement('div');
-    body.className = 'master-modal-body';
-
-    const img = document.createElement('img');
-    img.className = 'master-modal-img';
-    img.src = imgSrc;
-    img.alt = title || 'Cheatsheet';
-
-    body.appendChild(img);
-    modal.appendChild(body);
-    document.body.appendChild(modal);
-
-    function applyZoom(z) {
-      zoom = Math.max(0.5, Math.min(3.5, z));
-      img.style.transform = 'scale(' + zoom + ')';
-      zoomLabel.textContent = Math.round(zoom * 100) + '%';
-      if (zoom > 1.0) {
-        body.style.alignItems = 'flex-start';
-        body.style.justifyContent = 'flex-start';
-      } else {
-        body.style.alignItems = 'flex-start';
-        body.style.justifyContent = 'center';
-      }
-    }
-
-    zoomInBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(zoom + 0.35); });
-    zoomOutBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(zoom - 0.35); });
-    zoomFitBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(1.0); });
-    zoom200Btn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(2.0); });
-
-    img.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (zoom <= 1.1) applyZoom(2.0);
-      else applyZoom(1.0);
+    openCheatsheetPopUp({
+      title: title || 'Master Cheatsheet View',
+      page1: imgSrc,
+      pdfUrl: pdfUrl || '',
+      filename: pdfUrl ? pdfUrl.split('/').pop() : ''
     });
-
-    function closeModal() {
-      modal.remove();
-      window.removeEventListener('keydown', onKeyDown);
-    }
-
-    function onKeyDown(e) {
-      if (e.key === 'Escape') closeModal();
-      else if (e.key === '+' || e.key === '=') applyZoom(zoom + 0.35);
-      else if (e.key === '-' || e.key === '_') applyZoom(zoom - 0.35);
-      else if (e.key === '0') applyZoom(1.0);
-    }
-
-    closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal || e.target === body) closeModal();
-    });
-    window.addEventListener('keydown', onKeyDown);
   }
 
   // Builder for Verified Master Cheatsheets (exact high-density skill assets)
@@ -4455,12 +4344,296 @@ function initAskAI() {
 
 
   // Dedicated In-App Cheatsheet Pop-Up Modal Viewer (No External Redirects, Keeps User in App)
+  // Single-stage pan/zoom viewer for the cheatsheet modal.
+  // One transform on .sf-zoom-stage; no CSS transition, no nested zoom layers.
+  function createSheetZoomViewer({ modal, body, stage, dockSpace }) {
+    const view = { s: 1, x: 0, y: 0 };
+    let fitScale = 1;
+    let atFit = true;
+    let raf = 0;
+    let idleTimer = 0;
+    let destroyed = false;
+    const pointers = new Map();
+    let drag = null;
+    let pinch = null;
+    let lastTap = 0;
+    let lastTapX = 0;
+    let lastTapY = 0;
+    const dock = dockSpace || 0;
+    stage.style.visibility = 'hidden';
+
+    function area() {
+      return {
+        w: Math.max(1, body.clientWidth),
+        h: Math.max(1, body.clientHeight - dock)
+      };
+    }
+
+    function stageSize() {
+      return {
+        w: Math.max(1, stage.offsetWidth),
+        h: Math.max(1, stage.offsetHeight)
+      };
+    }
+
+    function clamp() {
+      const { w: bw, h: bh } = area();
+      const { w, h } = stageSize();
+      const cw = w * view.s;
+      const ch = h * view.s;
+      const m = 24;
+      if (cw <= bw) view.x = (bw - cw) / 2;
+      else view.x = Math.min(m, Math.max(bw - cw - m, view.x));
+      if (ch <= bh) view.y = (bh - ch) / 2;
+      else view.y = Math.min(m, Math.max(bh - ch - m, view.y));
+    }
+
+    function apply() {
+      if (destroyed) return;
+      clamp();
+      stage.style.transform = `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.s})`;
+    }
+
+    function schedule() {
+      if (raf || destroyed) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        apply();
+      });
+    }
+
+    function fit() {
+      const { w: bw, h: bh } = area();
+      const { w, h } = stageSize();
+      if (w < 2 || h < 2) return;
+      const m = 16;
+      const s = Math.min(2.0, (bw - 2 * m) / w, (bh - 2 * m) / h);
+      view.s = Math.max(0.05, s);
+      fitScale = view.s;
+      view.x = (bw - w * view.s) / 2;
+      view.y = (bh - h * view.s) / 2;
+      atFit = true;
+      apply();
+      stage.style.visibility = 'visible';
+    }
+
+    function refit(reset) {
+      if (reset) fit();
+      else if (atFit) fit();
+      else schedule();
+    }
+
+    function setScaleAt(next, clientX, clientY) {
+      const r = body.getBoundingClientRect();
+      const px = clientX - r.left;
+      const py = clientY - r.top;
+      const sx = (px - view.x) / view.s;
+      const sy = (py - view.y) / view.s;
+      const s = Math.max(fitScale, Math.min(4.5, next));
+      view.s = s;
+      view.x = px - sx * s;
+      view.y = py - sy * s;
+      atFit = Math.abs(s - fitScale) < 0.001;
+      schedule();
+    }
+
+    function zoomBy(factor) {
+      const r = body.getBoundingClientRect();
+      setScaleAt(view.s * factor, r.left + body.clientWidth / 2, r.top + (body.clientHeight - dock) / 2);
+    }
+
+    function begin() {
+      if (destroyed) return;
+      modal.classList.add('sf-zooming');
+      body.classList.add('sf-dragging');
+      stage.style.willChange = 'transform';
+      clearTimeout(idleTimer);
+    }
+
+    function end() {
+      body.classList.remove('sf-dragging');
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        modal.classList.remove('sf-zooming');
+        stage.style.willChange = 'auto';
+      }, 140);
+      atFit = Math.abs(view.s - fitScale) < 0.001;
+    }
+
+    function onPointerDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (e.target && e.target.closest && e.target.closest('a,button,input,textarea,select')) return;
+      e.preventDefault();
+      try { body.setPointerCapture(e.pointerId); } catch (err) {}
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      begin();
+      if (pointers.size === 1) {
+        drag = { id: e.pointerId, x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false, downAt: performance.now() };
+        pinch = null;
+      } else if (pointers.size === 2) {
+        const pts = [...pointers.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+        const midX = (pts[0].x + pts[1].x) / 2;
+        const midY = (pts[0].y + pts[1].y) / 2;
+        const r = body.getBoundingClientRect();
+        pinch = {
+          dist,
+          startScale: view.s,
+          sx: (midX - r.left - view.x) / view.s,
+          sy: (midY - r.top - view.y) / view.s
+        };
+        drag = null;
+      }
+    }
+
+    function onPointerMove(e) {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size >= 2 && pinch) {
+        const pts = [...pointers.values()].slice(0, 2);
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+        const midX = (pts[0].x + pts[1].x) / 2;
+        const midY = (pts[0].y + pts[1].y) / 2;
+        const r = body.getBoundingClientRect();
+        const s = Math.max(fitScale, Math.min(4.5, pinch.startScale * (dist / pinch.dist)));
+        view.s = s;
+        view.x = (midX - r.left) - pinch.sx * s;
+        view.y = (midY - r.top) - pinch.sy * s;
+        atFit = Math.abs(s - fitScale) < 0.001;
+        schedule();
+        return;
+      }
+      if (drag && e.pointerId === drag.id) {
+        const dx = e.clientX - drag.x;
+        const dy = e.clientY - drag.y;
+        if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+        drag.moved = true;
+        view.x = drag.vx + dx;
+        view.y = drag.vy + dy;
+        atFit = false;
+        schedule();
+      }
+    }
+
+    function onPointerUp(e) {
+      const wasDrag = drag && drag.id === e.pointerId && drag.moved;
+      const downAt = drag && drag.id === e.pointerId ? drag.downAt : 0;
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinch = null;
+      if (pointers.size === 0) {
+        if (!wasDrag && performance.now() - downAt < 280) {
+          const now = performance.now();
+          if (now - lastTap < 320 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 36) {
+            if (view.s > fitScale * 1.15) fit();
+            else setScaleAt(fitScale * 2, e.clientX, e.clientY);
+            lastTap = 0;
+          } else {
+            lastTap = now;
+            lastTapX = e.clientX;
+            lastTapY = e.clientY;
+          }
+        }
+        drag = null;
+        end();
+      } else if (pointers.size === 1) {
+        const [id, p] = [...pointers.entries()][0];
+        drag = { id, x: p.x, y: p.y, vx: view.x, vy: view.y, moved: true, downAt: performance.now() };
+        pinch = null;
+      }
+    }
+
+    function onPointerCancel(e) {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinch = null;
+      if (pointers.size === 0) {
+        drag = null;
+        end();
+      }
+    }
+
+    function onWheel(e) {
+      e.preventDefault();
+      begin();
+      end();
+      if (e.ctrlKey || e.metaKey) {
+        setScaleAt(view.s * Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY);
+      } else {
+        view.x -= e.deltaX;
+        view.y -= e.deltaY;
+        atFit = false;
+        schedule();
+      }
+    }
+
+    function onDragStart(e) {
+      e.preventDefault();
+    }
+
+    function onContextMenu(e) {
+      e.preventDefault();
+    }
+
+    body.addEventListener('pointerdown', onPointerDown);
+    body.addEventListener('pointermove', onPointerMove);
+    body.addEventListener('pointerup', onPointerUp);
+    body.addEventListener('pointercancel', onPointerCancel);
+    body.addEventListener('wheel', onWheel, { passive: false });
+    body.addEventListener('dragstart', onDragStart);
+    body.addEventListener('contextmenu', onContextMenu);
+
+    let ro = null;
+    if ('ResizeObserver' in window) {
+      try {
+        ro = new ResizeObserver(() => {
+          if (destroyed) return;
+          if (atFit) {
+            fit();
+          } else {
+            const { w: bw, h: bh } = area();
+            const { w, h } = stageSize();
+            const m = 16;
+            fitScale = Math.max(0.05, Math.min(2.0, (bw - 2 * m) / w, (bh - 2 * m) / h));
+            if (view.s < fitScale) view.s = fitScale;
+            schedule();
+          }
+        });
+        ro.observe(body);
+        ro.observe(stage);
+      } catch (err) {}
+    }
+
+    const api = {
+      fit,
+      refit,
+      zoomBy,
+      zoomIn: () => zoomBy(1.25),
+      zoomOut: () => zoomBy(0.8),
+      destroy: () => {
+        destroyed = true;
+        clearTimeout(idleTimer);
+        if (raf) cancelAnimationFrame(raf);
+        if (ro) ro.disconnect();
+        body.removeEventListener('pointerdown', onPointerDown);
+        body.removeEventListener('pointermove', onPointerMove);
+        body.removeEventListener('pointerup', onPointerUp);
+        body.removeEventListener('pointercancel', onPointerCancel);
+        body.removeEventListener('wheel', onWheel);
+        body.removeEventListener('dragstart', onDragStart);
+        body.removeEventListener('contextmenu', onContextMenu);
+      }
+    };
+    return api;
+  }
+
+  // Dedicated In-App Cheatsheet Pop-Up Modal Viewer (No External Redirects, Keeps User in App)
   function openCheatsheetPopUp(opts) {
     if (!opts) return;
     const existing = document.getElementById('masterModal');
-    if (existing) existing.remove();
+    if (existing) {
+      if (existing._sfViewer) existing._sfViewer.destroy();
+      existing.remove();
+    }
 
-    let zoom = 1.0;
     const modal = document.createElement('div');
     modal.id = 'masterModal';
     modal.className = 'master-img-modal';
@@ -4475,8 +4648,15 @@ function initAskAI() {
     const tools = document.createElement('div');
     tools.className = 'master-modal-tools';
 
-    // Page switcher tabs if 2 pages exist
-    let p1Wrap = null, p2Wrap = null;
+    let viewer = null;
+    let p1Wrap = null;
+    let p2Wrap = null;
+
+    const refitViewer = () => {
+      if (viewer) requestAnimationFrame(() => viewer.refit(true));
+    };
+
+    // Image master sheets keep their own Front/Back/Both tabs.
     if (opts.page1 && opts.page2) {
       const tabsWrap = document.createElement('div');
       tabsWrap.className = 'master-modal-tabs';
@@ -4501,106 +4681,46 @@ function initAskAI() {
         tFront.classList.add('active'); tBack.classList.remove('active'); tBoth.classList.remove('active');
         if (p1Wrap) p1Wrap.style.display = '';
         if (p2Wrap) p2Wrap.style.display = 'none';
+        refitViewer();
       });
       tBack.addEventListener('click', (e) => {
         e.stopPropagation();
         tBack.classList.add('active'); tFront.classList.remove('active'); tBoth.classList.remove('active');
         if (p1Wrap) p1Wrap.style.display = 'none';
         if (p2Wrap) p2Wrap.style.display = '';
+        refitViewer();
       });
       tBoth.addEventListener('click', (e) => {
         e.stopPropagation();
         tBoth.classList.add('active'); tFront.classList.remove('active'); tBack.classList.remove('active');
         if (p1Wrap) p1Wrap.style.display = '';
         if (p2Wrap) p2Wrap.style.display = '';
+        refitViewer();
       });
 
       tabsWrap.append(tFront, tBack, tBoth);
       tools.appendChild(tabsWrap);
     }
 
-    // Zoom Controls
-    const zoomLabel = document.createElement('span');
-    zoomLabel.style.cssText = 'font-size:12px; font-weight:700; color:#cbd5e1; min-width:48px; text-align:center;';
-    zoomLabel.textContent = '100%';
-
-    const zoomOutBtn = document.createElement('button');
-    zoomOutBtn.type = 'button';
-    zoomOutBtn.className = 'master-modal-btn';
-    zoomOutBtn.textContent = '➖ Zoom Out';
-
-    const zoomInBtn = document.createElement('button');
-    zoomInBtn.type = 'button';
-    zoomInBtn.className = 'master-modal-btn';
-    zoomInBtn.textContent = '➕ Zoom In';
-
-    const zoomFitBtn = document.createElement('button');
-    zoomFitBtn.type = 'button';
-    zoomFitBtn.className = 'master-modal-btn';
-    zoomFitBtn.textContent = '🔄 Fit';
-
-    const zoom150Btn = document.createElement('button');
-    zoom150Btn.type = 'button';
-    zoom150Btn.className = 'master-modal-btn';
-    zoom150Btn.textContent = '🔍 150%';
-
-    tools.append(zoomOutBtn, zoomLabel, zoomInBtn, zoomFitBtn, zoom150Btn);
-
-    // Download Button
-    if (opts.pdfUrl) {
-      const dlBtn = document.createElement('a');
-      dlBtn.className = 'master-modal-btn primary';
-      dlBtn.href = opts.pdfUrl;
-      const fn = opts.filename || (opts.pdfUrl ? opts.pdfUrl.split('/').pop() : 'cheatsheet.pdf');
-      dlBtn.download = fn;
-      dlBtn.target = '_blank';
-      dlBtn.innerHTML = '📥 Download';
-      tools.appendChild(dlBtn);
-    }
-
-    // Print Button
-    const printBtn = document.createElement('button');
-    printBtn.type = 'button';
-    printBtn.className = 'master-modal-btn';
-    printBtn.innerHTML = '🖨️ Print';
-    printBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const win = window.open(opts.pdfUrl, '_blank');
-      if (win) {
-        win.focus();
-        setTimeout(() => { try { win.print(); } catch(e) {} }, 500);
-      }
-    });
-    tools.appendChild(printBtn);
-
-    // Close Button
     const closeBtn = document.createElement('button');
     closeBtn.type = 'button';
     closeBtn.className = 'master-modal-btn';
     closeBtn.textContent = '✕ Close';
-    tools.appendChild(closeBtn);
 
-    bar.append(titleEl, tools);
-    modal.appendChild(bar);
-
-    // Modal Body Content
     const body = document.createElement('div');
     body.className = 'master-modal-body';
 
-    let zoomTarget = null;
+    let stage = null;
 
     if (opts.page1 && opts.page2) {
       const pagesContainer = document.createElement('div');
-      pagesContainer.style.cssText = 'display:flex; flex-direction:column; gap:20px; align-items:center; transform-origin:top center; transition:transform 0.15s ease-out;';
-      zoomTarget = pagesContainer;
-
+      pagesContainer.style.cssText = 'display:flex; flex-direction:column; gap:20px; align-items:center;';
       p1Wrap = document.createElement('div');
       const img1 = document.createElement('img');
       img1.className = 'master-modal-img';
       img1.src = opts.page1;
       img1.alt = (opts.title || '') + ' - Page 1';
       p1Wrap.appendChild(img1);
-
       p2Wrap = document.createElement('div');
       p2Wrap.style.display = 'none';
       const img2 = document.createElement('img');
@@ -4608,49 +4728,66 @@ function initAskAI() {
       img2.src = opts.page2;
       img2.alt = (opts.title || '') + ' - Page 2';
       p2Wrap.appendChild(img2);
-
       pagesContainer.append(p1Wrap, p2Wrap);
-      body.appendChild(pagesContainer);
+      stage = document.createElement('div');
+      stage.className = 'sf-zoom-stage';
+      stage.appendChild(pagesContainer);
+      body.appendChild(stage);
     } else if (opts.page1) {
       const img = document.createElement('img');
       img.className = 'master-modal-img';
       img.src = opts.page1;
       img.alt = opts.title || 'Cheatsheet';
-      zoomTarget = img;
-      body.appendChild(img);
+      stage = document.createElement('div');
+      stage.className = 'sf-zoom-stage';
+      stage.appendChild(img);
+      body.appendChild(stage);
     } else if (opts.sheetDOM || opts.html) {
-      const viewport = document.createElement('div');
-      viewport.className = 'master-sheet-viewport';
-      zoomTarget = viewport;
+      let sheetRoot = null;
       if (opts.sheetDOM) {
-        const cloned = opts.sheetDOM.cloneNode(true);
-        const t1 = cloned.querySelector('.duplex-tab:nth-child(1)');
-        const t2 = cloned.querySelector('.duplex-tab:nth-child(2)');
-        const tBoth = cloned.querySelector('.duplex-tab:nth-child(3)');
-        const p1 = cloned.querySelector('.duplex-page.page-1') || cloned.querySelectorAll('.duplex-page')[0];
-        const p2 = cloned.querySelector('.duplex-page.page-2') || cloned.querySelectorAll('.duplex-page')[1];
-        if (t1 && t2 && p1 && p2) {
-          t1.addEventListener('click', () => {
-            t1.classList.add('active'); t2.classList.remove('active'); if (tBoth) tBoth.classList.remove('active');
-            p1.style.display = ''; p2.style.display = 'none';
-          });
-          t2.addEventListener('click', () => {
-            t2.classList.add('active'); t1.classList.remove('active'); if (tBoth) tBoth.classList.remove('active');
-            p1.style.display = 'none'; p2.style.display = '';
-          });
-          if (tBoth) {
-            tBoth.addEventListener('click', () => {
-              tBoth.classList.add('active'); t1.classList.remove('active'); t2.classList.remove('active');
-              p1.style.display = ''; p2.style.display = '';
-            });
-          }
-        }
-        viewport.appendChild(cloned);
-      } else if (opts.html) {
-        viewport.innerHTML = opts.html;
+        sheetRoot = opts.sheetDOM.cloneNode(true);
+      } else {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = opts.html;
+        sheetRoot = wrap.querySelector('.sf-sheet') || wrap;
       }
-      body.appendChild(viewport);
+      if (sheetRoot && sheetRoot.classList) sheetRoot.classList.add('sf-viewer');
+      stage = document.createElement('div');
+      stage.className = 'sf-zoom-stage';
+      if (sheetRoot) stage.appendChild(sheetRoot);
+      body.appendChild(stage);
+
+      // The viewer hides the sheet's tiny internal tabs and puts page switching
+      // in the top bar so it stays legible on phones.
+      const papers = sheetRoot ? sheetRoot.querySelectorAll('.sf-paper') : [];
+      if (papers.length > 1) {
+        const tabsWrap = document.createElement('div');
+        tabsWrap.className = 'master-modal-tabs';
+        const mkTab = (value, label, active) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'master-modal-tab' + (active ? ' active' : '');
+          b.dataset.sfView = value;
+          b.textContent = label;
+          return b;
+        };
+        const current = sheetRoot.dataset.view || '1';
+        const tFront = mkTab('1', '📄 Front', current === '1');
+        const tBack = mkTab('2', '📄 Back', current === '2');
+        const tBoth = mkTab('both', '📑 Both', current === 'both');
+        const setView = (value, btn) => {
+          sheetRoot.dataset.view = value;
+          [tFront, tBack, tBoth].forEach(t => t.classList.toggle('active', t === btn));
+          refitViewer();
+        };
+        tFront.addEventListener('click', (e) => { e.stopPropagation(); setView('1', tFront); });
+        tBack.addEventListener('click', (e) => { e.stopPropagation(); setView('2', tBack); });
+        tBoth.addEventListener('click', (e) => { e.stopPropagation(); setView('both', tBoth); });
+        tabsWrap.append(tFront, tBack, tBoth);
+        tools.appendChild(tabsWrap);
+      }
     } else if (opts.pdfUrl) {
+      body.classList.add('pdf-mode');
       const iframeWrap = document.createElement('div');
       iframeWrap.className = 'master-modal-iframe-wrap';
       const iframe = document.createElement('iframe');
@@ -4660,51 +4797,53 @@ function initAskAI() {
       body.appendChild(iframeWrap);
     }
 
-    modal.appendChild(body);
-    document.body.appendChild(modal);
-    requestAnimationFrame(() => {
-      const sheetEl = modal.querySelector('.cheatsheet-sheet');
-      const sfEl = modal.querySelector('.sf-sheet');
-      if (sfEl) sfActivate(sfEl);
-      if (sheetEl) fitSheetInView(sheetEl);
-    });
+    tools.appendChild(closeBtn);
+    bar.append(titleEl, tools);
 
-    function applyZoom(z) {
-      zoom = Math.max(0.4, Math.min(3.0, z));
-      if (zoomTarget) {
-        zoomTarget.style.transform = 'scale(' + zoom + ')';
-      }
-      zoomLabel.textContent = Math.round(zoom * 100) + '%';
-      if (zoom > 1.0) {
-        body.style.alignItems = 'flex-start';
-        body.style.justifyContent = 'flex-start';
-      } else {
-        body.style.alignItems = 'flex-start';
-        body.style.justifyContent = 'center';
-      }
+    modal.appendChild(bar);
+    modal.appendChild(body);
+
+    if (opts.pdfUrl) {
+      const filename = opts.filename || (opts.pdfUrl ? opts.pdfUrl.split('/').pop() : 'cheatsheet.pdf');
+      const dock = document.createElement('div');
+      dock.className = 'master-download-dock';
+      const dl = document.createElement('a');
+      dl.className = 'master-download-btn';
+      dl.href = opts.pdfUrl;
+      dl.download = filename;
+      dl.target = '_blank';
+      dl.rel = 'noopener';
+      dl.innerHTML = '📥 Download';
+      dl.setAttribute('aria-label', 'Download cheatsheet');
+      dock.appendChild(dl);
+      modal.appendChild(dock);
     }
 
-    zoomInBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(zoom + 0.25); });
-    zoomOutBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(zoom - 0.25); });
-    zoomFitBtn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(1.0); });
-    zoom150Btn.addEventListener('click', (e) => { e.stopPropagation(); applyZoom(1.5); });
+    document.body.appendChild(modal);
+
+    if (stage) {
+      viewer = createSheetZoomViewer({ modal, body, stage, dockSpace: opts.pdfUrl ? 78 : 0 });
+      modal._sfViewer = viewer;
+      requestAnimationFrame(() => requestAnimationFrame(() => viewer.fit()));
+      stage.querySelectorAll('img').forEach(img => {
+        if (!img.complete) img.addEventListener('load', () => viewer && viewer.refit(true), { once: true });
+      });
+    }
 
     function closeModal() {
+      if (viewer) viewer.destroy();
       modal.remove();
       window.removeEventListener('keydown', onKeyDown);
     }
 
     function onKeyDown(e) {
       if (e.key === 'Escape') closeModal();
-      else if (e.key === '+' || e.key === '=') applyZoom(zoom + 0.25);
-      else if (e.key === '-' || e.key === '_') applyZoom(zoom - 0.25);
-      else if (e.key === '0') applyZoom(1.0);
+      else if (viewer && (e.key === '+' || e.key === '=')) viewer.zoomIn();
+      else if (viewer && (e.key === '-' || e.key === '_')) viewer.zoomOut();
+      else if (viewer && e.key === '0') viewer.fit();
     }
 
     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal || e.target === body) closeModal();
-    });
     window.addEventListener('keydown', onKeyDown);
   }
 
@@ -5616,7 +5755,9 @@ function initAskAI() {
 
   // ── A4 paper engine (cheatsheet-layout skill) ──
   const SF_ZMIN = 0.6;
-  const SF_ZMAX = 1.25;
+  // The skill's 1.25 ceiling assumed dense cards. This app's AI cards are
+  // shorter, so the fit is allowed to grow until the fullest column is packed.
+  const SF_ZMAX = 2.0;
 
   // Single source of truth for the paper engine. The same stylesheet is used by
   // the live sheet and by the standalone print HTML, so the fitted zoom measured
@@ -5666,7 +5807,6 @@ function initAskAI() {
   flex-direction: column;
   gap: 6mm;
   transform-origin: top left;
-  will-change: transform;
 }
 
 .sf-paper {
@@ -5744,7 +5884,7 @@ function initAskAI() {
 .sf-col {
   display: flex;
   flex-direction: column;
-  gap: 2.5pt;
+  gap: 0;
   min-height: 0;
   overflow: hidden;
 }

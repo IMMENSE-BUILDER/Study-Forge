@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.72** [build 132]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.73** [build 133]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,14 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.72):
+Recent major changes (Nov 2026, now v0.6.73):
+- v0.6.73 (Build 133):
+  - **Cheatsheet viewer rebuilt**: one `.sf-zoom-stage` transform (`translate3d + scale`, origin 0 0), custom pan/pinch/wheel gestures, no CSS transform transition, no `will-change` on `.sf-pages`, and `backdrop-filter`/paper shadows removed while zooming. Fixes the left-edge crop (paper left was −250 px at 150% and −531 px at 200%, outside the scroll area) and the text/block blinking.
+  - Top modal bar no longer has Zoom In/Out, Fit, 150% or Print. It keeps page tabs (Front/Back/Both) and Close.
+  - Download is now a single pill docked at the **bottom centre** of the screen.
+  - Master image sheets route through the same gesture viewer.
+  - Density: `SF_ZMAX` raised from 1.25 to 2.0 and `.sf-col` flex gap removed (card margin remains), so the fit fills the fullest column instead of stopping at 1.25 and leaving 170–200 px empty.
+  - Triple bump `v0.6.73` / `versionCode: 133` / `CACHE_NAME: study-forge-v0.6.73`.
 - v0.6.72 (Build 132):
   - **Content compliance**: `normalizeSheetBox` stores titles in CAPS; the prompt now requires raw-LaTeX `eq` values and spaced plain formulas so no whitespace token exceeds 22 chars. A live `validate_cards.py` run on PPS duplex had 0 errors in Unit I and one long `addr=...` equation in Unit II; this closes that case.
   - Triple bump `v0.6.72` / `versionCode: 132` / `CACHE_NAME: study-forge-v0.6.72`.
