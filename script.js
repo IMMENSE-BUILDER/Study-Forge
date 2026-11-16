@@ -4454,6 +4454,7 @@ function initAskAI() {
       body.classList.remove('sf-dragging');
       clearTimeout(idleTimer);
       idleTimer = setTimeout(() => {
+        if (pointers.size > 0) return;
         modal.classList.remove('sf-zooming');
         stage.style.willChange = 'auto';
       }, 140);
@@ -4466,7 +4467,6 @@ function initAskAI() {
       e.preventDefault();
       try { body.setPointerCapture(e.pointerId); } catch (err) {}
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      begin();
       if (pointers.size === 1) {
         drag = { id: e.pointerId, x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false, downAt: performance.now() };
         pinch = null;
@@ -4496,6 +4496,7 @@ function initAskAI() {
         const midY = (pts[0].y + pts[1].y) / 2;
         const r = body.getBoundingClientRect();
         const s = Math.max(fitScale, Math.min(4.5, pinch.startScale * (dist / pinch.dist)));
+        begin();
         view.s = s;
         view.x = (midX - r.left) - pinch.sx * s;
         view.y = (midY - r.top) - pinch.sy * s;
@@ -4508,6 +4509,7 @@ function initAskAI() {
         const dy = e.clientY - drag.y;
         if (!drag.moved && Math.hypot(dx, dy) < 4) return;
         drag.moved = true;
+        begin();
         view.x = drag.vx + dx;
         view.y = drag.vy + dy;
         atFit = false;
@@ -4524,6 +4526,7 @@ function initAskAI() {
         if (!wasDrag && performance.now() - downAt < 280) {
           const now = performance.now();
           if (now - lastTap < 320 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 36) {
+            begin();
             if (view.s > fitScale * 1.15) fit();
             else setScaleAt(fitScale * 2, e.clientX, e.clientY);
             lastTap = 0;

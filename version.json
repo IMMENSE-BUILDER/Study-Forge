@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 134,
-  "latest": "v0.6.74",
-  "notes": "Cheatsheet fill pass: leftover column space after text wrapping is distributed between cards (column bottoms align, no blank bottom strip); wheel zoom is clamped to 25% per event; master card labels no longer promise 200%.",
+  "versionCode": 135,
+  "latest": "v0.6.75",
+  "notes": "Cheatsheet zoom stability: removed the modal backdrop blur entirely, so the viewer never toggles a full-screen blur; the zoom class is applied only after real movement (no tap shadow flash) and is not removed while a finger is still down.",
   "apkUrl": ""
 }
