@@ -4638,6 +4638,10 @@ function initAskAI() {
 
     modal.appendChild(body);
     document.body.appendChild(modal);
+    requestAnimationFrame(() => {
+      const sheetEl = modal.querySelector('.cheatsheet-sheet');
+      if (sheetEl) fitSheetInView(sheetEl);
+    });
 
     function applyZoom(z) {
       zoom = Math.max(0.4, Math.min(3.0, z));
@@ -5359,6 +5363,11 @@ function initAskAI() {
     const sheet = document.createElement('div');
     sheet.className = `cheatsheet-sheet ${pal}`;
 
+    const scale = document.createElement('div');
+    scale.className = 'sheet-scale';
+    scale.style.setProperty('--z', '1');
+    sheet.appendChild(scale);
+
     const banner = document.createElement('div');
     banner.className = 'banner';
     const bTitle = document.createElement('div');
@@ -5366,7 +5375,7 @@ function initAskAI() {
     const bSub = document.createElement('span');
     bSub.textContent = `${code} · ${fac || 'B.Tech IT'}`;
     banner.append(bTitle, bSub);
-    sheet.appendChild(banner);
+    scale.appendChild(banner);
 
     const cols = document.createElement('div');
     cols.className = 'cols';
@@ -5377,7 +5386,7 @@ function initAskAI() {
       colEls.push(c);
       cols.appendChild(c);
     }
-    sheet.appendChild(cols);
+    scale.appendChild(cols);
 
     const cards = (doc.boxes || []).map((b, i) => buildSheetCard(b, i + 1));
     const heights = measureCardHeights(cards, 220);
@@ -5455,6 +5464,11 @@ function initAskAI() {
       const half = document.createElement('div');
       half.className = `half-unit ${unitClass}`;
       half.setAttribute('data-unit', unitClass);
+      const scale = document.createElement('div');
+      scale.className = 'unit-scale';
+      scale.style.setProperty('--z', '1');
+      half.appendChild(scale);
+
       const banner = document.createElement('div');
       banner.className = 'banner';
       const bTitle = document.createElement('div');
@@ -5462,7 +5476,7 @@ function initAskAI() {
       const bSub = document.createElement('span');
       bSub.textContent = subtitle;
       banner.append(bTitle, bSub);
-      half.appendChild(banner);
+      scale.appendChild(banner);
 
       const cols = document.createElement('div');
       cols.className = 'cols';
@@ -5473,7 +5487,7 @@ function initAskAI() {
       col2.className = 'col';
       colCards2.forEach(c => col2.appendChild(c));
       cols.append(col1, col2);
-      half.appendChild(cols);
+      scale.appendChild(cols);
       return half;
     }
 
@@ -5546,7 +5560,7 @@ html, body { background: #fff; font-family: 'Carlito', 'Calibri', 'Inter', -appl
 .u4, body.u4 { --ac: #b45309; --ac2: #d97706; --soft: #fffbeb; --line: #fde68a; --hd: #fef3c7; --dk: #78350f; --g1: #92400e; --g2: #b45309; --mut: #78350f; }
 .banner { background: linear-gradient(90deg, var(--g1), var(--g2)); color: #fff; font-weight: 700; font-size: 8.5pt; padding: 3pt 7pt; border-radius: 3pt; margin-bottom: 3.5pt; display: flex; justify-content: space-between; align-items: center; }
 .banner span { font-weight: 400; font-size: 6.2pt; opacity: 0.92; }
-.cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.4mm; height: 100%; }
+.cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.4mm; height: calc(100% - 15pt); }
 .col { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 2pt; }
 .card { background: var(--soft); border: 0.4pt solid var(--line); border-left: 2pt solid var(--ac2); border-radius: 2pt; padding: 1.6pt 3.5pt 2pt 4pt; margin-bottom: 2pt; font-size: 6.6pt; line-height: 1.18; color: #14202e; break-inside: avoid; }
 .card h3 { font-size: 7.4pt; color: var(--ac); font-weight: 700; display: flex; align-items: center; gap: 2.5pt; margin: 0 0 1.5pt; }
@@ -5566,10 +5580,12 @@ ul { list-style: none; padding: 0; margin: 0.5pt 0; }
 li { padding-left: 7pt; position: relative; margin: 0.3pt 0; }
 li:before { content: ''; position: absolute; left: 1.8pt; top: 3.2pt; width: 2.2pt; height: 2.2pt; border-radius: 50%; background: var(--ac2); }
 pre { background: #fff; border: 0.4pt solid var(--line); border-radius: 2pt; padding: 1.2pt 3.5pt; font-family: monospace; font-size: 6pt; margin: 1pt 0; white-space: pre-wrap; }
-.duplex-page { width: 297mm; height: 210mm; display: grid; grid-template-columns: 146.5mm 146.5mm; gap: 3.5mm; padding: 3.5mm; box-sizing: border-box; page-break-after: always; break-after: page; background: #fff; }
-.half-unit { width: 146.5mm; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
-.half-unit .cols { grid-template-columns: 1fr 1fr; }
-.cheatsheet-sheet { width: 297mm; height: 210mm; padding: 3.5mm; box-sizing: border-box; background: #fff; }
+.duplex-page { width: 297mm; height: 210mm; display: grid; grid-template-columns: 146.5mm 146.5mm; gap: 3.5mm; padding: 0; box-sizing: border-box; page-break-after: always; break-after: page; background: #fff; overflow: hidden; }
+.half-unit { width: 146.5mm; height: 100%; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.half-unit .cols, .unit-scale .cols { grid-template-columns: 1fr 1fr; }
+.sheet-scale { width: calc(100% / var(--z, 1)); height: calc(100% / var(--z, 1)); zoom: var(--z, 1); padding: 3.5mm; box-sizing: border-box; overflow: hidden; }
+.unit-scale { width: calc(100% / var(--z, 1)); height: calc(100% / var(--z, 1)); zoom: var(--z, 1); padding: 3.5mm; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; }
+.cheatsheet-sheet { width: 297mm; height: 210mm; padding: 0; box-sizing: border-box; background: #fff; overflow: hidden; }
 .duplex-tabs { display: none !important; }
 @media screen {
   .floating-print-bar { position: fixed; bottom: 18px; right: 18px; background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 9999px; box-shadow: 0 4px 20px rgba(0,0,0,0.35); display: flex; align-items: center; gap: 12px; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; }
@@ -5578,6 +5594,7 @@ pre { background: #fff; border: 0.4pt solid var(--line); border-radius: 2pt; pad
 }
 @media print {
   .floating-print-bar { display: none !important; }
+  .duplex-page, .duplex-page.page-1, .duplex-page.page-2 { display: grid !important; }
 }
 `;
     return `<!doctype html>
@@ -5594,32 +5611,59 @@ ${sheetElement.outerHTML}
 </html>`;
   }
 
-  // STRICT A4 fit: shrink type until content fits 210mm landscape bounds
-  function fitSheetToPage(root, minPx) {
+  // Skill-style fit: binary-search zoom per unit so all four columns fit.
+  // The .sheet-scale / .unit-scale wrappers compensate width/height, so zoom
+  // changes text wrapping exactly like the cheatsheet-layout skill.
+  function fitSheetToPage(root, minZ = 0.8) {
     if (!root || !root.isConnected) return;
-    const pages = root.classList.contains('duplex-sheet')
-      ? root.querySelectorAll('.duplex-page')
-      : [root];
-    pages.forEach(p => {
-      const min = minPx || 5.8;
-      p.style.fontSize = '';
-      const fits = () => p.scrollHeight <= p.clientHeight + 2 && p.scrollWidth <= p.clientWidth + 2;
-      if (p.clientHeight <= 0 || fits()) return;
-      let lo = min, hi = parseFloat(getComputedStyle(p).fontSize) || 8.5;
-      let best = min, guard = 0;
-      while (hi - lo > 0.3 && guard++ < 12) {
+    const scales = root.classList.contains('duplex-sheet')
+      ? root.querySelectorAll('.unit-scale')
+      : root.querySelectorAll('.sheet-scale');
+    const groups = new Map();
+    scales.forEach(scale => {
+      const unit = (scale.closest('.half-unit') && scale.closest('.half-unit').dataset.unit) || 'unit';
+      if (!groups.has(unit)) groups.set(unit, []);
+      groups.get(unit).push(scale);
+    });
+    groups.forEach(group => {
+      const fits = () => group.every(scale => {
+        const z = parseFloat(scale.style.getPropertyValue('--z')) || 1;
+        return Array.from(scale.querySelectorAll('.col')).every(col => {
+          const cap = col.getBoundingClientRect().height;
+          let used = 0;
+          col.querySelectorAll('.card').forEach(card => {
+            used += card.getBoundingClientRect().height;
+            used += (parseFloat(getComputedStyle(card).marginBottom) || 0) * z;
+          });
+          return used <= cap - 1;
+        });
+      });
+      group.forEach(s => s.style.setProperty('--z', '1'));
+      let lo = 0.8, hi = 1.2, best = 0.8;
+      for (let i = 0; i < 14; i++) {
         const mid = (lo + hi) / 2;
-        p.style.fontSize = mid + 'px';
-        if (p.scrollHeight <= p.clientHeight + 2 && p.scrollWidth <= p.clientWidth + 2) { best = mid; lo = mid; }
+        group.forEach(s => s.style.setProperty('--z', String(mid)));
+        if (fits()) { best = mid; lo = mid; }
         else { hi = mid; }
       }
-      p.style.fontSize = best + 'px';
+      group.forEach(s => s.style.setProperty('--z', String(best)));
     });
+  }
+
+  // Fit hidden duplex pages too (page 2 starts display:none).
+  function fitSheetInView(root) {
+    if (!root) return;
+    const hidden = [];
+    root.querySelectorAll('.duplex-page').forEach(p => {
+      if (p.style.display === 'none') { hidden.push(p); p.style.display = ''; }
+    });
+    fitSheetToPage(root, 0.8);
+    hidden.forEach(p => { p.style.display = 'none'; });
   }
 
   function refitVisibleSheets() {
     document.querySelectorAll('.cheatsheet-sheet, .duplex-sheet').forEach((s) => {
-      if (s.offsetParent !== null) fitSheetToPage(s, 6.2);
+      if (s.offsetParent !== null) fitSheetInView(s);
     });
   }
   let sheetResizeTimer = null;
@@ -5660,7 +5704,7 @@ ${sheetElement.outerHTML}
     body.appendChild(wrap);
     fs.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => fitSheetToPage(wrap, 7));
+    requestAnimationFrame(() => fitSheetInView(wrap));
   }
 
   function closeSheetFullscreen() {
@@ -5868,6 +5912,15 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
 
       botMsg.innerHTML = '';
       stripAdviceNodes(sheetDOM);
+
+      // Fit before exporting so the print blob and pop-up share the same zoom.
+      const fitScratch = document.createElement('div');
+      fitScratch.style.cssText = 'position:absolute;left:-99999px;top:0;width:1123px;height:794px;overflow:hidden;visibility:hidden;';
+      fitScratch.appendChild(sheetDOM);
+      document.body.appendChild(fitScratch);
+      fitSheetInView(sheetDOM);
+      fitScratch.remove();
+
       // Generate standalone print HTML blob for direct external viewing/download (zero in-app DOM clutter)
       const standaloneHTML = generateStandaloneSheetHTML(sheetDOM, sheetTitle, unitClass);
       const blob = new Blob([standaloneHTML], { type: 'text/html' });

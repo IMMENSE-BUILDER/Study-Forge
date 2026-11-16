@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 122,
-  "latest": "v0.6.62",
-  "notes": "Cheatsheet DocA fix: docA/docB were block-scoped inside the duplex branch but referenced later; both docs are now hoisted and reused for the popup/iteration state.",
+  "versionCode": 123,
+  "latest": "v0.6.63",
+  "notes": "Cheatsheet layout now follows the cheatsheet-layout skill: per-unit zoom wrappers, 4-column duplex geometry (2 pages x 2 columns per unit), skill card spacing, hidden page-2 print fix.",
   "apkUrl": ""
 }

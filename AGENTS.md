@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.62** [build 122]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.63** [build 123]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,12 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.62):
+Recent major changes (Nov 2026, now v0.6.63):
+- v0.6.63 (Build 123):
+  - Cheatsheet layout aligned to the `cheatsheet-layout` skill: per-unit `.unit-scale` / `.sheet-scale` zoom wrappers (binary-searched 0.8–1.2 using physical card heights), skill card spacing/tables/chips, fixed 2-page duplex geometry (Unit A | Unit B front, Unit B | Unit A back), and hidden Page 2 now prints.
+  - Fit runs on an offscreen 1123×794 stage before the print blob is generated, so Download/Print and the in-app popup share the same fitted zoom.
+  - Mobile no longer reflows the sheet to 1–2 columns; the print geometry stays fixed and the viewer zoom handles small screens.
+  - Triple bump `v0.6.63` / `versionCode: 123` / `CACHE_NAME: study-forge-v0.6.63`.
 - v0.6.62 (Build 122):
   - Cheatsheet "DocA is not defined" fix: `docA`/`docB` were declared with `const` inside the duplex branch and referenced outside it. Both are now hoisted (`let`), and `singleDoc` is used for the single-unit branch. Popup state and chat iteration context now work for both modes.
   - Triple bump `v0.6.62` / `versionCode: 122` / `CACHE_NAME: study-forge-v0.6.62`.

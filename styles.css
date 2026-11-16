@@ -5684,12 +5684,27 @@ label {
   background: #fff;
   border: 1px solid var(--line, #dbe5f1);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 0;
   font-size: 7.2pt;
   line-height: 1.2;
   overflow: hidden;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
   position: relative;
+  aspect-ratio: 297 / 210;
+}
+
+.sheet-scale {
+  width: calc(100% / var(--z, 1));
+  height: calc(100% / var(--z, 1));
+  zoom: var(--z, 1);
+  padding: 8px 10px;
+  box-sizing: border-box;
+  transform-origin: top left;
+  overflow: hidden;
+}
+
+.sheet-scale .cols {
+  height: calc(100% - 15pt);
 }
 
 .banner,
@@ -5746,28 +5761,19 @@ label {
   gap: 2.5pt;
 }
 
-@media (max-width: 900px) {
-  .cheatsheet-sheet .cols {
-    grid-template-columns: 1fr 1fr !important;
-  }
-}
-
-@media (max-width: 520px) {
-  .cheatsheet-sheet .cols {
-    grid-template-columns: 1fr !important;
-  }
-}
+/* Skill layout is fixed: keep 4 columns for single, 2x2 for duplex at every width.
+   Mobile uses the pop-up viewer's zoom instead of reflowing the print geometry. */
 
 .card,
 .cheatsheet-sheet .card,
 .duplex-sheet .card,
 .half-unit .card {
   background: var(--soft, #f4f8fd) !important;
-  border: 0.5pt solid var(--line, #dbe5f1) !important;
-  border-left: 2.5pt solid var(--ac2, #2f78c4) !important;
-  border-radius: 2.5pt !important;
-  padding: 2.2pt 4.5pt 3pt 5pt !important;
-  margin-bottom: 2.5pt !important;
+  border: 0.4pt solid var(--line, #dbe5f1) !important;
+  border-left: 2pt solid var(--ac2, #2f78c4) !important;
+  border-radius: 2pt !important;
+  padding: 1pt 3pt 1.2pt 3.6pt !important;
+  margin-bottom: 1.6pt !important;
   font-size: 6.6pt !important;
   line-height: 1.18 !important;
   color: #14202e !important;
@@ -5780,15 +5786,15 @@ label {
 .cheatsheet-sheet .card h3,
 .duplex-sheet .card h3,
 .half-unit .card h3 {
-  font-size: 7.4pt !important;
+  font-size: 7.3pt !important;
   color: var(--ac, #1a59a6) !important;
   font-weight: 700 !important;
   display: flex !important;
   align-items: center !important;
-  gap: 3pt !important;
-  margin: 0 0 2pt !important;
+  gap: 2pt !important;
+  margin: 0 0 1.2pt !important;
   padding: 0 !important;
-  line-height: 1.2 !important;
+  line-height: 1.15 !important;
 }
 
 .n,
@@ -5802,12 +5808,12 @@ label {
   background: var(--ac, #1a59a6) !important;
   color: #fff !important;
   border-radius: 2pt !important;
-  min-width: 9pt !important;
-  height: 9pt !important;
+  min-width: 8pt !important;
+  height: 8pt !important;
   text-align: center !important;
   font-size: 5.6pt !important;
   line-height: 1 !important;
-  padding: 0 2pt !important;
+  padding: 0 1pt !important;
   font-weight: 800 !important;
   flex-shrink: 0 !important;
   margin-right: 2pt !important;
@@ -5825,7 +5831,7 @@ label {
 .duplex-sheet p,
 .half-unit p,
 .card p {
-  margin: 0.8pt 0 !important;
+  margin: 0.3pt 0 !important;
   overflow-wrap: break-word !important;
 }
 
@@ -5836,9 +5842,9 @@ label {
 .card table {
   border-collapse: collapse !important;
   width: 100% !important;
-  margin: 1.2pt 0 !important;
-  font-size: 6pt !important;
-  line-height: 1.14 !important;
+  margin: 1pt 0 !important;
+  font-size: 5.9pt !important;
+  line-height: 1.06 !important;
 }
 
 .cheatsheet-sheet th,
@@ -5849,8 +5855,8 @@ label {
 .half-unit td,
 .card th,
 .card td {
-  border: 0.4pt solid var(--line, #dbe5f1) !important;
-  padding: 1pt 3pt !important;
+  border: 0.35pt solid var(--line, #dbe5f1) !important;
+  padding: 0.25pt 1.5pt !important;
   text-align: left !important;
   vertical-align: top !important;
   background: #fff !important;
@@ -5873,12 +5879,12 @@ label {
 .card .eq {
   background: #fff !important;
   border: 0.4pt solid var(--line, #dbe5f1) !important;
-  border-left: 2pt solid var(--ac, #1a59a6) !important;
+  border-left: 1.4pt solid var(--ac, #1a59a6) !important;
   border-radius: 2pt !important;
-  padding: 1.2pt 4pt !important;
-  margin: 1.5pt 0 !important;
-  font-size: 6.4pt !important;
-  line-height: 1.35 !important;
+  padding: 0.8pt 3pt !important;
+  margin: 0.6pt 0 !important;
+  font-size: 6.3pt !important;
+  line-height: 1.3 !important;
   color: var(--dk, #0d2a4d) !important;
   overflow-x: auto !important;
 }
@@ -5888,13 +5894,13 @@ label {
 .duplex-sheet .ex,
 .half-unit .ex,
 .card .ex {
-  border-left: 2pt solid #3f9a5a !important;
-  padding: 1.2pt 4pt !important;
-  margin: 1.5pt 0 !important;
+  border-left: 1.4pt solid #3f9a5a !important;
+  padding: 0.8pt 3pt !important;
+  margin: 0.6pt 0 !important;
   background: #f0faf3 !important;
   border-radius: 2pt !important;
   font-size: 6.2pt !important;
-  line-height: 1.25 !important;
+  line-height: 1.2 !important;
 }
 
 .ex .t,
@@ -5915,8 +5921,8 @@ label {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: center !important;
-  gap: 2pt 0 !important;
-  margin: 1.5pt 0 !important;
+  gap: 1pt 0 !important;
+  margin: 0.6pt 0 !important;
 }
 
 .chip,
@@ -5925,14 +5931,14 @@ label {
 .half-unit .chip,
 .card .chip {
   background: #fff !important;
-  border: 0.6pt solid var(--ac2, #2f78c4) !important;
+  border: 0.5pt solid var(--ac2, #2f78c4) !important;
   border-radius: 2pt !important;
-  padding: 0.6pt 3.5pt !important;
+  padding: 0.4pt 2.5pt !important;
   font-weight: 700 !important;
   color: var(--dk, #0d2a4d) !important;
-  font-size: 6pt !important;
+  font-size: 5.9pt !important;
   text-align: center !important;
-  line-height: 1.15 !important;
+  line-height: 1.1 !important;
 }
 
 .arr,
@@ -6065,23 +6071,38 @@ label {
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
   width: 100%;
+  aspect-ratio: 297 / 210;
+  overflow: hidden;
 }
 
-@media (max-width: 768px) {
-  .duplex-page {
-    grid-template-columns: 1fr;
-  }
-}
+/* Duplex stays a fixed two-half landscape page at every width. */
 
 .half-unit {
   background: #fff;
   border: 1px solid var(--line, #cbd5e1);
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+.unit-scale {
+  width: calc(100% / var(--z, 1));
+  height: calc(100% / var(--z, 1));
+  zoom: var(--z, 1);
+  padding: 6px 8px;
+  box-sizing: border-box;
+  transform-origin: top left;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.unit-scale .cols {
+  height: calc(100% - 15pt);
 }
 
 .half-unit .cols {
@@ -6539,7 +6560,7 @@ label {
     width: 297mm !important;
     height: 210mm !important;
     max-height: 210mm !important;
-    padding: 3.5mm !important;
+    padding: 0 !important;
     margin: 0 auto !important;
     border: none !important;
     border-radius: 0 !important;
@@ -6553,6 +6574,19 @@ label {
     background: #fff !important;
     color: #14202e !important;
     aspect-ratio: auto !important;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .sheet-scale {
+    width: calc(100% / var(--z, 1)) !important;
+    height: calc(100% / var(--z, 1)) !important;
+    padding: 3.5mm !important;
+    zoom: var(--z, 1);
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  body.print-cheatsheet .cheatsheet-sheet .sheet-scale .cols {
+    height: calc(100% - 15pt) !important;
   }
 
   body.print-cheatsheet .cheatsheet-sheet .cols {
@@ -6571,7 +6605,7 @@ label {
     width: 297mm !important;
     height: 210mm !important;
     max-height: 210mm !important;
-    padding: 3.5mm !important;
+    padding: 0 !important;
     margin: 0 auto !important;
     border: none !important;
     border-radius: 0 !important;
@@ -6589,14 +6623,24 @@ label {
   body.print-cheatsheet .duplex-page .half-unit {
     width: 146.5mm !important;
     height: 100% !important;
+    padding: 0 !important;
     overflow: hidden !important;
   }
 
-  body.print-cheatsheet .duplex-page .half-unit .cols {
+  body.print-cheatsheet .duplex-page .half-unit .unit-scale {
+    width: calc(100% / var(--z, 1)) !important;
+    height: calc(100% / var(--z, 1)) !important;
+    padding: 3.5mm !important;
+    zoom: var(--z, 1);
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  body.print-cheatsheet .duplex-page .half-unit .unit-scale .cols {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 2.4mm !important;
-    height: calc(100% - 14pt) !important;
+    height: calc(100% - 15pt) !important;
   }
 
   body.print-cheatsheet .card {
