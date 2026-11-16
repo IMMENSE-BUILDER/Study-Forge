@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.73** [build 133]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.74** [build 134]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,12 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.73):
+Recent major changes (Nov 2026, now v0.6.74):
+- v0.6.74 (Build 134):
+  - **Fill pass**: `.sf-col` uses `justify-content: space-between`, so the 20–55 px left by text-wrap cliffs is distributed between cards and every column ends on the same bottom line. No blank bottom strip.
+  - Wheel zoom clamped to 0.8–1.25 per event (a single fast wheel no longer jumps 3.75×).
+  - Master card labels say "Open Viewer" instead of promising 200%.
+  - Triple bump `v0.6.74` / `versionCode: 134` / `CACHE_NAME: study-forge-v0.6.74`.
 - v0.6.73 (Build 133):
   - **Cheatsheet viewer rebuilt**: one `.sf-zoom-stage` transform (`translate3d + scale`, origin 0 0), custom pan/pinch/wheel gestures, no CSS transform transition, no `will-change` on `.sf-pages`, and `backdrop-filter`/paper shadows removed while zooming. Fixes the left-edge crop (paper left was −250 px at 150% and −531 px at 200%, outside the scroll area) and the text/block blinking.
   - Top modal bar no longer has Zoom In/Out, Fit, 150% or Print. It keeps page tabs (Front/Back/Both) and Close.

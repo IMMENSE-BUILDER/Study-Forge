@@ -7043,6 +7043,10 @@ label {
   border-radius: 0 !important;
 }
 
+.master-img-modal.sf-zooming .sf-sheet .card {
+  box-shadow: none !important;
+}
+
 .master-img-modal.sf-zooming .master-modal-img {
   box-shadow: none !important;
   border-radius: 0 !important;

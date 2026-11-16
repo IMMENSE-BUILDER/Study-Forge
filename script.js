@@ -4298,7 +4298,7 @@ function initAskAI() {
     p1Wrap.className = 'master-page-box';
     const p1Label = document.createElement('div');
     p1Label.className = 'master-page-tag';
-    p1Label.innerHTML = '<strong>Page 1 (Front Side · Landscape Duplex)</strong> <span>🔍 Click / Tap to Zoom 200%</span>';
+    p1Label.innerHTML = '<strong>Page 1 (Front Side · Landscape Duplex)</strong> <span>🔍 Click / Tap to Open Viewer</span>';
     const img1 = document.createElement('img');
     img1.className = 'master-sheet-img';
     img1.src = data.page1;
@@ -4313,7 +4313,7 @@ function initAskAI() {
     p2Wrap.style.display = 'none';
     const p2Label = document.createElement('div');
     p2Label.className = 'master-page-tag';
-    p2Label.innerHTML = '<strong>Page 2 (Back Side · Landscape Duplex)</strong> <span>🔍 Click / Tap to Zoom 200%</span>';
+    p2Label.innerHTML = '<strong>Page 2 (Back Side · Landscape Duplex)</strong> <span>🔍 Click / Tap to Open Viewer</span>';
     const img2 = document.createElement('img');
     img2.className = 'master-sheet-img';
     img2.src = data.page2;
@@ -4556,7 +4556,8 @@ function initAskAI() {
       begin();
       end();
       if (e.ctrlKey || e.metaKey) {
-        setScaleAt(view.s * Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY);
+        const factor = Math.max(0.8, Math.min(1.25, Math.exp(-e.deltaY * 0.0018)));
+        setScaleAt(view.s * factor, e.clientX, e.clientY);
       } else {
         view.x -= e.deltaX;
         view.y -= e.deltaY;
@@ -5885,6 +5886,7 @@ function initAskAI() {
   display: flex;
   flex-direction: column;
   gap: 0;
+  justify-content: space-between;
   min-height: 0;
   overflow: hidden;
 }
