@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 126,
-  "latest": "v0.6.66",
-  "notes": "Fix duplex sf engine: docA/docB were referenced before declaration in buildSfSheet; single-unit sf paper verified live at 1123x794 with 4 balanced columns.",
+  "versionCode": 127,
+  "latest": "v0.6.67",
+  "notes": "Cheatsheet duplex banners no longer duplicate the unit number: sfUnitTitle strips 'UNIT N —' before rendering 'UNIT I/II · title'.",
   "apkUrl": ""
 }

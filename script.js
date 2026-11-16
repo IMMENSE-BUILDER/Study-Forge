@@ -5580,6 +5580,11 @@ function initAskAI() {
     } catch (e) {}
   }
 
+  function sfUnitTitle(doc, roman) {
+    const raw = String((doc && doc.title) || '').replace(/^UNIT\s+[IVX0-9]+\s*[—–-]\s*/i, '').trim();
+    return `UNIT ${roman} · ${raw || ('UNIT ' + roman)}`;
+  }
+
   async function buildSfSheet(docs, isDuplex, uA, uB, alias, probeParent) {
     const s = sheetSubjects().find(x => x.alias === alias);
     const fac = (typeof SF_FACULTY !== 'undefined' && SF_FACULTY[alias]) ? SF_FACULTY[alias].faculty : '';
@@ -5630,7 +5635,7 @@ function initAskAI() {
       const paper = mkPaper();
       const h = sfCreateHalf({
         unitClass: pal, unitKey: pal, side: 'sf-single',
-        title: `UNIT ${rU} · ${doc.title || ('UNIT ' + rU)}`,
+        title: sfUnitTitle(doc, rU),
         subtitle: `${code} · ${fac || 'B.Tech IT'}`,
         k: 4
       });
@@ -5647,13 +5652,13 @@ function initAskAI() {
       const palB = (docB && docB.theme) || getUnitPaletteClass(uB);
 
       const page1 = mkPaper();
-      const a1 = sfCreateHalf({ unitClass: palA, unitKey: 'A', side: 'left', title: `UNIT ${rA} · ${docA.title || ('UNIT ' + rA)}`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
-      const b1 = sfCreateHalf({ unitClass: palB, unitKey: 'B', side: 'right', title: `UNIT ${rB} · ${docB.title || ('UNIT ' + rB)}`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
+      const a1 = sfCreateHalf({ unitClass: palA, unitKey: 'A', side: 'left', title: sfUnitTitle(docA, rA), subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
+      const b1 = sfCreateHalf({ unitClass: palB, unitKey: 'B', side: 'right', title: sfUnitTitle(docB, rB), subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
       page1.append(a1.half, b1.half);
 
       const page2 = mkPaper();
-      const b2 = sfCreateHalf({ unitClass: palB, unitKey: 'B', side: 'left', title: `UNIT ${rB} · ${docB.title || ('UNIT ' + rB)} (contd.)`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
-      const a2 = sfCreateHalf({ unitClass: palA, unitKey: 'A', side: 'right', title: `UNIT ${rA} · ${docA.title || ('UNIT ' + rA)} (contd.)`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
+      const b2 = sfCreateHalf({ unitClass: palB, unitKey: 'B', side: 'left', title: `${sfUnitTitle(docB, rB)} (contd.)`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
+      const a2 = sfCreateHalf({ unitClass: palA, unitKey: 'A', side: 'right', title: `${sfUnitTitle(docA, rA)} (contd.)`, subtitle: `${code} · ${fac || 'B.Tech IT'}`, k: 2 });
       page2.append(b2.half, a2.half);
 
       const cardsA = (docA.boxes || []).map((b, i) => buildSheetCard(b, i + 1));

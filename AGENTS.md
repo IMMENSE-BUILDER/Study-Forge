@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.66** [build 126]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.67** [build 127]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,10 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.66):
+Recent major changes (Nov 2026, now v0.6.67):
+- v0.6.67 (Build 127):
+  - Duplex banner title cleanup: `sfUnitTitle()` strips `UNIT N —` from the AI title before rendering `UNIT I/II · title`, removing the duplicated unit number seen in live output.
+  - Triple bump `v0.6.67` / `versionCode: 127` / `CACHE_NAME: study-forge-v0.6.67`.
 - v0.6.66 (Build 126):
   - Fixed duplex `sf` engine crash: `docA`/`docB` were referenced before declaration in `buildSfSheet`. Single-unit sf paper live-verified at 1123×794 with 4 balanced columns.
   - Triple bump `v0.6.66` / `versionCode: 126` / `CACHE_NAME: study-forge-v0.6.66`.
