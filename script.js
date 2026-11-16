@@ -5136,7 +5136,7 @@ function initAskAI() {
                 if (norm) validBoxes.push(norm);
               } catch (eNorm) {}
             }
-            if (validBoxes.length >= 30) break;
+            if (validBoxes.length >= 24) break;
             i = end + 1;
           } else {
             break;
@@ -5159,7 +5159,7 @@ function initAskAI() {
         const n = normalizeSheetBox(b);
         if (n) valid.push(n);
       } catch (e) {}
-      if (valid.length >= 30) break;
+      if (valid.length >= 24) break;
     }
     if (valid.length < 3) return null;
     const missing = (Array.isArray(doc.missing) ? doc.missing : [])
@@ -6406,7 +6406,8 @@ ${unitCtx}
     TASK: Emit ONE ultra-dense, print-packed revision cheatsheet strictly following the cheatsheet-layout skill as raw JSON (no fences, no commentary) covering EVERY single subtopic in the syllabus above.
 
     STRICT SKILL DENSITY RULES:
-    - PACKED INFORMATION DENSITY: Generate 18 to 22 dense, exhaustive topic cards covering EVERY subtopic in the syllabus (24 absolute max).
+    - MANDATORY CARD COUNT: return 18 to 22 box objects (24 absolute max). Count the boxes before answering. Fewer than 18 is invalid: compact or split topics instead of omitting them.
+    - PACKED INFORMATION DENSITY: cover EVERY subtopic in the syllabus above, in syllabus order, with no skipped formula, law, algorithm, or conversion.
     - ZERO ADVICE BOXES: Never write advice, tips, tricks, warnings, hacks, remember, or pitfalls. BANNED: trap, tip, trick, warning, note, pro tip, careful. Zero fluff. Every square millimeter must be examinable technical content: definitions, derivations, formulas, numerical examples, and tables.
     - CORRECT FORMS, NOT SOLVING STEPS: Examples show the final correct form/result directly (e.g. "Eg. m = 1000 kg, v = 20 m/s -> K = 200 kJ").
     - FULL COVERAGE: Every single syllabus topic, formula, law, algorithm, and conversion gets an explicit card.

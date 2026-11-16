@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 128,
-  "latest": "v0.6.68",
-  "notes": "Cheatsheet print fidelity: one SF_ENGINE_CSS source drives both the live fit and the standalone print HTML (cards, tables, chips, margins identical), flex columns remove bottom clipping, duplex patches target Unit I/II, patch validation mirrors validate_cards.py, undo stack added, missing topics surfaced.",
+  "versionCode": 129,
+  "latest": "v0.6.69",
+  "notes": "Cheatsheet density guard: hard cap at 24 cards per unit and a mandatory 18-22 card prompt. Print CSS already unified with the live fit (v0.6.68).",
   "apkUrl": ""
 }

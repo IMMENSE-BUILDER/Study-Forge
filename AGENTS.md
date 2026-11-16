@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.68** [build 128]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.69** [build 129]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,10 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.68):
+Recent major changes (Nov 2026, now v0.6.69):
+- v0.6.69 (Build 129):
+  - Hard card cap at 24 per unit in both parser tiers (was 30), plus a mandatory 18-22 card count directive in the AI prompt (a live single-unit run produced 25 and a 12-card Unit I).
+  - Triple bump `v0.6.69` / `versionCode: 129` / `CACHE_NAME: study-forge-v0.6.69`.
 - v0.6.68 (Build 128):
   - **One paper stylesheet for screen and print**: `SF_ENGINE_CSS` in `script.js` is injected into the app and embedded verbatim in the standalone print HTML. Card padding, table cells, chips, equations and margins are now identical in the live fit and the printed file, fixing silent print clipping (columns were overflowing by ~60–80 px).
   - `.sf-hz` is a flex column and `.sf-cols` fills the space under the banner (`flex:1; min-height:0`), removing the ~2 pt bottom clip from `calc(100% - 15pt)`.
