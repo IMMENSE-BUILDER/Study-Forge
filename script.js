@@ -5877,7 +5877,7 @@ function initAskAI() {
 
 .sf-cols {
   display: grid;
-  grid-template-columns: repeat(var(--k, 2), 1fr);
+  grid-template-columns: repeat(var(--k, 2), minmax(0, 1fr));
   gap: 2.4mm;
   flex: 1 1 auto;
   min-height: 0;
@@ -5891,6 +5891,7 @@ function initAskAI() {
   gap: 0;
   justify-content: space-between;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -5908,6 +5909,7 @@ function initAskAI() {
   break-inside: avoid !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
   flex: none !important;
+  min-width: 0 !important;
 }
 
 .sf-sheet .card h3 {

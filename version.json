@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 135,
-  "latest": "v0.6.75",
-  "notes": "Cheatsheet zoom stability: removed the modal backdrop blur entirely, so the viewer never toggles a full-screen blur; the zoom class is applied only after real movement (no tap shadow flash) and is not removed while a finger is still down.",
+  "versionCode": 136,
+  "latest": "v0.6.76",
+  "notes": "Cheatsheet fit accuracy: grid columns now use minmax(0,1fr) and cards/columns are min-width:0, so every column has the exact width the fit measured. One column was 8 px taller than its fitted height because the first grid track was wider than the others.",
   "apkUrl": ""
 }

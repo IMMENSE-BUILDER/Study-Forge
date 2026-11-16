@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.75** [build 135]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.76** [build 136]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -172,7 +172,10 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.75):
+Recent major changes (Nov 2026, now v0.6.76):
+- v0.6.76 (Build 136):
+  - **Fit width parity**: `.sf-cols` uses `repeat(var(--k), minmax(0, 1fr))` and `.sf-col` / `.sf-sheet .card` set `min-width: 0`. Grid `1fr` has an implicit min-content floor, so the first track could be wider than the others; the fit measured the first track and a later column could be 8 px taller and clip. All tracks now match the measured width.
+  - Triple bump `v0.6.76` / `versionCode: 136` / `CACHE_NAME: study-forge-v0.6.76`.
 - v0.6.75 (Build 135):
   - Removed the modal's full-screen `backdrop-filter: blur(8px)` entirely, eliminating a costly compositing pass and the blurred-to-solid flash when a gesture starts.
   - `sf-zooming` is now applied only after real movement (4 px drag or pinch move), so a simple tap never removes/re-adds paper shadows.
