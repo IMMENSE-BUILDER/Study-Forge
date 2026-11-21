@@ -1,6 +1,6 @@
 ﻿# ⚡ StudyForge
 
-> Offline-first, installable PWA study companion tailored for Satyam Kumar (ADGIPS B.Tech IT, Sem 1, Sec E).
+> Offline-first, installable PWA study companion tailored for Satyam Kumar.
 > Features a live academic timetable, weekly sprints, Kanban task board, AI study cards, voice notes, and unified AI study companion.
 
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=flat&logo=vercel)](https://vercel.com)
@@ -11,7 +11,7 @@
 
 ## 🌟 Core Features
 
-- 📅 **Live Class Timetable**: 5-day aligned timetable (AY 2026–27, Sec E, Room 2310) with real-time class indicators, batch splits (E1/E2), and today's schedule agenda.
+- 📅 **Live Class Timetable**: 5-day aligned timetable (AY 2026–27, Sec E) with real-time class indicators, batch splits (E1/E2), and today's schedule agenda.
 - 🎴 **Visual AI Study Cards**: Generates instant animated revision cards with inline SVG diagrams, KaTeX math derivations, essence definitions, and common exam traps.
 - ✨ **Ask AI Tutor**: Academic tutor with sub-2s streaming responses, timetable awareness, syllabus grounding, and multi-turn conversational memory.
 - 🎯 **Goals & Sprints**: Track academic goals, sprint velocity, and weekly focus metrics.
