@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.77** [build 137]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.78** [build 138]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -43,8 +43,9 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 Desktop/study-forge-pwa/     # edit here
 ├── AGENTS.md                # this file (dev doc — exclude from Netlify deploys)
 ├── index.html               # 5 panels (timetable/goals/tasks/notes/snapshot) + bottom nav + dialogs
-│                            # + AI page. Loads: confetti CDN, syllabus.js, script.js, SW register
-├── script.js                # all app logic (~8.7k lines, see §4)
+│                            # + AI page. Loads: confetti CDN, syllabus.js, script.js, liquid-glass-nav.js, SW register
+├── script.js                # all app logic (~9.6k lines, see §4)
+├── liquid-glass-nav.js      # ray-traced 3D SDF liquid-glass engine for #bottomNav (MIT, adapted from MuhammadaliMS/liquid-glass)
 ├── syllabus.js              # SF_* data pack: profile, timetable, faculty, subjects, seed/migration helpers
 ├── styles.css               # neo-brutalist theme via CSS vars, mobile-first
 ├── sw.js                    # network-first worker; CACHE_NAME bumped every release
@@ -172,7 +173,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.77):
+Recent major changes (Nov 2026, now v0.6.78):
+- v0.6.78 (Build 138):
+  - **Ray-traced Liquid Glass bottom navigation bar** (`liquid-glass-nav.js`, adapted from `MuhammadaliMS/liquid-glass`, MIT): floating lower-mid pill (`#bottomNav`) combining a CPU-computed 3D SDF + Snell + Total Internal Reflection displacement SVG `backdrop-filter` (`color-interpolation-filters="sRGB"` with subtle chromatic border dispersion + CSS frosted fallback) and a real-time transparent WebGL 3D raymarched glass surface (`solid`, `enterSolid`, `exitSolid`, TIR border caustics, Schlick Fresnel rims, pointer liquid edge bulge, studio speculars, and smooth-min blended damped-spring active droplet with swipe scrubbing).
+  - Offline SW `ASSETS` includes `./liquid-glass-nav.js`; `holdTargetOk` ignores `.bottom-nav`.
+  - Triple bump `v0.6.78` / `versionCode: 138` / `CACHE_NAME: study-forge-v0.6.78`.
 - v0.6.77 (Build 137):
   - **Security & proxy hardening**: removed the hardcoded base64 Vercel AI Gateway fallback key from `api/ai/chat/completions.js` and `serve-pwa.js` (strictly requires `VERCEL_AI_GATEWAY_KEY` / `AI_GATEWAY_API_KEY` / `VERCEL_AI_KEY`).
   - Hardened `api/ai/chat/completions.js`: strict `Origin`/`Referer` validation (blocks missing headers and untrusted origins), 4 MB request body cap (`413`), sliding-window per-IP rate limiting (30 req/min, `429`), strict JSON/messages schema validation + parameter clamping, single `Accept` header, 55s upstream timeout (`504`), and client-abort upstream cleanup.

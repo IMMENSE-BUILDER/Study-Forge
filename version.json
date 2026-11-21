@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 137,
-  "latest": "v0.6.77",
-  "notes": "Security hardening: removed hardcoded AI gateway fallback keys from server proxy and local dev server, enforced strict Origin/Referer validation, 4 MB payload cap, per-IP rate limiting, and schema validation on /api/ai/chat/completions, and tightened the flashcard SVG sanitizer to an explicit tag allowlist and safe fragment/attribute checks.",
+  "versionCode": 138,
+  "latest": "v0.6.78",
+  "notes": "Ray-traced Liquid Glass bottom navigation bar (adapted from MuhammadaliMS/liquid-glass): live-DOM 3D Snell + Total Internal Reflection displacement backdrop-filter with subtle prismatic border dispersion, paired with a real-time transparent WebGL 3D SDF glass surface (smooth-min blended sliding active droplet, damped spring physics, pointer liquid edge bulge, Schlick Fresnel rims, and TIR border caustics).",
   "apkUrl": ""
 }
