@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 140,
-  "latest": "v0.6.80",
-  "notes": "Zero-flash first-paint liquid glass startup (synchronous dark-theme boot, non-blocking KaTeX/confetti CDNs, immediate 0-frame WebGL + SVG refraction paint, and borderless crystal fallback glass), plus compact Muse Ember model label in Ask AI mode bar.",
+  "versionCode": 141,
+  "latest": "v0.6.81",
+  "notes": "Ray-traced 3D Liquid Glass across all header buttons, icons, and badges (.top-bar): shared single-pass 6-item WebGL SDF raymarcher with ember/amber translucent crystal tinting (#newSprintBtn, #streakBadge), clear crystal geometry (#themeToggle, #calendarBtn, #xpLabel, Sprint menu button), per-item SVG Snell/TIR refraction chips, and optical glass XP trough + sprint dropdown.",
   "apkUrl": ""
 }

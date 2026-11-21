@@ -645,7 +645,7 @@
     '}'
   ].join('\n');
 
-  function createSurfaceGlassWebGL(canvas) {
+  function createShaderProgramContext(canvas, fragmentSource, uNames) {
     var gl = canvas.getContext('webgl', {
       alpha: true,
       antialias: true,
@@ -660,7 +660,7 @@
       gl.shaderSource(shader, source);
       gl.compileShader(shader);
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.warn('liquid-glass-nav shader compile error:', gl.getShaderInfoLog(shader));
+        console.warn('liquid-glass shader compile error:', gl.getShaderInfoLog(shader));
         gl.deleteShader(shader);
         return null;
       }
@@ -668,7 +668,7 @@
     }
 
     var vs = compile(gl.VERTEX_SHADER, VERTEX_SHADER);
-    var fs = compile(gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
+    var fs = compile(gl.FRAGMENT_SHADER, fragmentSource);
     if (!vs || !fs) return null;
 
     var program = gl.createProgram();
@@ -676,7 +676,7 @@
     gl.attachShader(program, fs);
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.warn('liquid-glass-nav program link error:', gl.getProgramInfoLog(program));
+      console.warn('liquid-glass program link error:', gl.getProgramInfoLog(program));
       gl.deleteShader(vs);
       gl.deleteShader(fs);
       gl.deleteProgram(program);
@@ -687,17 +687,34 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 
-    var aPos = gl.getAttribLocation(program, 'a_position');
+    var u = {};
+    for (var i = 0; i < uNames.length; i++) {
+      var name = uNames[i];
+      u[name] = gl.getUniformLocation(program, name) || gl.getUniformLocation(program, name + '[0]');
+    }
+
+    return {
+      gl: gl,
+      vs: vs,
+      fs: fs,
+      program: program,
+      quad: quad,
+      aPos: gl.getAttribLocation(program, 'a_position'),
+      u: u
+    };
+  }
+
+  function createSurfaceGlassWebGL(canvas) {
     var uNames = [
       'u_resolution', 'u_size', 'u_dpr', 'u_pill', 'u_radius',
       'u_lens', 'u_lensRadius', 'u_lensLift',
       'u_pointer', 'u_pull', 'u_light', 'u_press', 'u_dark'
     ];
-    var u = {};
-    for (var i = 0; i < uNames.length; i++) {
-      u[uNames[i]] = gl.getUniformLocation(program, uNames[i]);
-    }
+    var ctx = createShaderProgramContext(canvas, FRAGMENT_SHADER, uNames);
+    if (!ctx) return null;
 
+    var gl = ctx.gl;
+    var u = ctx.u;
     var cssWidth = 1;
     var cssHeight = 1;
     var dpr = 1;
@@ -721,11 +738,11 @@
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.useProgram(program);
+      gl.useProgram(ctx.program);
 
-      gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-      gl.enableVertexAttribArray(aPos);
-      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quad);
+      gl.enableVertexAttribArray(ctx.aPos);
+      gl.vertexAttribPointer(ctx.aPos, 2, gl.FLOAT, false, 0, 0);
 
       gl.uniform2f(u.u_resolution, canvas.width, canvas.height);
       gl.uniform2f(u.u_size, cssWidth, cssHeight);
@@ -747,10 +764,314 @@
     function destroy() {
       if (destroyed) return;
       destroyed = true;
-      gl.deleteBuffer(quad);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-      gl.deleteProgram(program);
+      gl.deleteBuffer(ctx.quad);
+      gl.deleteShader(ctx.vs);
+      gl.deleteShader(ctx.fs);
+      gl.deleteProgram(ctx.program);
+    }
+
+    return { resize: resize, draw: draw, destroy: destroy };
+  }
+
+  /* ------------------------------------------------------------
+     Header Multi-Item Ray-Traced 3D Liquid Glass Shader & WebGL
+     (6 icons/buttons/badges in a single GPU pass)
+     ------------------------------------------------------------ */
+  var HEADER_FRAGMENT_SHADER = [
+    'precision highp float;',
+    '',
+    'uniform vec2 u_resolution;',
+    'uniform vec2 u_size;',
+    'uniform float u_dpr;',
+    'uniform int u_count;',
+    'uniform vec4 u_rects[6];',
+    'uniform float u_radii[6];',
+    'uniform vec4 u_tints[6];',
+    'uniform float u_press[6];',
+    'uniform vec2 u_pointer;',
+    'uniform float u_pull;',
+    'uniform vec2 u_light;',
+    'uniform float u_dark;',
+    '',
+    '#define CAMERA 780.0',
+    '',
+    'float sdBox2(vec2 p, vec2 halfSize, float radius) {',
+    '  vec2 b = max(halfSize - radius, 0.0);',
+    '  vec2 q = abs(p) - b;',
+    '  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;',
+    '}',
+    '',
+    'vec3 itemField(vec2 local, vec4 rect, float radius) {',
+    '  vec2 halfSize = rect.zw;',
+    '  vec2 dp = (rect.xy + local) - u_pointer;',
+    '  float pDist2 = dot(dp, dp);',
+    '  halfSize += u_pull * 0.42 * exp(-pDist2 / 1200.0);',
+    '  vec2 b = max(halfSize - radius, 0.0);',
+    '  vec2 q = abs(local) - b;',
+    '  vec2 s = vec2(local.x < 0.0 ? -1.0 : 1.0, local.y < 0.0 ? -1.0 : 1.0);',
+    '  vec2 o = max(q, 0.0);',
+    '  float oLen = length(o);',
+    '  float d = oLen + min(max(q.x, q.y), 0.0) - radius;',
+    '  vec2 g = oLen > 0.0001 ? s * (o / oLen) : (q.x > q.y ? vec2(s.x, 0.0) : vec2(0.0, s.y));',
+    '  return vec3(d, g);',
+    '}',
+    '',
+    'vec4 itemSolid(vec3 p, vec4 rect, float radius) {',
+    '  vec2 local = p.xy - rect.xy;',
+    '  vec3 b = itemField(local, rect, radius);',
+    '  float minDim = max(min(rect.z, rect.w), 8.0);',
+    '  vec2 rad = max(rect.zw, vec2(minDim));',
+    '  float halfDepth = clamp(minDim * 0.68, 7.5, 14.5);',
+    '  float rounding = clamp(minDim * 0.44, 4.5, 9.5);',
+    '  float dome = clamp(minDim * 0.16, 1.5, 3.0) * exp(-1.6 * dot(local / rad, local / rad));',
+    '  vec2 domeGrad = -3.2 * dome * local / (rad * rad);',
+    '  vec2 q = vec2(b.x + rounding, abs(p.z) - halfDepth - dome + rounding);',
+    '  vec2 outside = max(q, 0.0);',
+    '  float outLen = length(outside);',
+    '  vec2 w = outLen > 0.0001 ? outside / outLen : (q.x > q.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0));',
+    '  float dist = min(max(q.x, q.y), 0.0) + outLen - rounding;',
+    '  vec3 grad = w.x * vec3(b.yz, 0.0) + w.y * vec3(-domeGrad, sign(p.z));',
+    '  return vec4(dist, normalize(grad + 1e-6));',
+    '}',
+    '',
+    'bool enterItemSolid(vec3 origin, vec3 dir, vec4 rect, float radius, out vec3 hit) {',
+    '  vec3 bMin = vec3(rect.xy - rect.zw - u_pull - 6.0, -28.0);',
+    '  vec3 bMax = vec3(rect.xy + rect.zw + u_pull + 6.0, 28.0);',
+    '  vec3 invDir = 1.0 / (dir + vec3(1e-6));',
+    '  vec3 a = (bMin - origin) * invDir;',
+    '  vec3 b = (bMax - origin) * invDir;',
+    '  vec3 nearB = min(a, b);',
+    '  vec3 farB = max(a, b);',
+    '  float tNear = max(0.0, max(max(nearB.x, nearB.y), nearB.z));',
+    '  float tFar = min(min(farB.x, farB.y), farB.z);',
+    '  if (tFar < tNear) return false;',
+    '  float t = tNear;',
+    '  for (int i = 0; i < 40; i++) {',
+    '    hit = origin + dir * t;',
+    '    float d = itemSolid(hit, rect, radius).x;',
+    '    if (d < 0.14) return true;',
+    '    t += max(0.08, d * 0.78);',
+    '    if (t > tFar) break;',
+    '  }',
+    '  return false;',
+    '}',
+    '',
+    'vec3 exitItemSolid(vec3 origin, vec3 dir, vec4 rect, float radius, out float traveled) {',
+    '  float t = 0.5;',
+    '  vec3 pt = origin + dir * t;',
+    '  float limit = 2.0 * (rect.z + rect.w) + 32.0;',
+    '  for (int i = 0; i < 32; i++) {',
+    '    pt = origin + dir * t;',
+    '    float d = -itemSolid(pt, rect, radius).x;',
+    '    if (i > 1 && d < 0.14) break;',
+    '    t += max(0.12, d * 0.78);',
+    '    if (t > limit) break;',
+    '  }',
+    '  traveled = t;',
+    '  return pt;',
+    '}',
+    '',
+    'vec3 hdrEnvColor(vec3 dir) {',
+    '  vec3 skyLight = mix(vec3(0.95, 0.92, 0.86), vec3(1.0, 0.985, 0.95), clamp(0.5 - dir.y * 0.8, 0.0, 1.0));',
+    '  vec3 skyDark = mix(vec3(0.10, 0.13, 0.20), vec3(0.32, 0.42, 0.60), clamp(0.5 - dir.y * 0.8, 0.0, 1.0));',
+    '  vec3 sky = mix(skyLight, skyDark, u_dark);',
+    '  float softbox = exp(-pow((dir.x + 0.34) / 0.22, 2.0) - pow((dir.y + 0.56) / 0.26, 4.0));',
+    '  float rimFill = exp(-pow((dir.x - 0.62) / 0.16, 2.0) - pow((dir.y - 0.12) / 0.52, 4.0));',
+    '  float bottomBounce = exp(-pow((dir.y - 0.75) / 0.18, 2.0));',
+    '  vec3 bounceCol = mix(vec3(1.0, 0.90, 0.78), vec3(0.55, 0.72, 1.0), u_dark);',
+    '  return sky + vec3(1.0, 0.99, 0.97) * (softbox * 1.48 + rimFill * 0.50) + bounceCol * (bottomBounce * 0.32);',
+    '}',
+    '',
+    'void main() {',
+    '  vec2 uv = gl_FragCoord.xy / u_resolution;',
+    '  vec2 pixel = vec2(uv.x * u_size.x, (1.0 - uv.y) * u_size.y);',
+    '',
+    '  float bestDist = 1e6;',
+    '  float minShDist = 1e6;',
+    '  float minContactDist = 1e6;',
+    '  float minShCy = 0.0;',
+    '  vec4 bestRect = vec4(0.0);',
+    '  float bestRadius = 12.0;',
+    '  vec4 bestTint = vec4(0.0);',
+    '  vec4 bestShTint = vec4(0.0);',
+    '  float bestPress = 0.0;',
+    '',
+    '  for (int i = 0; i < 6; i++) {',
+    '    if (i >= u_count) break;',
+    '    vec4 r = u_rects[i];',
+    '    if (r.z < 2.0 || r.w < 2.0) continue;',
+    '    float rad = u_radii[i];',
+    '    float d = sdBox2(pixel - r.xy, r.zw, rad);',
+    '    if (d < bestDist) {',
+    '      bestDist = d;',
+    '      bestRect = r;',
+    '      bestRadius = rad;',
+    '      bestTint = u_tints[i];',
+    '      bestPress = u_press[i];',
+    '    }',
+    '    float sh = sdBox2(pixel - vec2(0.0, 5.0) - r.xy, r.zw, rad);',
+    '    if (sh < minShDist) {',
+    '      minShDist = sh;',
+    '      minShCy = r.y;',
+    '      bestShTint = u_tints[i];',
+    '    }',
+    '    float ct = sdBox2(pixel - vec2(0.0, 1.6) - r.xy, r.zw, rad);',
+    '    if (ct < minContactDist) minContactDist = ct;',
+    '  }',
+    '',
+    '  if (bestDist > 18.0) {',
+    '    gl_FragColor = vec4(0.0);',
+    '    return;',
+    '  }',
+    '',
+    '  vec2 pLocal = pixel - bestRect.xy;',
+    '  float outerDist = itemField(pLocal, bestRect, bestRadius).x;',
+    '  vec3 origin = vec3(bestRect.xy, CAMERA);',
+    '  vec3 viewRay = normalize(vec3(pLocal, -CAMERA));',
+    '  vec3 front;',
+    '',
+    '  if (!enterItemSolid(origin, viewRay, bestRect, bestRadius, front)) {',
+    '    float shAlpha = (1.0 - smoothstep(-2.0, 11.5, minShDist)) * mix(0.15, 0.44, u_dark);',
+    '    float contact = (1.0 - smoothstep(-1.5, 4.0, minContactDist)) * mix(0.09, 0.24, u_dark);',
+    '    float caust = (1.0 - smoothstep(0.0, 7.0, abs(minShDist - 1.5))) * smoothstep(-3.0, 12.0, pixel.y - minShCy) * mix(0.10, 0.08, u_dark);',
+    '    vec3 shColBase = mix(vec3(0.12, 0.09, 0.06), vec3(0.0, 0.0, 0.02), u_dark);',
+    '    vec3 shCol = mix(shColBase, bestShTint.rgb * mix(0.55, 0.35, u_dark), bestShTint.a * 0.52);',
+    '    vec3 caustBase = mix(vec3(1.0, 0.96, 0.88), vec3(0.75, 0.88, 1.0), u_dark);',
+    '    vec3 caustCol = mix(caustBase, mix(bestShTint.rgb, vec3(1.0, 0.92, 0.80), 0.38), bestShTint.a * 0.82);',
+    '    float a = clamp(shAlpha + contact, 0.0, 0.65);',
+    '    vec3 outCol = mix(shCol, caustCol, clamp(caust * (3.0 + bestShTint.a * 2.0), 0.0, 0.55));',
+    '    gl_FragColor = vec4(outCol * a, a);',
+    '    return;',
+    '  }',
+    '',
+    '  vec3 normal = itemSolid(front, bestRect, bestRadius).yzw;',
+    '  float ior = 1.48;',
+    '  vec3 inside = refract(viewRay, normal, 1.0 / ior);',
+    '  float pathLength = 0.0;',
+    '  vec3 rear = exitItemSolid(front, inside, bestRect, bestRadius, pathLength);',
+    '  vec3 rearNormal = itemSolid(rear, bestRect, bestRadius).yzw;',
+    '  vec3 outgoing = refract(inside, -rearNormal, ior);',
+    '  float tirBounce = 0.0;',
+    '  if (dot(outgoing, outgoing) < 0.01) {',
+    '    tirBounce = 1.0;',
+    '    inside = reflect(inside, rearNormal);',
+    '    float secondLen = 0.0;',
+    '    rear = exitItemSolid(rear, inside, bestRect, bestRadius, secondLen);',
+    '    pathLength += secondLen;',
+    '    rearNormal = itemSolid(rear, bestRect, bestRadius).yzw;',
+    '    outgoing = refract(inside, -rearNormal, ior);',
+    '    if (dot(outgoing, outgoing) < 0.01) outgoing = reflect(inside, rearNormal);',
+    '  }',
+    '',
+    '  float grazing = 1.0 - max(dot(normal, -viewRay), 0.0);',
+    '  float f0 = pow((ior - 1.0) / (ior + 1.0), 2.0);',
+    '  float fresnel = f0 + (1.0 - f0) * pow(grazing, 3.2);',
+    '  vec3 reflected = hdrEnvColor(reflect(viewRay, normal));',
+    '',
+    '  vec3 toLight = normalize(vec3(u_light - front.xy, 340.0));',
+    '  vec3 halfVec = normalize(toLight - viewRay);',
+    '  float spec = pow(max(dot(normal, halfVec), 0.0), 110.0) * (0.36 + bestPress * 0.42);',
+    '  float broadSpec = pow(max(dot(normal, halfVec), 0.0), 20.0) * (0.11 + bestPress * 0.16);',
+    '',
+    '  float rimFactor = smoothstep(-9.0, -0.4, outerDist);',
+    '  float dispersionAngle = atan(rearNormal.y, rearNormal.x);',
+    '  vec3 prism = 0.5 + 0.5 * cos(dispersionAngle + vec3(0.0, 2.094, 4.188));',
+    '  vec3 causticColor = mix(vec3(1.0, 0.99, 0.96), prism, 0.26);',
+    '  causticColor = mix(causticColor, mix(bestTint.rgb, vec3(1.0, 0.94, 0.84), 0.45), bestTint.a * 0.65);',
+    '  float tirGlow = tirBounce * (0.44 + 0.34 * rimFactor);',
+    '',
+    '  float outerCrease = 1.0 - smoothstep(0.0, 2.0, abs(outerDist + 0.7));',
+    '  float topSpecularRim = clamp(-normal.y * 0.92 + 0.24, 0.0, 1.0) * (1.0 - smoothstep(0.0, 3.0, abs(outerDist + 1.4)));',
+    '',
+    '  vec3 baseVeilCol = mix(vec3(0.99, 0.975, 0.945), vec3(0.15, 0.19, 0.27), u_dark);',
+    '  float beer = exp(-0.022 * pathLength * (0.35 + bestTint.a));',
+    '  vec3 tintedCore = bestTint.rgb * mix(0.68, 1.02, beer) + vec3(0.06, 0.025, 0.005) * (1.0 - grazing);',
+    '  vec3 clearGlass = mix(baseVeilCol, reflected, clamp(fresnel * 1.15, 0.0, 0.90));',
+    '  vec3 edgeThicknessCol = mix(vec3(0.92, 0.96, 1.0), vec3(0.48, 0.68, 0.98), u_dark);',
+    '  clearGlass = mix(clearGlass, edgeThicknessCol, rimFactor * 0.24);',
+    '  vec3 glassColor = mix(clearGlass, mix(tintedCore, reflected, clamp(fresnel * 0.66, 0.0, 0.58)), bestTint.a);',
+    '',
+    '  glassColor += causticColor * tirGlow * 0.85;',
+    '  glassColor += vec3(1.0, 0.995, 0.98) * (spec + broadSpec + topSpecularRim * mix(0.62, 0.68, u_dark));',
+    '  vec3 rimContour = mix(vec3(0.22, 0.18, 0.14), vec3(0.86, 0.92, 1.0), u_dark);',
+    '  rimContour = mix(rimContour, vec3(1.0, 0.82, 0.68), bestTint.a * 0.72);',
+    '  glassColor = mix(glassColor, rimContour, outerCrease * mix(0.28, 0.34, u_dark));',
+    '',
+    '  float clearAlpha = mix(0.25, 0.30, u_dark) + bestPress * 0.08;',
+    '  float tintedAlpha = mix(0.84, 0.76, u_dark) + bestPress * 0.06;',
+    '  float centerAlpha = mix(clearAlpha, tintedAlpha, bestTint.a);',
+    '  float rimAlpha = clamp(fresnel * 0.86 + tirGlow * 0.62 + outerCrease * 0.44 + spec + topSpecularRim * 0.46, 0.0, 0.92);',
+    '  float alpha = clamp(max(centerAlpha, rimAlpha), 0.0, 0.94);',
+    '  float coverage = smoothstep(0.6 / max(u_dpr, 1.0), -0.8 / max(u_dpr, 1.0), outerDist);',
+    '  alpha *= max(coverage, step(outerDist, -1.0));',
+    '',
+    '  gl_FragColor = vec4(clamp(glassColor, 0.0, 1.0) * alpha, alpha);',
+    '}'
+  ].join('\n');
+
+  function createHeaderGlassWebGL(canvas) {
+    var uNames = [
+      'u_resolution', 'u_size', 'u_dpr', 'u_count',
+      'u_rects', 'u_radii', 'u_tints', 'u_press',
+      'u_pointer', 'u_pull', 'u_light', 'u_dark'
+    ];
+    var ctx = createShaderProgramContext(canvas, HEADER_FRAGMENT_SHADER, uNames);
+    if (!ctx) return null;
+
+    var gl = ctx.gl;
+    var u = ctx.u;
+    var cssWidth = 1;
+    var cssHeight = 1;
+    var dpr = 1;
+    var destroyed = false;
+
+    function resize(w, h) {
+      if (destroyed) return;
+      cssWidth = Math.max(1, w);
+      cssHeight = Math.max(1, h);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var pw = Math.max(1, Math.round(cssWidth * dpr));
+      var ph = Math.max(1, Math.round(cssHeight * dpr));
+      if (canvas.width !== pw || canvas.height !== ph) {
+        canvas.width = pw;
+        canvas.height = ph;
+      }
+    }
+
+    function draw(state) {
+      if (destroyed) return;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(ctx.program);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quad);
+      gl.enableVertexAttribArray(ctx.aPos);
+      gl.vertexAttribPointer(ctx.aPos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.uniform2f(u.u_resolution, canvas.width, canvas.height);
+      gl.uniform2f(u.u_size, cssWidth, cssHeight);
+      gl.uniform1f(u.u_dpr, dpr);
+      gl.uniform1i(u.u_count, state.count);
+      gl.uniform4fv(u.u_rects, state.rects);
+      gl.uniform1fv(u.u_radii, state.radii);
+      gl.uniform4fv(u.u_tints, state.tints);
+      gl.uniform1fv(u.u_press, state.press);
+      gl.uniform2f(u.u_pointer, state.pointerX, state.pointerY);
+      gl.uniform1f(u.u_pull, state.pull);
+      gl.uniform2f(u.u_light, state.lightX, state.lightY);
+      gl.uniform1f(u.u_dark, state.dark);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    function destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      gl.deleteBuffer(ctx.quad);
+      gl.deleteShader(ctx.vs);
+      gl.deleteShader(ctx.fs);
+      gl.deleteProgram(ctx.program);
     }
 
     return { resize: resize, draw: draw, destroy: destroy };
@@ -1237,6 +1558,390 @@
   }
 
   /* ------------------------------------------------------------
+     Header Multi-Item Ray-Traced Liquid Glass Controller
+     Renders 6 crisp 3D optical glass pills/circles without touching
+     inner button/badge DOM (safe with .textContent writes).
+     ------------------------------------------------------------ */
+  function attachHeaderLiquidGlass(headerEl, itemDefs) {
+    if (!headerEl || !itemDefs || !itemDefs.length) return null;
+    if (headerEl.dataset.lgInit === '1' && headerEl._sfLgCtrl) {
+      return headerEl._sfLgCtrl;
+    }
+    headerEl.dataset.lgInit = '1';
+
+    var MAX_ITEMS = 6;
+    var bleedY = 16;
+
+    var refractHost = document.createElement('div');
+    refractHost.className = 'sf-lg-hdr-refract-host';
+    refractHost.setAttribute('aria-hidden', 'true');
+
+    var canvas = document.createElement('canvas');
+    canvas.className = 'sf-lg-hdr-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+
+    var items = [];
+    for (var d = 0; d < itemDefs.length && items.length < MAX_ITEMS; d++) {
+      var def = itemDefs[d];
+      if (!def || !def.el) continue;
+      var chip = document.createElement('div');
+      chip.className = 'sf-lg-hdr-refract-chip';
+      chip.style.setProperty('--sf-lg-filter', 'url(#sf-lg-filter-' + def.id + ')');
+      if (def.tint && def.tint[3] > 0) {
+        chip.dataset.lgTint = '1';
+      }
+      refractHost.appendChild(chip);
+      items.push({
+        id: def.id,
+        filterId: 'sf-lg-filter-' + def.id,
+        el: def.el,
+        chip: chip,
+        tint: def.tint || [0, 0, 0, 0],
+        lastFilterKey: ''
+      });
+    }
+
+    if (!items.length) return null;
+
+    headerEl.insertBefore(canvas, headerEl.firstChild);
+    headerEl.insertBefore(refractHost, canvas);
+    headerEl.classList.add('sf-lg-header', 'sf-lg-ready');
+
+    var renderer = createHeaderGlassWebGL(canvas);
+    headerEl.dataset.lgWebgl = renderer ? '1' : '0';
+
+    var useSvgRefract = sharedSvgSupported;
+    headerEl.dataset.lgRefract = useSvgRefract ? 'svg' : 'css';
+
+    canvas.addEventListener('webglcontextlost', function (e) {
+      e.preventDefault();
+      if (renderer) {
+        renderer.destroy();
+        renderer = null;
+      }
+      headerEl.dataset.lgWebgl = '0';
+    });
+
+    var rectsArr = new Float32Array(MAX_ITEMS * 4);
+    var radiiArr = new Float32Array(MAX_ITEMS);
+    var tintsArr = new Float32Array(MAX_ITEMS * 4);
+    var pressArr = new Float32Array(MAX_ITEMS);
+    var pressVArr = new Float32Array(MAX_ITEMS);
+    var targetPressArr = new Float32Array(MAX_ITEMS);
+
+    var hdrMetrics = {
+      width: 360,
+      height: 80,
+      count: items.length
+    };
+
+    var anim = {
+      pull: 0, pullV: 0, targetPull: 0,
+      lightX: 160, lightVx: 0, targetLightX: 160,
+      lightY: -100, lightVy: 0, targetLightY: -100,
+      dark: isDarkMode() ? 1 : 0, darkV: 0, targetDark: isDarkMode() ? 1 : 0,
+      pointerX: -9999,
+      pointerY: -9999,
+      pointerInside: false,
+      pointerDown: false,
+      hoverIdx: -1
+    };
+
+    var rafId = 0;
+    var lastNow = 0;
+    var sleeping = false;
+
+    function renderFrame() {
+      if (!renderer) return;
+      renderer.draw({
+        count: hdrMetrics.count,
+        rects: rectsArr,
+        radii: radiiArr,
+        tints: tintsArr,
+        press: pressArr,
+        pointerX: anim.pointerInside ? anim.pointerX : -9999,
+        pointerY: anim.pointerInside ? anim.pointerY : -9999,
+        pull: anim.pull,
+        lightX: anim.lightX,
+        lightY: anim.lightY,
+        dark: clamp(anim.dark, 0, 1)
+      });
+    }
+
+    function measure(snap) {
+      var hRect = headerEl.getBoundingClientRect();
+      if (hRect.width < 20 || hRect.height < 20) return;
+
+      hdrMetrics.width = hRect.width;
+      hdrMetrics.height = hRect.height;
+
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var r = it.el.getBoundingClientRect();
+        var cs = getComputedStyle(it.el);
+        var visible = r.width >= 4 && r.height >= 4 && cs.display !== 'none' && cs.visibility !== 'hidden';
+        var b4 = i * 4;
+
+        if (!visible) {
+          it.chip.style.display = 'none';
+          rectsArr[b4] = -9999;
+          rectsArr[b4 + 1] = -9999;
+          rectsArr[b4 + 2] = 0;
+          rectsArr[b4 + 3] = 0;
+          radiiArr[i] = 0;
+          tintsArr[b4] = tintsArr[b4 + 1] = tintsArr[b4 + 2] = tintsArr[b4 + 3] = 0;
+          continue;
+        }
+
+        var relX = r.left - hRect.left;
+        var relY = r.top - hRect.top;
+        var rawRad = parseFloat(cs.borderTopLeftRadius);
+        if (!isFinite(rawRad)) rawRad = r.height * 0.5;
+        var rad = clamp(rawRad, 0, Math.min(r.width, r.height) * 0.5);
+
+        it.chip.style.display = '';
+        it.chip.style.left = relX.toFixed(2) + 'px';
+        it.chip.style.top = relY.toFixed(2) + 'px';
+        it.chip.style.width = r.width.toFixed(2) + 'px';
+        it.chip.style.height = r.height.toFixed(2) + 'px';
+        it.chip.style.borderRadius = rad.toFixed(2) + 'px';
+
+        rectsArr[b4] = relX + r.width * 0.5;
+        rectsArr[b4 + 1] = bleedY + relY + r.height * 0.5;
+        rectsArr[b4 + 2] = r.width * 0.5;
+        rectsArr[b4 + 3] = r.height * 0.5;
+        radiiArr[i] = rad;
+
+        tintsArr[b4] = it.tint[0];
+        tintsArr[b4 + 1] = it.tint[1];
+        tintsArr[b4 + 2] = it.tint[2];
+        tintsArr[b4 + 3] = it.tint[3];
+
+        if (useSvgRefract) {
+          var fKey = Math.round(r.width) + 'x' + Math.round(r.height) + '@' + Math.round(rad);
+          if (fKey !== it.lastFilterKey) {
+            it.lastFilterKey = fKey;
+            var dispScale = clamp(Math.round(r.height * 0.28), 6, 11);
+            var ok = updateSvgDisplacementFilter(it.filterId, r.width, r.height, rad, dispScale);
+            if (!ok) {
+              useSvgRefract = false;
+              headerEl.dataset.lgRefract = 'css';
+            }
+          }
+        }
+      }
+
+      if (!anim.pointerInside) {
+        anim.targetLightX = hRect.width * 0.34;
+        anim.targetLightY = bleedY - 95;
+        if (snap) {
+          anim.lightX = anim.targetLightX;
+          anim.lightY = anim.targetLightY;
+        }
+      }
+
+      if (renderer) {
+        renderer.resize(hdrMetrics.width, hdrMetrics.height + bleedY * 2);
+      }
+
+      if (snap) {
+        anim.targetDark = isDarkMode() ? 1 : 0;
+        anim.dark = anim.targetDark;
+        anim.darkV = 0;
+        lastNow = performance.now();
+        renderFrame();
+      } else {
+        scheduleFrame();
+      }
+    }
+
+    function itemIndexForEventTarget(target) {
+      if (!target) return -1;
+      for (var i = 0; i < items.length; i++) {
+        if (target === items[i].el || (items[i].el.contains && items[i].el.contains(target))) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function syncItemTargets(activeIdx, down) {
+      anim.hoverIdx = activeIdx;
+      for (var i = 0; i < items.length; i++) {
+        targetPressArr[i] = (i === activeIdx) ? (down ? 1.0 : 0.38) : 0.0;
+      }
+      anim.targetPull = (activeIdx >= 0 && !(sharedMotionQuery && sharedMotionQuery.matches)) ? 3.2 : 0.0;
+    }
+
+    function updateHeaderPointer(e, isDown) {
+      var hRect = headerEl.getBoundingClientRect();
+      anim.pointerX = e.clientX - hRect.left;
+      anim.pointerY = (e.clientY - hRect.top) + bleedY;
+      anim.pointerInside = true;
+      anim.targetLightX = anim.pointerX - 42;
+      anim.targetLightY = anim.pointerY - 82;
+      var idx = itemIndexForEventTarget(e.target);
+      syncItemTargets(idx, isDown);
+      scheduleFrame();
+    }
+
+    headerEl.addEventListener('pointerenter', function (e) {
+      updateHeaderPointer(e, anim.pointerDown);
+    }, { passive: true });
+
+    headerEl.addEventListener('pointermove', function (e) {
+      updateHeaderPointer(e, anim.pointerDown);
+    }, { passive: true });
+
+    headerEl.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button > 0) return;
+      anim.pointerDown = true;
+      updateHeaderPointer(e, true);
+    }, { passive: true });
+
+    headerEl.addEventListener('pointerleave', function () {
+      anim.pointerInside = false;
+      anim.pointerDown = false;
+      syncItemTargets(-1, false);
+      anim.targetLightX = hdrMetrics.width * 0.34;
+      anim.targetLightY = bleedY - 95;
+      scheduleFrame();
+    }, { passive: true });
+
+    function finishHeaderPointer() {
+      if (!anim.pointerDown) return;
+      anim.pointerDown = false;
+      syncItemTargets(anim.pointerInside ? anim.hoverIdx : -1, false);
+      scheduleFrame();
+    }
+
+    window.addEventListener('pointerup', finishHeaderPointer, { passive: true });
+    window.addEventListener('pointercancel', finishHeaderPointer, { passive: true });
+
+    function tick(now) {
+      rafId = 0;
+      if (sleeping || document.hidden) return;
+      var dt = lastNow ? clamp((now - lastNow) / 1000, 0, 1 / 15) : 1 / 60;
+      lastNow = now;
+
+      var still = sharedMotionQuery && sharedMotionQuery.matches;
+      var moving = false;
+
+      if (still) {
+        anim.pull = 0;
+        anim.pullV = 0;
+        anim.lightX = anim.targetLightX;
+        anim.lightY = anim.targetLightY;
+        anim.lightVx = anim.lightVy = 0;
+        anim.dark = anim.targetDark;
+        anim.darkV = 0;
+        for (var s = 0; s < items.length; s++) {
+          pressArr[s] = targetPressArr[s];
+          pressVArr[s] = 0;
+        }
+      } else {
+        var rp = stepSpring(anim.pull, anim.pullV, anim.targetPull, dt, 260, 18);
+        anim.pull = rp[0]; anim.pullV = rp[1];
+        var rlx = stepSpring(anim.lightX, anim.lightVx, anim.targetLightX, dt, 300, 24);
+        anim.lightX = rlx[0]; anim.lightVx = rlx[1];
+        var rly = stepSpring(anim.lightY, anim.lightVy, anim.targetLightY, dt, 300, 24);
+        anim.lightY = rly[0]; anim.lightVy = rly[1];
+        var rd = stepSpring(anim.dark, anim.darkV, anim.targetDark, dt, 320, 28);
+        anim.dark = rd[0]; anim.darkV = rd[1];
+
+        for (var i = 0; i < items.length; i++) {
+          var rpr = stepSpring(pressArr[i], pressVArr[i], targetPressArr[i], dt, 420, 22);
+          pressArr[i] = rpr[0];
+          pressVArr[i] = rpr[1];
+          if (Math.abs(pressArr[i] - targetPressArr[i]) > SINK_THRESH || Math.abs(pressVArr[i]) > 0.05) {
+            moving = true;
+          }
+        }
+
+        if (
+          Math.abs(anim.pull - anim.targetPull) > SINK_THRESH || Math.abs(anim.pullV) > 0.05 ||
+          Math.abs(anim.lightX - anim.targetLightX) > 0.05 || Math.abs(anim.lightVx) > 0.1 ||
+          Math.abs(anim.lightY - anim.targetLightY) > 0.05 || Math.abs(anim.lightVy) > 0.1 ||
+          Math.abs(anim.dark - anim.targetDark) > SINK_THRESH || Math.abs(anim.darkV) > 0.05
+        ) {
+          moving = true;
+        }
+      }
+
+      renderFrame();
+
+      if (moving && !still) {
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+
+    function scheduleFrame() {
+      if (!sleeping && !rafId && !document.hidden) {
+        lastNow = performance.now();
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+
+    function sleep() {
+      sleeping = true;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    }
+
+    function wake(snap) {
+      sleeping = false;
+      anim.targetDark = isDarkMode() ? 1 : 0;
+      if (snap) {
+        anim.dark = anim.targetDark;
+        anim.darkV = 0;
+      }
+      measure(!!snap);
+    }
+
+    if (typeof ResizeObserver === 'function') {
+      var ro = new ResizeObserver(function () {
+        if (!sleeping) measure(false);
+      });
+      ro.observe(headerEl);
+      for (var rIdx = 0; rIdx < items.length; rIdx++) {
+        ro.observe(items[rIdx].el);
+      }
+    } else {
+      window.addEventListener('resize', function () {
+        if (!sleeping) measure(false);
+      });
+    }
+
+    if (typeof MutationObserver === 'function') {
+      var bodyObserver = new MutationObserver(function () {
+        anim.targetDark = isDarkMode() ? 1 : 0;
+        scheduleFrame();
+      });
+      bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && !sleeping) scheduleFrame();
+      else if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    });
+
+    if (sharedMotionQuery && typeof sharedMotionQuery.addEventListener === 'function') {
+      sharedMotionQuery.addEventListener('change', function () {
+        if (!sleeping) scheduleFrame();
+      });
+    }
+
+    var ctrl = { measure: measure, wake: wake, sleep: sleep };
+    headerEl._sfLgCtrl = ctrl;
+    return ctrl;
+  }
+
+  /* ------------------------------------------------------------
      Bootstrap Main Surfaces & Lazy Ask AI Page Surfaces
      ------------------------------------------------------------ */
   var didInitSurfaces = false;
@@ -1245,9 +1950,19 @@
     if (didInitSurfaces) return;
     didInitSurfaces = true;
 
+    var headerEl = document.querySelector('header.top-bar');
     var nav = document.getElementById('bottomNav');
     var searchInner = document.querySelector('#aiSearchBar > .ai-search-inner');
     var aiPage = document.getElementById('aiPage');
+
+    var headerCtrl = headerEl ? attachHeaderLiquidGlass(headerEl, [
+      { id: 'hdr-menu', el: headerEl.querySelector('.title-row .menu.inline .menu-button'), tint: [0, 0, 0, 0] },
+      { id: 'hdr-xp', el: document.getElementById('xpLabel'), tint: [0, 0, 0, 0] },
+      { id: 'hdr-streak', el: document.getElementById('streakBadge'), tint: [0.92, 0.40, 0.02, 0.80] },
+      { id: 'hdr-theme', el: document.getElementById('themeToggle'), tint: [0, 0, 0, 0] },
+      { id: 'hdr-cal', el: document.getElementById('calendarBtn'), tint: [0, 0, 0, 0] },
+      { id: 'hdr-sprint', el: document.getElementById('newSprintBtn'), tint: [0.88, 0.27, 0.09, 0.84] }
+    ]) : null;
 
     var navCtrl = nav ? attachLiquidGlassSurface(nav, {
       id: 'nav',
@@ -1267,12 +1982,17 @@
       pullMax: 4.8
     }) : null;
 
+    if (headerCtrl) headerCtrl.wake(true);
     if (navCtrl) navCtrl.wake(true);
     if (searchCtrl) searchCtrl.wake(true);
 
     function resnapMainSurfaces() {
+      if (headerCtrl) headerCtrl.measure(true);
       if (navCtrl) navCtrl.measure(true);
       if (searchCtrl) searchCtrl.measure(true);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', resnapMainSurfaces);
     }
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(resnapMainSurfaces);

@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.80** [build 140]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.81** [build 141]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -173,7 +173,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.80):
+Recent major changes (Nov 2026, now v0.6.81):
+- v0.6.81 (Build 141):
+  - **Ray-traced Liquid Glass across all `header.top-bar` buttons, icons, and badges** (`attachHeaderLiquidGlass()` + `createHeaderGlassWebGL()` in `liquid-glass-nav.js`): uses a single shared 6-item 3D SDF WebGL raymarcher (`z-index: 1`, `bleedX = 0` for zero 360px overflow) plus 6 per-element SVG Snell/TIR refraction chips (`#sf-lg-filter-hdr-*` at `z-index: 0`) positioned strictly as siblings so `.textContent` writes on `#themeToggle`, `#xpLabel`, and `#streakBadge` never disturb glass layers.
+  - Clear crystal depth on Sprint `⋯`, `#xpLabel`, `#themeToggle`, and `#calendarBtn`; Beer-Lambert amber/ember translucent crystal glass + warm caustic shadows on `#streakBadge` (`🔥`) and `#newSprintBtn`; optical glass `.xp-bar-container` trough and frosted `.title-row .menu-list` dropdown.
+  - Triple bump `v0.6.81` / `versionCode: 141` / `CACHE_NAME: study-forge-v0.6.81`.
 - v0.6.80 (Build 140):
   - **Zero-flash first-paint Liquid Glass & instant theme boot**: added synchronous `sf-boot` / `sf_theme` script immediately after `<body>` in `index.html` (clears after double `rAF` in `script.js` so manual toggles keep smooth transitions), made `katex.min.css` non-render-blocking and `katex.min.js` + `confetti.browser.min.js` `async` (removed unused `auto-render.min.js`).
   - **0-frame Liquid Glass paint (`liquid-glass-nav.js`)**: `attachLiquidGlassSurface()` renders WebGL + SVG refraction synchronously inside `measure(true)` / `wake(true)` at parse time (with font/load re-snap), and `styles.css` matches Light/Dark pre-JS fallback glass with borderless inset crystal rims (0px layout bump).
