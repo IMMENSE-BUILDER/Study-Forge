@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.81** [build 141]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.82** [build 142]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -27,9 +27,9 @@ Related folders (under `C:\Users\Administrator\Desktop\codex projects\SF\` — d
 |---|---|---|
 | Language | Vanilla JS + HTML5 + CSS3, no bundler | `script.js` ~8.7k lines, `styles.css` ~7k lines, single files |
 | Data pack | `syllabus.js` (loads before `script.js`) | Profile, timetable, faculty, subjects, seed builders; all consumers guard with `typeof` |
-| Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `studyForge_flashcards`, `activeTab`, `sf_theme` |
+| Persistence | `localStorage` only | `studyForgeState-v1` (main), `sf_ai_chats`, `sf_ai_active_chat`, `sf_ai_model`, `studyForge_flashcards`, `activeTab`, `sf_theme` |
 | Offline | Service worker `sw.js`, **network-first**, cache-fallback | Old cache-first worker caused stuck deploys; never go back |
-| AI & Voice | Vercel AI Gateway via server proxy `api/ai/chat/completions.js`, model pinned to `meta/muse-ember` + Deepgram nova-2 STT + aura TTS | AI key is server-side (`VERCEL_AI_GATEWAY_KEY`); browser holds no gateway key. Deepgram key remains client-side for now. |
+| AI & Voice | Vercel AI Gateway via server proxy `api/ai/chat/completions.js`, allowlisted models (`meta/muse-ember`, `minimax/minimax-m3.1-flash`) + Deepgram nova-2 STT + aura TTS | AI key is server-side (`VERCEL_AI_GATEWAY_KEY`); browser holds no gateway key. Deepgram key remains client-side for now. |
 | Voice | MediaRecorder + `getUserMedia` | No Capacitor plugins used (`capacitor.plugins.json` is `{}`) — fully browser-safe |
 | CDN (progressive enhancement only) | KaTeX, canvas-confetti, Google Fonts | Core app must work cached/offline without them |
 | Dev server | `node serve-pwa.js` (zero-dep, `:3000`, `Cache-Control: no-store` on everything) | Serves the folder live; no restart needed after edits |
@@ -50,7 +50,7 @@ Desktop/study-forge-pwa/     # edit here
 ├── styles.css               # neo-brutalist theme via CSS vars, mobile-first
 ├── sw.js                    # network-first worker; CACHE_NAME bumped every release
 ├── manifest.json            # StudyForge identity + icons[]
-├── api/ai/chat/completions.js      # server-side Vercel AI Gateway proxy (key + meta/muse-ember pin)
+├── api/ai/chat/completions.js      # server-side Vercel AI Gateway proxy (key + allowlisted models)
 ├── loader-lab.html          # standalone 26-option flashcard loader lab (not in nav)
 ├── icons/                   # generated from logo.png (book+flame brand); app.png/logo.jpg are unused leftovers
 ├── serve-pwa.js             # dev-only static server (never deployed; mirrors /api/ai proxy)
@@ -80,8 +80,8 @@ Entry points: `index.html` → `syllabus.js` (data) → `script.js` (`let state 
   Timetable aliases resolve via `ttResolve`/`ttInfo`; labs never show Room 2310 (lab halls differ).
 - **Today engine is the hub.** `getTodayAgenda(state, now)` (pure, injectable date — always unit-test it)
   feeds greeting, today's subjects, focus-task matching (goal title prefix `ALIAS · …`), sprint-staleness.
-- **AI Layer (Vercel AI Gateway Engine · meta/muse-ember only):**
-  - **Server-side proxy:** `api/ai/chat/completions.js` (Vercel Node function) proxies `/api/ai/*` to `https://ai-gateway.vercel.sh/v1/*`, injects the gateway key, and pins `model: meta/muse-ember` on every request. `serve-pwa.js` mirrors this locally.
+- **AI Layer (Vercel AI Gateway Engine · allowlisted models: `meta/muse-ember`, `minimax/minimax-m3.1-flash`):**
+  - **Server-side proxy:** `api/ai/chat/completions.js` (Vercel Node function) proxies `/api/ai/*` to `https://ai-gateway.vercel.sh/v1/*`, injects the gateway key, and restricts `model` to `ALLOWED_AI_MODELS` (`meta/muse-ember` default fallback, `minimax/minimax-m3.1-flash`). `serve-pwa.js` mirrors this locally.
   - **API credentials:** `VERCEL_AI_GATEWAY_KEY` (or `AI_GATEWAY_API_KEY`) must be set in Vercel Project Settings. The browser never receives an AI gateway key. Deepgram voice can remain client-side for now.
   - **Academic Grounding:** `AI_SYSTEM_PROMPT` + `getUserContext()` ground answers in Satyam's syllabus & timetable. Always maintains "StudyForged" tutor identity.
   - **Subject data:** flashcard/quiz metadata is derived from `syllabus.js` (`SF_SEM1_SUBJECTS` + `SF_FACULTY`); never reintroduce a local subject table.
@@ -118,7 +118,7 @@ Things to NEVER do:
 - Never paste API keys into chat/outputs; never commit new secrets; flag key rotation before any public share.
 - Never present 2025-scheme syllabus content as current — user gathers official 2026 syllabi first (syllabus viewer was removed for exactly this; restore only on their data).
 - Never invent timetable/faculty/subject facts — Sec-E PDF + photo legend are ground truth; mark anything uncertain.
-- Active AI provider is Vercel AI Gateway (`meta/muse-ember`). Token Harbor integration has been retired.
+- Active AI provider is Vercel AI Gateway (`meta/muse-ember` + `minimax/minimax-m3.1-flash`). Token Harbor integration has been retired.
 - AI gateway credentials are server-side only; never re-add `DEFAULT_VERCEL_KEY` or any `vck_...` to `script.js`, `index.html`, or other browser files.
 
 Project constraints:
@@ -173,7 +173,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.81):
+Recent major changes (Nov 2026, now v0.6.82):
+- v0.6.82 (Build 142):
+  - **Ask AI liquid-glass model picker dropdown + MiniMax M3.1 Flash**: replaced the disabled native `<select>` in `.ai-mode-bar` (`index.html`, `styles.css`, `script.js`) with a vertically centered optical pill trigger (`#aiModelTrigger`) + frosted popover listbox (`#aiModelMenu`) supporting both `meta/muse-ember` (`Muse Ember`) and `minimax/minimax-m3.1-flash` (`MiniMax M3.1 Flash`), persisted in `localStorage` (`sf_ai_model`).
+  - **Server allowlist update**: replaced strict single-model pinning in `api/ai/chat/completions.js` and `serve-pwa.js` with `ALLOWED_AI_MODELS` (`meta/muse-ember`, `minimax/minimax-m3.1-flash`), falling back to `meta/muse-ember` on unknown/missing IDs.
+  - Triple bump `v0.6.82` / `versionCode: 142` / `CACHE_NAME: study-forge-v0.6.82`.
 - v0.6.81 (Build 141):
   - **Ray-traced Liquid Glass across all `header.top-bar` buttons, icons, and badges** (`attachHeaderLiquidGlass()` + `createHeaderGlassWebGL()` in `liquid-glass-nav.js`): uses a single shared 6-item 3D SDF WebGL raymarcher (`z-index: 1`, `bleedX = 0` for zero 360px overflow) plus 6 per-element SVG Snell/TIR refraction chips (`#sf-lg-filter-hdr-*` at `z-index: 0`) positioned strictly as siblings so `.textContent` writes on `#themeToggle`, `#xpLabel`, and `#streakBadge` never disturb glass layers.
   - Clear crystal depth on Sprint `⋯`, `#xpLabel`, `#themeToggle`, and `#calendarBtn`; Beer-Lambert amber/ember translucent crystal glass + warm caustic shadows on `#streakBadge` (`🔥`) and `#newSprintBtn`; optical glass `.xp-bar-container` trough and frosted `.title-row .menu-list` dropdown.

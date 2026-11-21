@@ -2343,6 +2343,15 @@ function getVercelApiUrl() {
 }
 const VERCEL_API_URL = getVercelApiUrl();
 const DEFAULT_VERCEL_MODEL = 'meta/muse-ember';
+const AI_MODEL_STORAGE_KEY = 'sf_ai_model';
+const AI_MODELS = [
+  { id: 'meta/muse-ember', shortName: 'Muse Ember', fullName: 'Muse Ember' },
+  { id: 'minimax/minimax-m3.1-flash', shortName: 'MiniMax M3.1', fullName: 'MiniMax M3.1 Flash' }
+];
+
+function findAiModelEntry(modelId) {
+  return AI_MODELS.find((m) => m.id === modelId) || AI_MODELS[0];
+}
 
 // Kept for backward compatibility with old call sites; server auth means no client key.
 function getVercelApiKey() {
@@ -2350,6 +2359,10 @@ function getVercelApiKey() {
 }
 
 function getVercelModel() {
+  try {
+    const saved = String(localStorage.getItem(AI_MODEL_STORAGE_KEY) || '').trim();
+    if (saved && AI_MODELS.some((m) => m.id === saved)) return saved;
+  } catch (e) {}
   return DEFAULT_VERCEL_MODEL;
 }
 
@@ -2363,7 +2376,20 @@ function getActiveAiApiKey() {
 }
 
 function getActiveAiModel() {
-  return DEFAULT_VERCEL_MODEL;
+  return getVercelModel();
+}
+
+function setActiveAiModel(modelId) {
+  const entry = findAiModelEntry(modelId);
+  try {
+    localStorage.setItem(AI_MODEL_STORAGE_KEY, entry.id);
+  } catch (e) {}
+  updateAIModelBadge();
+  const modeBar = document.querySelector('.ai-mode-bar');
+  if (modeBar && modeBar._sfLgCtrl) {
+    modeBar._sfLgCtrl.measure(false);
+  }
+  return entry;
 }
 
 function getActiveAiApiFallbackUrl() {
@@ -2387,11 +2413,13 @@ const getOpenRouterModel = getActiveAiModel;
 const OPENROUTER_API_URL = VERCEL_API_URL;
 
 function updateAIModelBadge() {
+  const model = getActiveAiModel();
+  const entry = findAiModelEntry(model);
   const badge = document.getElementById('aiModelBadge');
   if (badge) {
-    const model = getActiveAiModel();
     let label = model;
     if (label.startsWith('meta/')) label = label.replace('meta/', '');
+    if (label.startsWith('minimax/')) label = label.replace('minimax/', '');
     if (label.startsWith('google/')) label = label.replace('google/', '');
     if (label.startsWith('openai/')) label = label.replace('openai/', '');
     if (label.startsWith('anthropic/')) label = label.replace('anthropic/', '');
@@ -2401,11 +2429,20 @@ function updateAIModelBadge() {
     badge.title = `Vercel AI Gateway: ${model}`;
   }
   try {
-    const sel = document.getElementById('aiModelSelect');
-    if (sel) {
-      const curModel = getActiveAiModel();
-      const has = Array.prototype.some.call(sel.options, (o) => o.value === curModel);
-      sel.value = has ? curModel : 'meta/muse-ember';
+    const labelEl = document.getElementById('aiModelLabel');
+    if (labelEl) labelEl.textContent = entry.shortName;
+    const triggerEl = document.getElementById('aiModelTrigger');
+    if (triggerEl) {
+      triggerEl.dataset.model = entry.id;
+      triggerEl.title = `Vercel AI Gateway: ${entry.id}`;
+    }
+    const menuEl = document.getElementById('aiModelMenu');
+    if (menuEl) {
+      menuEl.querySelectorAll('.ai-model-option').forEach((opt) => {
+        const isSel = opt.dataset.model === entry.id;
+        opt.classList.toggle('active', isSel);
+        opt.setAttribute('aria-selected', String(isSel));
+      });
     }
   } catch (e) {}
 }
@@ -5078,9 +5115,50 @@ function initAskAI() {
   }
   if (modeChatBtn) modeChatBtn.addEventListener('click', () => setSheetMode(false));
   if (modeSheetBtn) modeSheetBtn.addEventListener('click', () => setSheetMode(true));
-  // Server-side model is pinned to meta/muse-ember. The UI control is informational only.
-  const modelSelect = document.getElementById('aiModelSelect');
-  if (modelSelect) modelSelect.value = DEFAULT_VERCEL_MODEL;
+
+  function initAiModelDropdown() {
+    const dropdown = document.getElementById('aiModelDropdown');
+    const trigger = document.getElementById('aiModelTrigger');
+    const menu = document.getElementById('aiModelMenu');
+    if (!dropdown || !trigger || !menu) return;
+
+    function setOpen(open) {
+      dropdown.classList.toggle('open', open);
+      trigger.setAttribute('aria-expanded', String(open));
+    }
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setOpen(!dropdown.classList.contains('open'));
+    });
+
+    menu.querySelectorAll('.ai-model-option').forEach((opt) => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const entry = setActiveAiModel(opt.dataset.model);
+        setOpen(false);
+        if (typeof showToast === 'function') {
+          showToast(`Model: ${entry.fullName}`);
+        }
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (dropdown.classList.contains('open') && !dropdown.contains(e.target)) {
+        setOpen(false);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dropdown.classList.contains('open')) {
+        setOpen(false);
+      }
+    });
+
+    updateAIModelBadge();
+  }
+  initAiModelDropdown();
+
   if (sheetSubject) sheetSubject.addEventListener('change', fillSheetUnits);
   fillSheetSubjects();
 

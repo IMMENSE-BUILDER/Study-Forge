@@ -8,6 +8,10 @@ const path = require("path");
 const ROOT = __dirname;
 const PORT = 3000;
 const AI_MODEL = "meta/muse-ember";
+const ALLOWED_AI_MODELS = new Set([
+  "meta/muse-ember",
+  "minimax/minimax-m3.1-flash",
+]);
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 // Server-side only. The browser never receives this key.
 const SERVER_AI_KEY = String(
@@ -91,11 +95,12 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       if (bodyTooLarge) return;
       let body = Buffer.concat(chunks);
-      // Pin the model server-side, even if a stale client sends another ID.
+      // Enforce server allowlist, falling back to the default model if missing/unknown.
       try {
         const parsed = JSON.parse(body.toString("utf8"));
         if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          parsed.model = AI_MODEL;
+          const requestedModel = typeof parsed.model === "string" ? parsed.model.trim() : "";
+          parsed.model = ALLOWED_AI_MODELS.has(requestedModel) ? requestedModel : AI_MODEL;
           body = Buffer.from(JSON.stringify(parsed));
         }
       } catch (e) {}

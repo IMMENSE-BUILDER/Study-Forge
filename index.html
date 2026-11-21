@@ -157,9 +157,33 @@
     <div class="ai-mode-bar" role="tablist" aria-label="Ask AI mode">
       <button type="button" class="ai-mode-btn active" id="aiModeChatBtn" role="tab" aria-selected="true">💬 Chat</button>
       <button type="button" class="ai-mode-btn" id="aiModeSheetBtn" role="tab" aria-selected="false">📄 Cheatsheet</button>
-      <select id="aiModelSelect" class="ai-model-select" title="Server model: meta/muse-ember" disabled>
-        <option value="meta/muse-ember" selected>Muse Ember</option>
-      </select>
+      <div class="ai-model-dropdown" id="aiModelDropdown">
+        <button type="button" class="ai-model-trigger" id="aiModelTrigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Select AI model" title="Vercel AI Gateway: meta/muse-ember" data-model="meta/muse-ember">
+          <span class="ai-model-dot" aria-hidden="true"></span>
+          <span class="ai-model-trigger-label" id="aiModelLabel">Muse Ember</span>
+          <svg class="ai-model-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="ai-model-menu" id="aiModelMenu" role="listbox" aria-label="AI models">
+          <button type="button" class="ai-model-option active" role="option" aria-selected="true" data-model="meta/muse-ember">
+            <span class="ai-model-opt-dot" data-model="meta/muse-ember" aria-hidden="true"></span>
+            <span class="ai-model-opt-main">
+              <span class="ai-model-opt-name">Muse Ember</span>
+              <span class="ai-model-opt-sub">meta/muse-ember</span>
+            </span>
+            <span class="ai-model-opt-check" aria-hidden="true">✓</span>
+          </button>
+          <button type="button" class="ai-model-option" role="option" aria-selected="false" data-model="minimax/minimax-m3.1-flash">
+            <span class="ai-model-opt-dot" data-model="minimax/minimax-m3.1-flash" aria-hidden="true"></span>
+            <span class="ai-model-opt-main">
+              <span class="ai-model-opt-name">MiniMax M3.1 Flash</span>
+              <span class="ai-model-opt-sub">minimax/minimax-m3.1-flash</span>
+            </span>
+            <span class="ai-model-opt-check" aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </div>
     </div>
     <div class="ai-sheet-bar" id="aiSheetBar" style="display:none;">
       <select id="aiSheetSubject" class="ai-sheet-select" title="Subject"></select>

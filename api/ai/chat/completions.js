@@ -1,10 +1,14 @@
 // Server-side Vercel AI Gateway proxy for POST /api/ai/chat/completions.
 // The browser never sees the gateway key; every AI tool calls /api/ai/chat/completions.
-// Model is pinned to meta/muse-ember for the whole app.
+// Only explicit allowlisted Vercel AI Gateway models are permitted.
 import https from 'node:https';
 
 const GATEWAY_HOST = 'ai-gateway.vercel.sh';
 export const AI_MODEL = 'meta/muse-ember';
+export const ALLOWED_AI_MODELS = new Set([
+  'meta/muse-ember',
+  'minimax/minimax-m3.1-flash',
+]);
 
 const ALLOWED_ORIGIN_RE = /^https:\/\/(study-forged\.vercel\.app|studyforged\.vercel\.app|studyforged\.netlify\.app)$/i;
 const LOCAL_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i;
@@ -215,8 +219,9 @@ export default async function handler(req, res) {
     return json(res, 400, 'Request must include 1 to 50 messages.');
   }
 
-  // Pin the model everywhere and clamp output parameters.
-  parsed.model = AI_MODEL;
+  // Restrict model to the server allowlist and clamp output parameters.
+  const requestedModel = typeof parsed.model === 'string' ? parsed.model.trim() : '';
+  parsed.model = ALLOWED_AI_MODELS.has(requestedModel) ? requestedModel : AI_MODEL;
   if (typeof parsed.max_tokens === 'number' && Number.isFinite(parsed.max_tokens)) {
     parsed.max_tokens = Math.max(1, Math.min(16000, Math.floor(parsed.max_tokens)));
   } else {

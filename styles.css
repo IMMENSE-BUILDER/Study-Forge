@@ -6271,7 +6271,7 @@ label {
 /* ── Ask AI: Chat/Cheatsheet mode + 1-page unit cheatsheet (Ray-Traced Liquid Glass) ── */
 .ai-mode-bar {
   position: relative;
-  z-index: 10;
+  z-index: 30;
   width: min(calc(100% - 24px), 740px);
   margin: 8px auto 0;
   display: flex;
@@ -6313,10 +6313,11 @@ label {
     padding: 8px 6px;
   }
 
-  .ai-model-select {
-    flex: 0 1 102px !important;
-    font-size: 10.5px !important;
-    padding: 0 7px !important;
+  .ai-model-trigger {
+    height: 32px;
+    padding: 0 8px;
+    gap: 5px;
+    font-size: 10.5px;
   }
 }
 
@@ -6347,37 +6348,216 @@ label {
   background: transparent;
 }
 
-/* Global model picker: compact crystal pill */
-.ai-model-select {
+/* Global model picker: optical liquid-glass pill + custom dropdown menu */
+.ai-model-dropdown {
   position: relative;
-  z-index: 3;
-  flex: 0 1 136px;
-  min-width: 0;
+  z-index: 4;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ai-model-trigger {
+  font-family: "Space Grotesk", sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   height: 34px;
-  border: 1px solid rgba(19, 19, 19, 0.12);
+  padding: 0 11px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.44);
-  color: var(--ink);
+  border: 1px solid rgba(19, 19, 19, 0.10);
+  background: rgba(255, 253, 248, 0.60);
+  color: rgba(19, 19, 19, 0.88);
+  font-size: 11.5px;
   font-weight: 700;
-  font-size: 11px;
-  padding: 0 10px;
-  cursor: pointer;
-  text-overflow: ellipsis;
+  line-height: 1;
   white-space: nowrap;
-  overflow: hidden;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.14s ease, box-shadow 0.16s ease;
+  box-sizing: border-box;
 }
 
-[data-theme="dark"] .ai-model-select {
+.ai-model-trigger:hover {
+  background: rgba(255, 253, 248, 0.82);
+  border-color: rgba(19, 19, 19, 0.16);
+}
+
+.ai-model-trigger:active {
+  transform: scale(0.97);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+[data-theme="dark"] .ai-model-trigger {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(210, 228, 255, 0.22);
+  color: #f4f7fc;
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+
+[data-theme="dark"] .ai-model-trigger:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(210, 228, 255, 0.34);
+}
+
+.ai-model-dot,
+.ai-model-opt-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #eb5e33;
+  box-shadow: 0 0 6px rgba(235, 94, 51, 0.55);
+}
+
+.ai-model-trigger[data-model="minimax/minimax-m3.1-flash"] .ai-model-dot,
+.ai-model-opt-dot[data-model="minimax/minimax-m3.1-flash"] {
+  background: #38bdf8;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.55);
+}
+
+.ai-model-trigger-label {
+  display: inline-block;
+  line-height: 1;
+}
+
+.ai-model-chevron {
+  opacity: 0.68;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ai-model-dropdown.open .ai-model-chevron {
+  transform: rotate(180deg);
+}
+
+.ai-model-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 236px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 600;
+  background: rgba(255, 252, 246, 0.94);
+  backdrop-filter: blur(26px) saturate(195%);
+  -webkit-backdrop-filter: blur(26px) saturate(195%);
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.16),
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  transform-origin: top right;
+  pointer-events: none;
+  transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ai-model-dropdown.open .ai-model-menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+[data-theme="dark"] .ai-model-menu {
+  background: rgba(22, 26, 36, 0.95);
+  border-color: rgba(210, 228, 255, 0.24);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.ai-model-option {
+  font-family: "Space Grotesk", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 11px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(19, 19, 19, 0.88);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.ai-model-option:hover {
+  background: rgba(19, 19, 19, 0.055);
+}
+
+.ai-model-option:active {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.ai-model-option.active {
+  background: rgba(235, 94, 51, 0.11);
+}
+
+[data-theme="dark"] .ai-model-option {
+  color: #f4f7fc;
+}
+
+[data-theme="dark"] .ai-model-option:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.18);
-  color: #f6f8fc;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
-.ai-model-select:disabled {
-  opacity: 0.9;
-  cursor: default;
+[data-theme="dark"] .ai-model-option.active {
+  background: rgba(255, 140, 102, 0.15);
+}
+
+.ai-model-opt-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ai-model-opt-name {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ai-model-opt-sub {
+  font-size: 10.5px;
+  font-weight: 500;
+  opacity: 0.62;
+  line-height: 1.25;
+  margin-top: 2px;
+}
+
+.ai-model-opt-check {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 800;
+  color: #c43a18;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.ai-model-option.active .ai-model-opt-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+[data-theme="dark"] .ai-model-opt-check {
+  color: #ff9c7a;
 }
 
 .ai-sheet-bar {

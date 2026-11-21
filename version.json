@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 141,
-  "latest": "v0.6.81",
-  "notes": "Ray-traced 3D Liquid Glass across all header buttons, icons, and badges (.top-bar): shared single-pass 6-item WebGL SDF raymarcher with ember/amber translucent crystal tinting (#newSprintBtn, #streakBadge), clear crystal geometry (#themeToggle, #calendarBtn, #xpLabel, Sprint menu button), per-item SVG Snell/TIR refraction chips, and optical glass XP trough + sprint dropdown.",
+  "versionCode": 142,
+  "latest": "v0.6.82",
+  "notes": "Ask AI custom liquid-glass model picker dropdown supporting both Muse Ember (meta/muse-ember) and MiniMax M3.1 Flash (minimax/minimax-m3.1-flash) through the allowlisted Vercel AI Gateway proxy, with localStorage persistence (sf_ai_model) and frosted popover menu.",
   "apkUrl": ""
 }
