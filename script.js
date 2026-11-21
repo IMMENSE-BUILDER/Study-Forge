@@ -9456,7 +9456,7 @@ function holdClearTimer() {
 
 function holdTargetOk(target) {
   if (!target || !target.closest) return false;
-  if (target.closest("input, textarea, select, [contenteditable], a, button, [role='button'], .bottom-nav")) return false;
+  if (target.closest("input, textarea, select, [contenteditable], a, button, [role='button'], .bottom-nav, .ai-search-inner, .ai-page-header, .ai-mode-bar, .ai-input-bar")) return false;
   return true;
 }
 

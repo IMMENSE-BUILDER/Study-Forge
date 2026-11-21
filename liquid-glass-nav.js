@@ -1,28 +1,31 @@
 /* ============================================================
-   StudyForged — Ray-Traced Liquid Glass Navigation Engine
+   StudyForged — Ray-Traced Liquid Glass Engine
    3D SDF raymarching, Snell refraction, Total Internal Reflection
    border caustics, chromatic dispersion, and damped spring physics
    adapted from MuhammadaliMS/liquid-glass (MIT License, Copyright (c) 2026 zerowing).
 
-   Hybrid dual-layer architecture for live scrolling PWA DOM:
-   1. Live-DOM Refraction Layer: CPU-computed 3D ray-traced Snell + TIR
-      displacement map driving a 3-channel sRGB SVG <feDisplacementMap>
-      backdrop-filter (Chromium) with frosted CSS fallback elsewhere.
-   2. Transparent WebGL 3D Glass Surface: real-time raymarched dual-solid
-      SDF (outer pill + smooth-min blended active droplet lens) rendering
-      Fresnel rims, softbox reflections, pointer-reactive liquid bulge,
+   Multi-surface hybrid dual-layer architecture for live scrolling PWA DOM:
+   1. Live-DOM Refraction Layer: CPU-computed per-surface 3D ray-traced
+      Snell + TIR displacement map driving a 3-channel sRGB SVG
+      <feDisplacementMap> backdrop-filter (Chromium) with frosted CSS fallback.
+   2. Transparent WebGL 3D Glass Surface: real-time raymarched 3D SDF
+      (outer pill + optional smooth-min blended active droplet lens)
+      rendering Fresnel rims, softbox reflections, pointer liquid bulge,
       TIR border caustics & dispersion, specular glints, and contact shadow.
+
+   Active surfaces (within 5 total WebGL contexts):
+   - Main view: #bottomNav, #aiSearchBar > .ai-search-inner
+   - Ask AI page (lazy on .open, sleeps on close):
+     .ai-page-header, .ai-mode-bar (with active droplet), .ai-input-bar
    ============================================================ */
 (function () {
   'use strict';
 
-  var BLEED_X = 12;
-  var BLEED_Y = 18;
-  var MAX_DISP = 18;
   var GLASS_IOR = 1.48;
   var RAY_CAMERA = 780;
   var RAY_BACK = -165;
   var SINK_THRESH = 0.001;
+  var SVG_NS = 'http://www.w3.org/2000/svg';
 
   function clamp(value, minimum, maximum) {
     return Math.min(maximum, Math.max(minimum, value));
@@ -79,7 +82,7 @@
     return [ix - d * nx, iy - d * ny, iz - d * nz];
   }
 
-  function buildRayTracedDisplacementURL(width, height, radius) {
+  function buildRayTracedDisplacementURL(width, height, radius, maxDisp) {
     var W = Math.max(32, Math.round(width));
     var H = Math.max(24, Math.round(height));
     var hw = W * 0.5;
@@ -155,7 +158,6 @@
         var lx = pxIdx + 0.5 - hw;
         var idx = (pyIdx * W + pxIdx) * 4;
 
-        // Ray from camera (0, 0, RAY_CAMERA) through (lx, ly, 0)
         var rdx = lx;
         var rdy = ly;
         var rdz = -RAY_CAMERA;
@@ -164,7 +166,6 @@
         rdy /= rlen;
         rdz /= rlen;
 
-        // AABB slab intersect for fast start
         var invX = 1.0 / (rdx + 1e-6);
         var invY = 1.0 / (rdy + 1e-6);
         var invZ = 1.0 / (rdz + 1e-6);
@@ -216,7 +217,6 @@
 
               var outgoing = refract3(inside[0], inside[1], inside[2], -rg[1], -rg[2], -rg[3], GLASS_IOR);
               if (!outgoing) {
-                // TIR internal bounce at curved border bevel
                 inside = reflect3(inside[0], inside[1], inside[2], rg[1], rg[2], rg[3]);
                 var bTravel = 0.6;
                 var bx = rxPos, by = ryPos, bz = rzPos;
@@ -238,10 +238,9 @@
 
               var oz = outgoing[2];
               if (oz > -0.18) {
-                // Grazing or TIR-flipped ray bends strongly along border tangent
                 var edgeTaper = clamp(-sdRoundedBox2D(lx, ly, hw, hh, r) / 4.0, 0.0, 1.0);
-                dxOut = clamp(outgoing[0] * MAX_DISP * 1.1 * edgeTaper, -MAX_DISP, MAX_DISP);
-                dyOut = clamp(outgoing[1] * MAX_DISP * 1.1 * edgeTaper, -MAX_DISP, MAX_DISP);
+                dxOut = clamp(outgoing[0] * maxDisp * 1.1 * edgeTaper, -maxDisp, maxDisp);
+                dyOut = clamp(outgoing[1] * maxDisp * 1.1 * edgeTaper, -maxDisp, maxDisp);
               } else {
                 var rayDist = (RAY_BACK - rzPos) / oz;
                 var bgX = (rxPos + outgoing[0] * rayDist) * RAY_CAMERA / (RAY_CAMERA - RAY_BACK);
@@ -250,16 +249,15 @@
                 var rawDy = bgY - ly;
                 var dEdge = sdRoundedBox2D(lx, ly, hw, hh, r);
                 var edgeFade = clamp(-dEdge / 1.5, 0.0, 1.0);
-                dxOut = clamp(rawDx * edgeFade, -MAX_DISP, MAX_DISP);
-                dyOut = clamp(rawDy * edgeFade, -MAX_DISP, MAX_DISP);
+                dxOut = clamp(rawDx * edgeFade, -maxDisp, maxDisp);
+                dyOut = clamp(rawDy * edgeFade, -maxDisp, maxDisp);
               }
             }
           }
         }
 
-        // Encode displacement into sRGB PNG channels (neutral = 128)
-        data[idx] = clamp(Math.round(128 + (dxOut / MAX_DISP) * 127), 0, 255);
-        data[idx + 1] = clamp(Math.round(128 + (dyOut / MAX_DISP) * 127), 0, 255);
+        data[idx] = clamp(Math.round(128 + (dxOut / maxDisp) * 127), 0, 255);
+        data[idx + 1] = clamp(Math.round(128 + (dyOut / maxDisp) * 127), 0, 255);
         data[idx + 2] = 128;
         data[idx + 3] = 255;
       }
@@ -269,31 +267,42 @@
     return { url: offCanvas.toDataURL('image/png'), width: W, height: H };
   }
 
-  function ensureSvgFilterElement() {
+  function ensureSvgElement() {
     var svg = document.getElementById('sf-lg-svg');
     if (svg) return svg;
-    var ns = 'http://www.w3.org/2000/svg';
-    svg = document.createElementNS(ns, 'svg');
+    svg = document.createElementNS(SVG_NS, 'svg');
     svg.id = 'sf-lg-svg';
     svg.setAttribute('aria-hidden', 'true');
     svg.style.cssText = 'position:fixed;width:0;height:0;overflow:hidden;pointer-events:none;left:-9999px;top:-9999px;';
-    var defs = document.createElementNS(ns, 'defs');
-    var filter = document.createElementNS(ns, 'filter');
-    filter.id = 'sf-lg-nav-filter';
-    filter.setAttribute('color-interpolation-filters', 'sRGB');
-    defs.appendChild(filter);
+    var defs = document.createElementNS(SVG_NS, 'defs');
     svg.appendChild(defs);
     document.body.appendChild(svg);
     return svg;
   }
 
-  function updateSvgDisplacementFilter(width, height, radius) {
-    var map = buildRayTracedDisplacementURL(width, height, radius);
+  function ensureSvgFilter(filterId) {
+    var svg = ensureSvgElement();
+    var defs = svg.querySelector('defs');
+    if (!defs) {
+      defs = document.createElementNS(SVG_NS, 'defs');
+      svg.appendChild(defs);
+    }
+    var filter = document.getElementById(filterId);
+    if (!filter) {
+      filter = document.createElementNS(SVG_NS, 'filter');
+      filter.id = filterId;
+      filter.setAttribute('color-interpolation-filters', 'sRGB');
+      defs.appendChild(filter);
+    }
+    return filter;
+  }
+
+  function updateSvgDisplacementFilter(filterId, width, height, radius, maxDisp) {
+    var map = buildRayTracedDisplacementURL(width, height, radius, maxDisp);
     if (!map) return false;
-    var svg = ensureSvgFilterElement();
-    var filter = svg.querySelector('#sf-lg-nav-filter');
+    var filter = ensureSvgFilter(filterId);
     if (!filter) return false;
-    var ns = 'http://www.w3.org/2000/svg';
+
     var W = String(map.width);
     var H = String(map.height);
 
@@ -308,7 +317,7 @@
     while (filter.firstChild) filter.removeChild(filter.firstChild);
 
     function el(tag, attrs) {
-      var node = document.createElementNS(ns, tag);
+      var node = document.createElementNS(SVG_NS, tag);
       for (var k in attrs) {
         if (Object.prototype.hasOwnProperty.call(attrs, k)) {
           node.setAttribute(k, String(attrs[k]));
@@ -317,7 +326,6 @@
       return node;
     }
 
-    // Optical polish softens high-frequency text behind the dock while keeping refracted shapes rich
     filter.appendChild(el('feGaussianBlur', {
       in: 'SourceGraphic',
       stdDeviation: '1.85',
@@ -333,11 +341,10 @@
       result: 'dispMap'
     }));
 
-    // Subtle chromatic RGB dispersion along the refracted curved borders
     filter.appendChild(el('feDisplacementMap', {
       in: 'softSrc',
       in2: 'dispMap',
-      scale: (MAX_DISP * 0.96).toFixed(2),
+      scale: (maxDisp * 0.96).toFixed(2),
       xChannelSelector: 'R',
       yChannelSelector: 'G',
       result: 'dispR'
@@ -352,7 +359,7 @@
     filter.appendChild(el('feDisplacementMap', {
       in: 'softSrc',
       in2: 'dispMap',
-      scale: MAX_DISP.toFixed(2),
+      scale: maxDisp.toFixed(2),
       xChannelSelector: 'R',
       yChannelSelector: 'G',
       result: 'dispG'
@@ -367,7 +374,7 @@
     filter.appendChild(el('feDisplacementMap', {
       in: 'softSrc',
       in2: 'dispMap',
-      scale: (MAX_DISP * 1.04).toFixed(2),
+      scale: (maxDisp * 1.04).toFixed(2),
       xChannelSelector: 'R',
       yChannelSelector: 'G',
       result: 'dispB'
@@ -426,7 +433,7 @@
     'uniform vec2 u_pointer;',    // pointer pos in canvas CSS px
     'uniform float u_pull;',      // pointer liquid bulge in px
     'uniform vec2 u_light;',      // specular studio light pos in canvas CSS px
-    'uniform float u_press;',     // 0..1 active press highlight
+    'uniform float u_press;',     // 0..1 active press/focus highlight
     'uniform float u_dark;',      // 0 light mode .. 1 dark mode
     '',
     'const float CAMERA = 780.0;',
@@ -437,7 +444,6 @@
     '  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - cr;',
     '}',
     '',
-    '// Outer capsule outline with liquid pointer bulge (ported from glass.frag).',
     'float pillOutline(vec2 p) {',
     '  float d = sdBox2(p, u_pill.zw, u_radius);',
     '  vec2 toPtr = (u_pill.xy + p) - u_pointer;',
@@ -459,7 +465,6 @@
     '  return vec3(d, normalize(n + 1e-6));',
     '}',
     '',
-    '// 3D dual-solid SDF: main domed glass capsule + smooth-min blended active droplet.',
     'vec4 solid(vec3 p) {',
     '  vec2 local = p.xy - u_pill.xy;',
     '  vec3 b = pillField(local);',
@@ -536,7 +541,6 @@
     '}',
     '',
     'vec3 environmentColor(vec3 dir, vec2 pixel) {',
-    '  // Warm-cream studio sky in light mode, cool moonlit studio in dark mode',
     '  vec3 skyLight = mix(vec3(0.95, 0.92, 0.86), vec3(1.0, 0.98, 0.94), clamp(0.5 - dir.y * 0.8, 0.0, 1.0));',
     '  vec3 skyDark = mix(vec3(0.10, 0.13, 0.20), vec3(0.32, 0.42, 0.60), clamp(0.5 - dir.y * 0.8, 0.0, 1.0));',
     '  vec3 sky = mix(skyLight, skyDark, u_dark);',
@@ -558,7 +562,6 @@
     '  vec3 front;',
     '',
     '  if (!enterSolid(origin, viewRay, front)) {',
-    '    // Floating soft drop shadow + subtle caustic glow under curved bottom edge',
     '    float shDist = sdBox2(pLocal - vec2(0.0, 6.5), u_pill.zw, u_radius);',
     '    float shadowAlpha = (1.0 - smoothstep(-2.0, 13.5, shDist)) * mix(0.16, 0.44, u_dark);',
     '    float contact = (1.0 - smoothstep(-1.5, 4.5, sdBox2(pLocal - vec2(0.0, 2.0), u_pill.zw, u_radius))) * mix(0.08, 0.22, u_dark);',
@@ -590,7 +593,6 @@
     '    if (dot(outgoing, outgoing) < 0.01) outgoing = reflect(inside, rearNormal);',
     '  }',
     '',
-    '  // Active sliding droplet mask & edge normal strength',
     '  float lensEdgeMask = 0.0;',
     '  float lensBodyMask = 0.0;',
     '  float lensTopRim = 0.0;',
@@ -606,50 +608,44 @@
     '  float fresnel = f0 + (1.0 - f0) * pow(grazing, 3.2);',
     '  vec3 reflected = environmentColor(reflect(viewRay, normal), pixel);',
     '',
-    '  // Specular highlights tracking pointer/light position',
     '  vec3 toLight = normalize(vec3(u_light - front.xy, 360.0));',
     '  vec3 halfVec = normalize(toLight - viewRay);',
     '  float spec = pow(max(dot(normal, halfVec), 0.0), 120.0) * (0.34 + u_press * 0.36);',
     '  float broadSpec = pow(max(dot(normal, halfVec), 0.0), 22.0) * (0.10 + u_press * 0.14);',
     '',
-    '  // Curved-border TIR caustics & subtle prismatic chromatic fire at glass rims',
     '  float rimFactor = smoothstep(-12.0, -0.5, outerDist);',
     '  float dispersionAngle = atan(rearNormal.y, rearNormal.x);',
     '  vec3 prism = 0.5 + 0.5 * cos(dispersionAngle + vec3(0.0, 2.094, 4.188));',
     '  vec3 causticColor = mix(vec3(1.0, 0.99, 0.96), prism, 0.28);',
     '  float tirGlow = tirBounce * (0.42 + 0.32 * rimFactor) + lensEdgeMask * (0.28 + 0.25 * grazing);',
     '',
-    '  // Crisp optical boundary bevel & catchlight rims',
-    '  float outerCrease = 1.0 - smoothstep(0.0, 1.8, abs(outerDist + 0.5));',
-    '  float topSpecularRim = clamp(-normal.y * 0.85 + 0.4, 0.0, 1.0) * (1.0 - smoothstep(0.0, 3.2, abs(outerDist + 1.5)));',
+    '  float outerCrease = 1.0 - smoothstep(0.0, 2.2, abs(outerDist + 0.75));',
+    '  float topSpecularRim = clamp(-normal.y * 0.92 + 0.22, 0.0, 1.0) * (1.0 - smoothstep(0.0, 3.2, abs(outerDist + 1.6)));',
     '  float dropletCrease = lensEdgeMask * (0.48 + 0.42 * grazing);',
     '',
-    '  // Beer-Lambert glass tint + balanced translucent crystal veil for crisp icon/label readability',
     '  vec3 baseVeilCol = mix(vec3(0.99, 0.975, 0.94), vec3(0.14, 0.17, 0.24), u_dark);',
     '  vec3 edgeThicknessCol = mix(vec3(0.92, 0.96, 1.0), vec3(0.45, 0.65, 0.96), u_dark);',
-    '  vec3 glassColor = mix(baseVeilCol, reflected, clamp(fresnel * 1.18, 0.0, 0.92));',
+    '  vec3 glassColor = mix(baseVeilCol, reflected, clamp(fresnel * 1.12, 0.0, 0.90));',
     '  glassColor = mix(glassColor, edgeThicknessCol, rimFactor * 0.24);',
-    '  glassColor += causticColor * tirGlow;',
-    '  glassColor += vec3(1.0, 0.995, 0.98) * (spec + broadSpec + topSpecularRim * mix(0.62, 0.72, u_dark) + lensTopRim * 0.68);',
-    '  // Raised active crystal droplet pillow (bright frosted milk-crystal in light, glowing ice in dark)',
+    '  glassColor += causticColor * tirGlow * 0.85;',
+    '  glassColor += vec3(1.0, 0.995, 0.98) * (spec + broadSpec + topSpecularRim * mix(0.60, 0.64, u_dark) + lensTopRim * 0.68);',
     '  vec3 dropletTint = mix(vec3(1.0, 0.99, 0.96), vec3(0.76, 0.86, 1.0), u_dark);',
     '  glassColor = mix(glassColor, dropletTint, lensBodyMask * mix(0.50, 0.24, u_dark));',
-    '  // Optical rim contour so the curved crystal edge & active droplet read clearly on both themes',
-    '  vec3 rimContour = mix(vec3(0.24, 0.20, 0.17), vec3(0.88, 0.94, 1.0), u_dark);',
-    '  glassColor = mix(glassColor, rimContour, outerCrease * mix(0.28, 0.36, u_dark));',
+    '  vec3 rimContour = mix(vec3(0.24, 0.20, 0.17), vec3(0.84, 0.91, 1.0), u_dark);',
+    '  glassColor = mix(glassColor, rimContour, outerCrease * mix(0.28, 0.30, u_dark));',
     '  glassColor = mix(glassColor, rimContour, dropletCrease * mix(0.28, 0.38, u_dark));',
     '',
     '  float centerAlpha = mix(0.22, 0.26, u_dark) + lensBodyMask * mix(0.38, 0.22, u_dark);',
-    '  float rimAlpha = clamp(fresnel * 0.88 + tirGlow * 0.68 + outerCrease * 0.45 + spec + topSpecularRim * 0.48 + dropletCrease * 0.45, 0.0, 0.95);',
-    '  float alpha = clamp(max(centerAlpha, rimAlpha), 0.0, 0.96);',
-    '  float coverage = clamp(0.5 - outerDist * u_dpr, 0.0, 1.0);',
+    '  float rimAlpha = clamp(fresnel * 0.84 + tirGlow * 0.60 + outerCrease * 0.42 + spec + topSpecularRim * 0.44 + dropletCrease * 0.45, 0.0, 0.88);',
+    '  float alpha = clamp(max(centerAlpha, rimAlpha), 0.0, 0.92);',
+    '  float coverage = smoothstep(0.6 / max(u_dpr, 1.0), -0.8 / max(u_dpr, 1.0), outerDist);',
     '  alpha *= max(coverage, step(outerDist, -1.0));',
     '',
     '  gl_FragColor = vec4(clamp(glassColor, 0.0, 1.0) * alpha, alpha);',
     '}'
   ].join('\n');
 
-  function createNavGlassWebGL(canvas) {
+  function createSurfaceGlassWebGL(canvas) {
     var gl = canvas.getContext('webgl', {
       alpha: true,
       antialias: true,
@@ -761,39 +757,63 @@
   }
 
   /* ------------------------------------------------------------
-     Bootstrap & Spring Choreography on #bottomNav
+     Generic Ray-Traced Liquid Glass Surface Controller
      ------------------------------------------------------------ */
-  function initLiquidGlassNav() {
-    var nav = document.getElementById('bottomNav');
-    if (!nav || nav.dataset.lgInit === '1') return;
-    nav.dataset.lgInit = '1';
+  var sharedMotionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  var sharedSvgSupported = supportsSvgBackdropRefraction();
 
-    // Insert backing refraction layer, WebGL glass canvas, and CSS fallback pill BEFORE tabs
+  function isDarkMode() {
+    return document.body.getAttribute('data-theme') === 'dark';
+  }
+
+  function attachLiquidGlassSurface(hostEl, opts) {
+    if (!hostEl) return null;
+    if (hostEl.dataset.lgInit === '1' && hostEl._sfLgCtrl) {
+      return hostEl._sfLgCtrl;
+    }
+    hostEl.dataset.lgInit = '1';
+
+    opts = opts || {};
+    var id = opts.id || 'surface';
+    var filterId = 'sf-lg-filter-' + id;
+    var bleedX = opts.bleedX !== undefined ? opts.bleedX : 10;
+    var bleedY = opts.bleedY !== undefined ? opts.bleedY : 14;
+    var maxDisp = opts.maxDisp !== undefined ? opts.maxDisp : 16;
+    var pullMax = opts.pullMax !== undefined ? opts.pullMax : 4.8;
+    var lensSelector = opts.lensSelector || null;
+    var scrubSelector = opts.scrubSelector || null;
+    var focusSelector = opts.focusSelector || null;
+
+    hostEl.style.setProperty('--lg-bleed-x', bleedX + 'px');
+    hostEl.style.setProperty('--lg-bleed-y', bleedY + 'px');
+
     var refractLayer = document.createElement('div');
     refractLayer.className = 'sf-lg-refract';
     refractLayer.setAttribute('aria-hidden', 'true');
+    refractLayer.style.setProperty('--sf-lg-filter', 'url(#' + filterId + ')');
 
     var canvas = document.createElement('canvas');
     canvas.className = 'sf-lg-canvas';
     canvas.setAttribute('aria-hidden', 'true');
 
-    var pillFallback = document.createElement('div');
-    pillFallback.className = 'sf-lg-pill-fallback';
-    pillFallback.setAttribute('aria-hidden', 'true');
+    var pillFallback = null;
+    if (lensSelector) {
+      pillFallback = document.createElement('div');
+      pillFallback.className = 'sf-lg-pill-fallback';
+      pillFallback.setAttribute('aria-hidden', 'true');
+      hostEl.insertBefore(pillFallback, hostEl.firstChild);
+      hostEl.insertBefore(canvas, pillFallback);
+    } else {
+      hostEl.insertBefore(canvas, hostEl.firstChild);
+    }
+    hostEl.insertBefore(refractLayer, canvas);
+    hostEl.classList.add('sf-lg-surface', 'sf-lg-ready');
 
-    nav.insertBefore(pillFallback, nav.firstChild);
-    nav.insertBefore(canvas, pillFallback);
-    nav.insertBefore(refractLayer, canvas);
-    nav.classList.add('sf-lg-ready');
+    var renderer = createSurfaceGlassWebGL(canvas);
+    hostEl.dataset.lgWebgl = renderer ? '1' : '0';
 
-    var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-    var isDarkMode = function () { return document.body.getAttribute('data-theme') === 'dark'; };
-
-    var renderer = createNavGlassWebGL(canvas);
-    nav.dataset.lgWebgl = renderer ? '1' : '0';
-
-    var useSvgRefract = supportsSvgBackdropRefraction();
-    nav.dataset.lgRefract = useSvgRefract ? 'svg' : 'css';
+    var useSvgRefract = sharedSvgSupported;
+    hostEl.dataset.lgRefract = useSvgRefract ? 'svg' : 'css';
 
     canvas.addEventListener('webglcontextlost', function (e) {
       e.preventDefault();
@@ -801,32 +821,33 @@
         renderer.destroy();
         renderer = null;
       }
-      nav.dataset.lgWebgl = '0';
+      hostEl.dataset.lgWebgl = '0';
     });
 
     var metrics = {
-      width: 340,
-      height: 62,
-      radius: 31,
-      tabs: [] // { left, width, height, cx, cy } relative to nav
+      width: 320,
+      height: 56,
+      radius: 28,
+      tabs: []
     };
 
     var anim = {
       lensX: 0, lensVx: 0, targetLensX: 0,
+      lensY: 28,
       lensW: 60, lensVw: 0, targetLensW: 60,
-      lensH: 48,
+      lensH: 40,
       pull: 0, pullV: 0, targetPull: 0,
       press: 0, pressV: 0, targetPress: 0,
-      lightX: 120, lightVx: 0, targetLightX: 120,
+      lightX: 100, lightVx: 0, targetLightX: 100,
       lightY: -40, lightVy: 0, targetLightY: -40,
       dark: isDarkMode() ? 1 : 0, darkV: 0, targetDark: isDarkMode() ? 1 : 0,
       pointerX: -9999,
       pointerY: -9999,
       pointerInside: false,
       pointerDown: false,
+      inputFocused: false,
       scrubbing: false,
       startClientX: 0,
-      startClientY: 0,
       scrubTargetIdx: -1,
       initialized: false
     };
@@ -834,71 +855,89 @@
     var rafId = 0;
     var lastNow = 0;
     var lastFilterKey = '';
+    var sleeping = false;
 
-    function measureNav(snap) {
-      var rect = nav.getBoundingClientRect();
+    function syncFallbackPill() {
+      if (!pillFallback || !lensSelector) return;
+      var pw = Math.max(32, anim.lensW);
+      var ph = Math.max(28, anim.lensH);
+      var px = anim.lensX - pw * 0.5;
+      var py = anim.lensY - ph * 0.5;
+      pillFallback.style.width = pw.toFixed(1) + 'px';
+      pillFallback.style.height = ph.toFixed(1) + 'px';
+      pillFallback.style.transform = 'translate3d(' + px.toFixed(1) + 'px, ' + py.toFixed(1) + 'px, 0)';
+    }
+
+    function measure(snap) {
+      var rect = hostEl.getBoundingClientRect();
       if (rect.width < 20 || rect.height < 20) return;
 
-      var cs = getComputedStyle(nav);
-      var parsedR = parseFloat(cs.borderTopLeftRadius) || 32;
+      var cs = getComputedStyle(hostEl);
+      var parsedR = parseFloat(cs.borderTopLeftRadius) || 28;
       metrics.width = rect.width;
       metrics.height = rect.height;
       metrics.radius = clamp(parsedR, 0, Math.min(rect.width, rect.height) * 0.5);
 
-      var tabEls = Array.from(nav.querySelectorAll('.nav-tab'));
-      var activeIdx = -1;
-      metrics.tabs = tabEls.map(function (tab, i) {
-        var tr = tab.getBoundingClientRect();
-        var relLeft = tr.left - rect.left;
-        var relTop = tr.top - rect.top;
-        if (tab.classList.contains('active')) activeIdx = i;
-        return {
-          el: tab,
-          left: relLeft,
-          top: relTop,
-          width: tr.width,
-          height: tr.height,
-          cx: relLeft + tr.width * 0.5,
-          cy: relTop + tr.height * 0.5
-        };
-      });
+      if (lensSelector) {
+        var btnSelector = scrubSelector || lensSelector.replace(/\.active\b/g, '');
+        var tabEls = Array.from(hostEl.querySelectorAll(btnSelector));
+        var activeIdx = -1;
+        metrics.tabs = tabEls.map(function (tab, i) {
+          var tr = tab.getBoundingClientRect();
+          var relLeft = tr.left - rect.left;
+          var relTop = tr.top - rect.top;
+          if (tab.matches(lensSelector) || tab.classList.contains('active')) activeIdx = i;
+          return {
+            el: tab,
+            left: relLeft,
+            top: relTop,
+            width: tr.width,
+            height: tr.height,
+            cx: relLeft + tr.width * 0.5,
+            cy: relTop + tr.height * 0.5
+          };
+        });
 
-      if (activeIdx < 0 && metrics.tabs.length) activeIdx = 0;
-      if (activeIdx >= 0) {
-        var active = metrics.tabs[activeIdx];
-        anim.targetLensX = active.cx;
-        anim.targetLensW = Math.max(36, active.width - 2);
-        anim.lensH = Math.max(32, active.height - 2);
-        if (!anim.initialized || snap) {
-          anim.lensX = anim.targetLensX;
-          anim.lensW = anim.targetLensW;
-          anim.lensVx = 0;
-          anim.lensVw = 0;
-          anim.initialized = true;
+        if (activeIdx < 0 && metrics.tabs.length) activeIdx = 0;
+        if (activeIdx >= 0) {
+          var active = metrics.tabs[activeIdx];
+          anim.targetLensX = active.cx;
+          anim.lensY = active.cy || metrics.height * 0.5;
+          anim.targetLensW = Math.max(36, active.width - 2);
+          anim.lensH = Math.max(28, active.height - 2);
+          if (!anim.initialized || snap) {
+            anim.lensX = anim.targetLensX;
+            anim.lensW = anim.targetLensW;
+            anim.lensVx = 0;
+            anim.lensVw = 0;
+            anim.initialized = true;
+          }
         }
+      } else {
+        anim.initialized = true;
       }
 
       if (!anim.pointerInside) {
-        anim.targetLightX = BLEED_X + metrics.width * 0.24;
-        anim.targetLightY = BLEED_Y - metrics.height * 0.35;
-        if (!anim.initialized || snap) {
+        anim.targetLightX = bleedX + metrics.width * 0.24;
+        anim.targetLightY = bleedY - metrics.height * 0.35;
+        if (snap) {
           anim.lightX = anim.targetLightX;
           anim.lightY = anim.targetLightY;
         }
       }
 
       if (renderer) {
-        renderer.resize(metrics.width + BLEED_X * 2, metrics.height + BLEED_Y * 2);
+        renderer.resize(metrics.width + bleedX * 2, metrics.height + bleedY * 2);
       }
 
       if (useSvgRefract) {
         var fKey = Math.round(metrics.width) + 'x' + Math.round(metrics.height) + '@' + Math.round(metrics.radius);
         if (fKey !== lastFilterKey) {
           lastFilterKey = fKey;
-          var ok = updateSvgDisplacementFilter(metrics.width, metrics.height, metrics.radius);
+          var ok = updateSvgDisplacementFilter(filterId, metrics.width, metrics.height, metrics.radius, maxDisp);
           if (!ok) {
             useSvgRefract = false;
-            nav.dataset.lgRefract = 'css';
+            hostEl.dataset.lgRefract = 'css';
           }
         }
       }
@@ -907,31 +946,25 @@
       scheduleFrame();
     }
 
-    function syncFallbackPill() {
-      var pw = Math.max(32, anim.lensW);
-      var ph = Math.max(30, anim.lensH);
-      var px = anim.lensX - pw * 0.5;
-      var py = (metrics.height - ph) * 0.5;
-      pillFallback.style.width = pw.toFixed(1) + 'px';
-      pillFallback.style.height = ph.toFixed(1) + 'px';
-      pillFallback.style.transform = 'translate3d(' + px.toFixed(1) + 'px, ' + py.toFixed(1) + 'px, 0)';
-    }
-
-    function updateActiveTargetFromMutation() {
+    function updateActiveTarget() {
       if (anim.scrubbing) return;
-      var tabEls = Array.from(nav.querySelectorAll('.nav-tab'));
-      var idx = tabEls.findIndex(function (t) { return t.classList.contains('active'); });
-      if (idx >= 0 && metrics.tabs[idx]) {
-        anim.targetLensX = metrics.tabs[idx].cx;
-        anim.targetLensW = Math.max(36, metrics.tabs[idx].width - 2);
-        scheduleFrame();
+      if (lensSelector) {
+        var btnSelector = scrubSelector || lensSelector.replace(/\.active\b/g, '');
+        var tabEls = Array.from(hostEl.querySelectorAll(btnSelector));
+        var idx = tabEls.findIndex(function (t) { return t.matches(lensSelector) || t.classList.contains('active'); });
+        if (idx >= 0 && metrics.tabs[idx]) {
+          anim.targetLensX = metrics.tabs[idx].cx;
+          anim.lensY = metrics.tabs[idx].cy || metrics.height * 0.5;
+          anim.targetLensW = Math.max(36, metrics.tabs[idx].width - 2);
+          anim.lensH = Math.max(28, metrics.tabs[idx].height - 2);
+        }
       }
       anim.targetDark = isDarkMode() ? 1 : 0;
       scheduleFrame();
     }
 
     function tabIndexAtClientX(clientX) {
-      var rect = nav.getBoundingClientRect();
+      var rect = hostEl.getBoundingClientRect();
       var x = clientX - rect.left;
       var bestIdx = -1;
       var bestDist = Infinity;
@@ -946,51 +979,52 @@
     }
 
     function updatePointer(e) {
-      var rect = nav.getBoundingClientRect();
+      var rect = hostEl.getBoundingClientRect();
       var lx = e.clientX - rect.left;
       var ly = e.clientY - rect.top;
-      anim.pointerX = lx + BLEED_X;
-      anim.pointerY = ly + BLEED_Y;
+      anim.pointerX = lx + bleedX;
+      anim.pointerY = ly + bleedY;
       anim.pointerInside = true;
       anim.targetLightX = anim.pointerX - 45;
       anim.targetLightY = anim.pointerY - 85;
-      anim.targetPull = motionQuery && motionQuery.matches ? 0 : 5.5;
+      anim.targetPull = sharedMotionQuery && sharedMotionQuery.matches ? 0 : pullMax;
       scheduleFrame();
     }
 
-    nav.addEventListener('pointerenter', updatePointer, { passive: true });
-    nav.addEventListener('pointermove', function (e) {
+    hostEl.addEventListener('pointerenter', updatePointer, { passive: true });
+    hostEl.addEventListener('pointermove', function (e) {
       updatePointer(e);
-      if (anim.pointerDown) {
+      if (anim.pointerDown && anim.canScrub && metrics.tabs.length) {
         var dx = Math.abs(e.clientX - anim.startClientX);
         if (!anim.scrubbing && dx > 10) {
           anim.scrubbing = true;
         }
         if (anim.scrubbing) {
-          var rect = nav.getBoundingClientRect();
-          var clampedX = clamp(e.clientX - rect.left, anim.lensW * 0.5 + 4, metrics.width - anim.lensW * 0.5 - 4);
-          anim.targetLensX = clampedX;
+          var rect = hostEl.getBoundingClientRect();
+          var minCx = metrics.tabs[0].cx;
+          var maxCx = metrics.tabs[metrics.tabs.length - 1].cx;
+          anim.targetLensX = clamp(e.clientX - rect.left, minCx, maxCx);
           anim.scrubTargetIdx = tabIndexAtClientX(e.clientX);
         }
       }
     }, { passive: true });
 
-    nav.addEventListener('pointerleave', function () {
+    hostEl.addEventListener('pointerleave', function () {
       anim.pointerInside = false;
       anim.targetPull = 0;
-      anim.targetLightX = BLEED_X + metrics.width * 0.24;
-      anim.targetLightY = BLEED_Y - metrics.height * 0.35;
+      anim.targetLightX = bleedX + metrics.width * 0.24;
+      anim.targetLightY = bleedY - metrics.height * 0.35;
       scheduleFrame();
     }, { passive: true });
 
-    nav.addEventListener('pointerdown', function (e) {
+    hostEl.addEventListener('pointerdown', function (e) {
       if (e.button !== undefined && e.button > 0) return;
       updatePointer(e);
       anim.pointerDown = true;
       anim.scrubbing = false;
       anim.scrubTargetIdx = -1;
+      anim.canScrub = !!(scrubSelector && e.target && e.target.closest && e.target.closest(scrubSelector));
       anim.startClientX = e.clientX;
-      anim.startClientY = e.clientY;
       anim.targetPress = 1.0;
       scheduleFrame();
     }, { passive: true });
@@ -1002,13 +1036,13 @@
       anim.pointerDown = false;
       anim.scrubbing = false;
       anim.scrubTargetIdx = -1;
-      anim.targetPress = 0.0;
+      anim.targetPress = anim.inputFocused ? 0.55 : 0.0;
       if (wasScrubbing && scrubIdx >= 0 && metrics.tabs[scrubIdx]) {
         metrics.tabs[scrubIdx].el.click();
         anim.targetLensX = metrics.tabs[scrubIdx].cx;
         anim.targetLensW = Math.max(36, metrics.tabs[scrubIdx].width - 2);
       } else if (e.type === 'pointercancel') {
-        updateActiveTargetFromMutation();
+        updateActiveTarget();
       }
       scheduleFrame();
     }
@@ -1016,13 +1050,29 @@
     window.addEventListener('pointerup', finishPointer, { passive: true });
     window.addEventListener('pointercancel', finishPointer, { passive: true });
 
+    if (focusSelector) {
+      var focusEl = hostEl.querySelector(focusSelector);
+      if (focusEl) {
+        focusEl.addEventListener('focus', function () {
+          anim.inputFocused = true;
+          if (!anim.pointerDown) anim.targetPress = 0.55;
+          scheduleFrame();
+        }, { passive: true });
+        focusEl.addEventListener('blur', function () {
+          anim.inputFocused = false;
+          if (!anim.pointerDown) anim.targetPress = 0.0;
+          scheduleFrame();
+        }, { passive: true });
+      }
+    }
+
     function tick(now) {
       rafId = 0;
-      if (document.hidden) return;
+      if (sleeping || document.hidden) return;
       var dt = lastNow ? clamp((now - lastNow) / 1000, 0, 1 / 15) : 1 / 60;
       lastNow = now;
 
-      var still = motionQuery && motionQuery.matches;
+      var still = sharedMotionQuery && sharedMotionQuery.matches;
       if (still) {
         anim.lensX = anim.targetLensX;
         anim.lensW = anim.targetLensW;
@@ -1033,10 +1083,12 @@
         anim.dark = anim.targetDark;
         anim.lensVx = anim.lensVw = anim.pullV = anim.pressV = anim.lightVx = anim.lightVy = anim.darkV = 0;
       } else {
-        var r1 = stepSpring(anim.lensX, anim.lensVx, anim.targetLensX, dt, 380, 24);
-        anim.lensX = r1[0]; anim.lensVx = r1[1];
-        var r2 = stepSpring(anim.lensW, anim.lensVw, anim.targetLensW, dt, 380, 24);
-        anim.lensW = r2[0]; anim.lensVw = r2[1];
+        if (lensSelector) {
+          var r1 = stepSpring(anim.lensX, anim.lensVx, anim.targetLensX, dt, 380, 24);
+          anim.lensX = r1[0]; anim.lensVx = r1[1];
+          var r2 = stepSpring(anim.lensW, anim.lensVw, anim.targetLensW, dt, 380, 24);
+          anim.lensW = r2[0]; anim.lensVw = r2[1];
+        }
         var r3 = stepSpring(anim.pull, anim.pullV, anim.targetPull, dt, 260, 18);
         anim.pull = r3[0]; anim.pullV = r3[1];
         var r4 = stepSpring(anim.press, anim.pressV, anim.targetPress, dt, 420, 20);
@@ -1049,26 +1101,28 @@
         anim.dark = r7[0]; anim.darkV = r7[1];
       }
 
-      // Liquid squash-and-stretch as the active droplet glides across tabs
-      var stretch = still ? 0 : clamp(Math.abs(anim.lensVx) * 0.00028, 0, 0.22);
-      var pressBoost = 1 + anim.press * 0.035;
-      var dropletHw = (anim.lensW * 0.5) * (1 + stretch) * pressBoost;
-      var dropletHh = (anim.lensH * 0.5) * (1 - stretch * 0.42) * pressBoost;
-
-      syncFallbackPill();
+      var dropletHw = 0;
+      var dropletHh = 0;
+      if (lensSelector) {
+        var stretch = still ? 0 : clamp(Math.abs(anim.lensVx) * 0.00028, 0, 0.22);
+        var pressBoost = 1 + anim.press * 0.035;
+        dropletHw = (anim.lensW * 0.5) * (1 + stretch) * pressBoost * 0.94;
+        dropletHh = (anim.lensH * 0.5) * (1 - stretch * 0.42) * pressBoost * 0.94;
+        syncFallbackPill();
+      }
 
       if (renderer) {
         renderer.draw({
-          pillCx: BLEED_X + metrics.width * 0.5,
-          pillCy: BLEED_Y + metrics.height * 0.5,
+          pillCx: bleedX + metrics.width * 0.5,
+          pillCy: bleedY + metrics.height * 0.5,
           pillHw: metrics.width * 0.5,
           pillHh: metrics.height * 0.5,
           radius: metrics.radius,
-          lensCx: BLEED_X + anim.lensX,
-          lensCy: BLEED_Y + metrics.height * 0.5,
-          lensHw: dropletHw * 0.94,
-          lensHh: dropletHh * 0.94,
-          lensRadius: Math.min(dropletHw * 0.94, dropletHh * 0.94),
+          lensCx: bleedX + anim.lensX,
+          lensCy: bleedY + anim.lensY,
+          lensHw: dropletHw,
+          lensHh: dropletHh,
+          lensRadius: Math.min(dropletHw, dropletHh),
           lensLift: 2.8 + anim.press * 1.4,
           pointerX: anim.pointerInside ? anim.pointerX : -9999,
           pointerY: anim.pointerInside ? anim.pointerY : -9999,
@@ -1081,10 +1135,12 @@
       }
 
       var moving =
-        Math.abs(anim.lensX - anim.targetLensX) > SINK_THRESH ||
-        Math.abs(anim.lensVx) > 0.05 ||
-        Math.abs(anim.lensW - anim.targetLensW) > SINK_THRESH ||
-        Math.abs(anim.lensVw) > 0.05 ||
+        (lensSelector && (
+          Math.abs(anim.lensX - anim.targetLensX) > SINK_THRESH ||
+          Math.abs(anim.lensVx) > 0.05 ||
+          Math.abs(anim.lensW - anim.targetLensW) > SINK_THRESH ||
+          Math.abs(anim.lensVw) > 0.05
+        )) ||
         Math.abs(anim.pull - anim.targetPull) > SINK_THRESH ||
         Math.abs(anim.pullV) > 0.05 ||
         Math.abs(anim.press - anim.targetPress) > SINK_THRESH ||
@@ -1102,23 +1158,43 @@
     }
 
     function scheduleFrame() {
-      if (!rafId && !document.hidden) {
+      if (!sleeping && !rafId && !document.hidden) {
         lastNow = performance.now();
         rafId = requestAnimationFrame(tick);
       }
     }
 
+    function sleep() {
+      sleeping = true;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    }
+
+    function wake(snap) {
+      sleeping = false;
+      anim.targetDark = isDarkMode() ? 1 : 0;
+      if (snap) anim.dark = anim.targetDark;
+      measure(!!snap);
+    }
+
     if (typeof ResizeObserver === 'function') {
-      var ro = new ResizeObserver(function () { measureNav(false); });
-      ro.observe(nav);
+      var ro = new ResizeObserver(function () {
+        if (!sleeping) measure(false);
+      });
+      ro.observe(hostEl);
     } else {
-      window.addEventListener('resize', function () { measureNav(false); });
+      window.addEventListener('resize', function () {
+        if (!sleeping) measure(false);
+      });
     }
 
     if (typeof MutationObserver === 'function') {
-      var navObserver = new MutationObserver(updateActiveTargetFromMutation);
-      navObserver.observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
-
+      if (lensSelector) {
+        var selfObserver = new MutationObserver(updateActiveTarget);
+        selfObserver.observe(hostEl, { subtree: true, attributes: true, attributeFilter: ['class'] });
+      }
       var bodyObserver = new MutationObserver(function () {
         anim.targetDark = isDarkMode() ? 1 : 0;
         scheduleFrame();
@@ -1127,28 +1203,195 @@
     }
 
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) scheduleFrame();
+      if (!document.hidden && !sleeping) scheduleFrame();
       else if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = 0;
       }
     });
 
-    if (motionQuery && typeof motionQuery.addEventListener === 'function') {
-      motionQuery.addEventListener('change', function () { scheduleFrame(); });
+    if (sharedMotionQuery && typeof sharedMotionQuery.addEventListener === 'function') {
+      sharedMotionQuery.addEventListener('change', function () {
+        if (!sleeping) scheduleFrame();
+      });
     }
 
-    // Wait a microtask/frame so initBottomNav & initTheme finish setting active tab & theme
+    var ctrl = { measure: measure, wake: wake, sleep: sleep };
+    hostEl._sfLgCtrl = ctrl;
+    return ctrl;
+  }
+
+  /* ------------------------------------------------------------
+     Bootstrap Main Surfaces & Lazy Ask AI Page Surfaces
+     ------------------------------------------------------------ */
+  function initAllLiquidGlassSurfaces() {
+    var nav = document.getElementById('bottomNav');
+    var searchInner = document.querySelector('#aiSearchBar > .ai-search-inner');
+    var aiPage = document.getElementById('aiPage');
+
+    var navCtrl = nav ? attachLiquidGlassSurface(nav, {
+      id: 'nav',
+      bleedX: 12,
+      bleedY: 18,
+      maxDisp: 18,
+      pullMax: 5.5,
+      lensSelector: '.nav-tab.active',
+      scrubSelector: '.nav-tab'
+    }) : null;
+
+    var searchCtrl = searchInner ? attachLiquidGlassSurface(searchInner, {
+      id: 'search',
+      bleedX: 10,
+      bleedY: 14,
+      maxDisp: 16,
+      pullMax: 4.8
+    }) : null;
+
     requestAnimationFrame(function () {
-      anim.targetDark = isDarkMode() ? 1 : 0;
-      anim.dark = anim.targetDark;
-      measureNav(true);
+      if (navCtrl) navCtrl.wake(true);
+      if (searchCtrl) searchCtrl.wake(true);
     });
+
+    if (!aiPage) return;
+
+    var aiControllers = null;
+    var aiHeader = aiPage.querySelector('.ai-page-header');
+    var aiModeBar = aiPage.querySelector('.ai-mode-bar');
+    var aiSheetBar = document.getElementById('aiSheetBar');
+    var aiSheetStatus = document.getElementById('aiSheetStatus');
+    var aiPreviewTray = document.getElementById('aiImagePreviewTray');
+    var aiInputBar = aiPage.querySelector('.ai-input-bar');
+
+    function syncAiChromePadding() {
+      if (!aiPage.classList.contains('open')) return;
+      var pageRect = aiPage.getBoundingClientRect();
+      if (pageRect.height < 40) return;
+
+      var topEnd = 0;
+      var topEls = [aiHeader, aiModeBar, aiSheetBar, aiSheetStatus];
+      for (var i = 0; i < topEls.length; i++) {
+        var tel = topEls[i];
+        if (!tel || tel.offsetHeight <= 0) continue;
+        if (getComputedStyle(tel).display === 'none') continue;
+        topEnd = Math.max(topEnd, tel.getBoundingClientRect().bottom - pageRect.top);
+      }
+
+      var bottomStart = pageRect.height;
+      var botEls = [aiPreviewTray, aiInputBar];
+      for (var j = 0; j < botEls.length; j++) {
+        var bel = botEls[j];
+        if (!bel || bel.offsetHeight <= 0) continue;
+        if (getComputedStyle(bel).display === 'none') continue;
+        bottomStart = Math.min(bottomStart, bel.getBoundingClientRect().top - pageRect.top);
+      }
+
+      var topPad = Math.max(118, Math.round(topEnd + 14));
+      var bottomPad = Math.max(88, Math.round((pageRect.height - bottomStart) + 14));
+      aiPage.style.setProperty('--ai-chrome-top', topPad + 'px');
+      aiPage.style.setProperty('--ai-chrome-bottom', bottomPad + 'px');
+    }
+
+    function ensureAiControllers() {
+      if (aiControllers) return aiControllers;
+      aiControllers = [];
+      if (aiHeader) {
+        aiControllers.push(attachLiquidGlassSurface(aiHeader, {
+          id: 'ai-header',
+          bleedX: 10,
+          bleedY: 14,
+          maxDisp: 16,
+          pullMax: 4.8
+        }));
+      }
+      if (aiModeBar) {
+        aiControllers.push(attachLiquidGlassSurface(aiModeBar, {
+          id: 'ai-mode',
+          bleedX: 10,
+          bleedY: 14,
+          maxDisp: 16,
+          pullMax: 4.8,
+          lensSelector: '.ai-mode-btn.active',
+          scrubSelector: '.ai-mode-btn'
+        }));
+      }
+      if (aiInputBar) {
+        aiControllers.push(attachLiquidGlassSurface(aiInputBar, {
+          id: 'ai-input',
+          bleedX: 10,
+          bleedY: 14,
+          maxDisp: 16,
+          pullMax: 4.8,
+          focusSelector: '#aiChatInput'
+        }));
+      }
+      return aiControllers;
+    }
+
+    function syncAiOpenState() {
+      var open = aiPage.classList.contains('open');
+      if (open) {
+        var list = ensureAiControllers();
+        requestAnimationFrame(function () {
+          for (var i = 0; i < list.length; i++) {
+            if (list[i]) list[i].wake(true);
+          }
+          syncAiChromePadding();
+        });
+      } else if (aiControllers) {
+        for (var j = 0; j < aiControllers.length; j++) {
+          if (aiControllers[j]) aiControllers[j].sleep();
+        }
+      }
+    }
+
+    if (typeof MutationObserver === 'function') {
+      var pageObserver = new MutationObserver(function () {
+        syncAiOpenState();
+      });
+      pageObserver.observe(aiPage, { attributes: true, attributeFilter: ['class'] });
+
+      var chromeObserver = new MutationObserver(function () {
+        if (!aiPage.classList.contains('open')) return;
+        requestAnimationFrame(function () {
+          syncAiChromePadding();
+          if (aiControllers) {
+            for (var i = 0; i < aiControllers.length; i++) {
+              if (aiControllers[i]) aiControllers[i].measure(false);
+            }
+          }
+        });
+      });
+      [aiSheetBar, aiSheetStatus, aiPreviewTray].forEach(function (el) {
+        if (el) chromeObserver.observe(el, { attributes: true, attributeFilter: ['style', 'class'], childList: true });
+      });
+    }
+
+    aiPage.addEventListener('transitionend', function (e) {
+      if (e.target === aiPage && aiPage.classList.contains('open')) {
+        if (aiControllers) {
+          for (var i = 0; i < aiControllers.length; i++) {
+            if (aiControllers[i]) aiControllers[i].measure(true);
+          }
+        }
+        syncAiChromePadding();
+      }
+    }, { passive: true });
+
+    if (typeof ResizeObserver === 'function') {
+      var pageRo = new ResizeObserver(function () {
+        if (aiPage.classList.contains('open')) syncAiChromePadding();
+      });
+      pageRo.observe(aiPage);
+    }
+
+    if (aiPage.classList.contains('open')) {
+      syncAiOpenState();
+    }
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLiquidGlassNav);
+    document.addEventListener('DOMContentLoaded', initAllLiquidGlassSurfaces);
   } else {
-    initLiquidGlassNav();
+    initAllLiquidGlassSurfaces();
   }
 })();

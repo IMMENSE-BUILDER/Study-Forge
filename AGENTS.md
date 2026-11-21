@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.78** [build 138]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.79** [build 139]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -45,7 +45,7 @@ Desktop/study-forge-pwa/     # edit here
 ├── index.html               # 5 panels (timetable/goals/tasks/notes/snapshot) + bottom nav + dialogs
 │                            # + AI page. Loads: confetti CDN, syllabus.js, script.js, liquid-glass-nav.js, SW register
 ├── script.js                # all app logic (~9.6k lines, see §4)
-├── liquid-glass-nav.js      # ray-traced 3D SDF liquid-glass engine for #bottomNav (MIT, adapted from MuhammadaliMS/liquid-glass)
+├── liquid-glass-nav.js      # multi-surface ray-traced 3D SDF liquid-glass engine for #bottomNav, #aiSearchBar, and #aiPage (MIT, adapted from MuhammadaliMS/liquid-glass)
 ├── syllabus.js              # SF_* data pack: profile, timetable, faculty, subjects, seed/migration helpers
 ├── styles.css               # neo-brutalist theme via CSS vars, mobile-first
 ├── sw.js                    # network-first worker; CACHE_NAME bumped every release
@@ -173,7 +173,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.78):
+Recent major changes (Nov 2026, now v0.6.79):
+- v0.6.79 (Build 139):
+  - **Ray-traced Liquid Glass across Ask AI bar & full interface** (`liquid-glass-nav.js` refactored into `attachLiquidGlassSurface()`): applies live-DOM 3D Snell + TIR SVG `backdrop-filter` (`#sf-lg-filter-<id>`) + transparent WebGL 3D SDF glass across `#aiSearchBar > .ai-search-inner`, floating `.ai-page-header`, `.ai-mode-bar` (with smooth-min spring-sliding active droplet between Chat/Cheatsheet), and floating `.ai-input-bar` (lazy-activated on `#aiPage.open` and sleeping when closed, staying within 5 WebGL contexts).
+  - Full optical liquid glass theme in `styles.css` across `.ai-page`, `.ai-chat-area` (dynamic `--ai-chrome-top`/`--ai-chrome-bottom` scroll-under padding via `syncAiChromePadding()`), `.ai-sheet-bar`, `.ai-image-preview-tray`, `.ai-welcome` cards/pills, `.ai-msg` bubbles/actions, and `.ai-history-sidebar`. Fixed narrow-viewport mode bar wrapping/truncation and `.ai-send-btn` horizontal squishing at 360px.
+  - Triple bump `v0.6.79` / `versionCode: 139` / `CACHE_NAME: study-forge-v0.6.79`.
 - v0.6.78 (Build 138):
   - **Ray-traced Liquid Glass bottom navigation bar** (`liquid-glass-nav.js`, adapted from `MuhammadaliMS/liquid-glass`, MIT): floating lower-mid pill (`#bottomNav`) combining a CPU-computed 3D SDF + Snell + Total Internal Reflection displacement SVG `backdrop-filter` (`color-interpolation-filters="sRGB"` with subtle chromatic border dispersion + CSS frosted fallback) and a real-time transparent WebGL 3D raymarched glass surface (`solid`, `enterSolid`, `exitSolid`, TIR border caustics, Schlick Fresnel rims, pointer liquid edge bulge, studio speculars, and smooth-min blended damped-spring active droplet with swipe scrubbing).
   - Offline SW `ASSETS` includes `./liquid-glass-nav.js`; `holdTargetOk` ignores `.bottom-nav`.

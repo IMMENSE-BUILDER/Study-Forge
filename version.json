@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 138,
-  "latest": "v0.6.78",
-  "notes": "Ray-traced Liquid Glass bottom navigation bar (adapted from MuhammadaliMS/liquid-glass): live-DOM 3D Snell + Total Internal Reflection displacement backdrop-filter with subtle prismatic border dispersion, paired with a real-time transparent WebGL 3D SDF glass surface (smooth-min blended sliding active droplet, damped spring physics, pointer liquid edge bulge, Schlick Fresnel rims, and TIR border caustics).",
+  "versionCode": 139,
+  "latest": "v0.6.79",
+  "notes": "Ray-traced Liquid Glass across Ask AI bar and full Ask AI interface: multi-surface dual-layer WebGL + per-surface SVG Snell/TIR refraction on #aiSearchBar > .ai-search-inner, floating .ai-page-header, .ai-mode-bar (with spring-sliding active droplet), and floating .ai-input-bar, plus translucent liquid-glass welcome cards, chat bubbles, history drawer, and 360px mobile layout fixes.",
   "apkUrl": ""
 }
