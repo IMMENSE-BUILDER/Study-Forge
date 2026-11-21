@@ -8,9 +8,14 @@ const path = require("path");
 const ROOT = __dirname;
 const PORT = 3000;
 const AI_MODEL = "meta/muse-ember";
+const MAX_BODY_BYTES = 4 * 1024 * 1024;
 // Server-side only. The browser never receives this key.
-const FALLBACK_VERCEL_KEY = Buffer.from("dmNrXzdFMklZTUNWek94dHg5ZTdSZFRtanQwOGFjZmFwbUFPOUFvWUxBZEdVQXlXd2x1WUlqM2I0TzY2", "base64").toString("utf8");
-const SERVER_AI_KEY = process.env.VERCEL_AI_GATEWAY_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_AI_KEY || FALLBACK_VERCEL_KEY;
+const SERVER_AI_KEY = String(
+  process.env.VERCEL_AI_GATEWAY_KEY ||
+  process.env.AI_GATEWAY_API_KEY ||
+  process.env.VERCEL_AI_KEY ||
+  ""
+).trim();
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -39,6 +44,18 @@ const server = http.createServer((req, res) => {
       res.writeHead(204, corsHeaders);
       return res.end();
     }
+    if (!SERVER_AI_KEY) {
+      res.writeHead(503, { ...corsHeaders, "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: { message: "AI gateway key is not configured. Set VERCEL_AI_GATEWAY_KEY." } }));
+    }
+    const contentLengthHeader = req.headers["content-length"];
+    if (contentLengthHeader !== undefined) {
+      const parsedLen = Number(contentLengthHeader);
+      if (Number.isFinite(parsedLen) && parsedLen > MAX_BODY_BYTES) {
+        res.writeHead(413, { ...corsHeaders, "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: { message: "Request payload too large." } }));
+      }
+    }
     const targetPath = req.url.replace(/^\/api\/ai/, "/v1");
     const proxyHeaders = { ...req.headers };
     proxyHeaders.host = "ai-gateway.vercel.sh";
@@ -53,14 +70,26 @@ const server = http.createServer((req, res) => {
     }
     // Server-side key only. Ignore any Authorization header from the browser.
     delete proxyHeaders["authorization"];
-    if (SERVER_AI_KEY) {
-      proxyHeaders["authorization"] = `Bearer ${SERVER_AI_KEY}`;
-    }
+    proxyHeaders["authorization"] = `Bearer ${SERVER_AI_KEY}`;
 
     const reqStart = Date.now();
     const chunks = [];
-    req.on("data", (chunk) => chunks.push(chunk));
+    let totalBytes = 0;
+    let bodyTooLarge = false;
+    req.on("data", (chunk) => {
+      if (bodyTooLarge) return;
+      totalBytes += chunk.length;
+      if (totalBytes > MAX_BODY_BYTES) {
+        bodyTooLarge = true;
+        res.writeHead(413, { ...corsHeaders, "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: { message: "Request payload too large." } }));
+        if (typeof req.resume === "function") req.resume();
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on("end", () => {
+      if (bodyTooLarge) return;
       let body = Buffer.concat(chunks);
       // Pin the model server-side, even if a stale client sends another ID.
       try {

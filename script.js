@@ -6885,6 +6885,85 @@ REASONING: Keep reasoning concise and output the JSON directly.`;
   });
 }
 
+const ALLOWED_SVG_TAGS = new Set([
+  'svg', 'g', 'defs', 'title', 'desc', 'symbol', 'marker',
+  'lineargradient', 'radialgradient', 'stop', 'clippath', 'mask', 'pattern',
+  'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'path',
+  'text', 'tspan', 'textpath', 'use'
+]);
+const SAFE_SVG_FRAGMENT_RE = /^#[A-Za-z_][A-Za-z0-9_.:-]*$/;
+
+function sanitizeSvgElement(svgEl) {
+  if (!svgEl || String(svgEl.localName || svgEl.tagName || '').toLowerCase() !== 'svg') {
+    return null;
+  }
+
+  for (const el of Array.from(svgEl.querySelectorAll('*'))) {
+    const tag = String(el.localName || el.tagName || '').toLowerCase();
+    if (!ALLOWED_SVG_TAGS.has(tag)) {
+      el.remove();
+    }
+  }
+
+  const allEls = [svgEl, ...svgEl.querySelectorAll('*')];
+  for (const el of allEls) {
+    for (let i = el.attributes.length - 1; i >= 0; i--) {
+      const attr = el.attributes[i];
+      const name = String(attr.name || '').toLowerCase();
+      const rawVal = String(attr.value || '');
+      const compactVal = rawVal.replace(/[\u0000-\u0020]+/g, '');
+
+      if (name.startsWith('on') || name === 'srcdoc' || name === 'formaction') {
+        el.removeAttribute(attr.name);
+        continue;
+      }
+
+      if (name === 'href' || name === 'src' || name.endsWith(':href')) {
+        if (!SAFE_SVG_FRAGMENT_RE.test(compactVal)) {
+          el.removeAttribute(attr.name);
+        }
+        continue;
+      }
+
+      if (name === 'style') {
+        if (
+          /url\s*\(|expression\s*\(|@import|javascript:|vbscript:|data:|behavior\s*:|-moz-binding|\\/i.test(rawVal) ||
+          /(?:javascript|vbscript|data):/i.test(compactVal)
+        ) {
+          el.removeAttribute(attr.name);
+        }
+        continue;
+      }
+
+      if (/(?:javascript|vbscript|data):/i.test(compactVal)) {
+        el.removeAttribute(attr.name);
+        continue;
+      }
+
+      if (/url\s*\(/i.test(rawVal)) {
+        if (rawVal.includes('\\')) {
+          el.removeAttribute(attr.name);
+          continue;
+        }
+        const openCount = (rawVal.match(/url\s*\(/gi) || []).length;
+        const matches = Array.from(rawVal.matchAll(/url\s*\(([^)]*)\)/gi));
+        const allSafe = matches.length > 0 && matches.length === openCount && matches.every((m) => {
+          const inner = String(m[1] || '').trim().replace(/^(['"])(.*)\1$/, '$2').trim();
+          return SAFE_SVG_FRAGMENT_RE.test(inner);
+        });
+        if (!allSafe) {
+          el.removeAttribute(attr.name);
+        }
+      }
+    }
+  }
+
+  if (!svgEl.getAttribute('xmlns')) {
+    svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  }
+  return svgEl;
+}
+
 // ─── AI Flashcards (Vercel AI Gateway · meta/muse-ember) ───
 function initFlashcards() {
   const topicInput = document.getElementById('fcTopicInput');
@@ -7067,7 +7146,7 @@ function initFlashcards() {
     if (!content) return;
     const str = String(content).trim();
     // If content contains an SVG diagram
-    if (str.includes('<svg') && str.includes('</svg>')) {
+    if (/<svg\b/i.test(str) && /<\/svg>/i.test(str)) {
       const svgMatch = str.match(/<svg[\s\S]*?<\/svg>/i);
       if (svgMatch) {
         try {
@@ -7079,24 +7158,14 @@ function initFlashcards() {
             const htmlDoc = parser.parseFromString(svgMatch[0], 'text/html');
             svgEl = htmlDoc.querySelector('svg');
           }
-          if (svgEl) {
-            // Sanitize: strip script tags and any on* attributes
-            svgEl.querySelectorAll('script').forEach(s => s.remove());
-            const allEls = [svgEl, ...svgEl.querySelectorAll('*')];
-            allEls.forEach(el => {
-              for (let i = el.attributes.length - 1; i >= 0; i--) {
-                const attr = el.attributes[i];
-                if (attr.name.toLowerCase().startsWith('on') || attr.value.toLowerCase().includes('javascript:')) {
-                  el.removeAttribute(attr.name);
-                }
-              }
-            });
-            if (!svgEl.getAttribute('width')) svgEl.setAttribute('width', '100%');
-            svgEl.style.maxWidth = '100%';
-            svgEl.style.height = 'auto';
-            svgEl.style.display = 'block';
-            svgEl.style.margin = '0 auto';
-            container.appendChild(document.adoptNode(svgEl));
+          const cleanSvg = sanitizeSvgElement(svgEl);
+          if (cleanSvg) {
+            if (!cleanSvg.getAttribute('width')) cleanSvg.setAttribute('width', '100%');
+            cleanSvg.style.maxWidth = '100%';
+            cleanSvg.style.height = 'auto';
+            cleanSvg.style.display = 'block';
+            cleanSvg.style.margin = '0 auto';
+            container.appendChild(document.adoptNode(cleanSvg));
             return;
           }
         } catch (e) {
@@ -7105,7 +7174,7 @@ function initFlashcards() {
       }
     }
     // If content was supposed to be SVG but failed, never dump raw code string
-    if (str.startsWith('<svg') || str.includes('</svg>')) {
+    if (/<svg\b|<\/svg>/i.test(str)) {
       container.innerHTML = '<div style="font-size:12px;opacity:0.8;font-weight:600;padding:8px 0;">⚡ Visual Schematic Blueprint</div>';
       return;
     }

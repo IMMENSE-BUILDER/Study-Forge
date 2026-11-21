@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 136,
-  "latest": "v0.6.76",
-  "notes": "Cheatsheet fit accuracy: grid columns now use minmax(0,1fr) and cards/columns are min-width:0, so every column has the exact width the fit measured. One column was 8 px taller than its fitted height because the first grid track was wider than the others.",
+  "versionCode": 137,
+  "latest": "v0.6.77",
+  "notes": "Security hardening: removed hardcoded AI gateway fallback keys from server proxy and local dev server, enforced strict Origin/Referer validation, 4 MB payload cap, per-IP rate limiting, and schema validation on /api/ai/chat/completions, and tightened the flashcard SVG sanitizer to an explicit tag allowlist and safe fragment/attribute checks.",
   "apkUrl": ""
 }

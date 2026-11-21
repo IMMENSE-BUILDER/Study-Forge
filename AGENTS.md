@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.76** [build 136]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.77** [build 137]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -133,7 +133,7 @@ Project constraints:
 ```powershell
 # Server-side AI key (Vercel Project Settings → Environment Variables)
 # Name: VERCEL_AI_GATEWAY_KEY  Value: vck_...   (Production + Preview)
-# The fallback in api/ai/chat/completions.js keeps the app alive until the env var is set.
+# Required: no hardcoded fallback key remains in api/ai/chat/completions.js or serve-pwa.js.
 
 # Deploy loop: commit and push to GitHub (auto-deploys to Vercel)
 git add .
@@ -172,7 +172,12 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.76):
+Recent major changes (Nov 2026, now v0.6.77):
+- v0.6.77 (Build 137):
+  - **Security & proxy hardening**: removed the hardcoded base64 Vercel AI Gateway fallback key from `api/ai/chat/completions.js` and `serve-pwa.js` (strictly requires `VERCEL_AI_GATEWAY_KEY` / `AI_GATEWAY_API_KEY` / `VERCEL_AI_KEY`).
+  - Hardened `api/ai/chat/completions.js`: strict `Origin`/`Referer` validation (blocks missing headers and untrusted origins), 4 MB request body cap (`413`), sliding-window per-IP rate limiting (30 req/min, `429`), strict JSON/messages schema validation + parameter clamping, single `Accept` header, 55s upstream timeout (`504`), and client-abort upstream cleanup.
+  - Hardened flashcard SVG rendering in `script.js` via `sanitizeSvgElement()` using an explicit tag allowlist and normalized `on*`/URL/`style`/`url(...)` checks.
+  - Triple bump `v0.6.77` / `versionCode: 137` / `CACHE_NAME: study-forge-v0.6.77`.
 - v0.6.76 (Build 136):
   - **Fit width parity**: `.sf-cols` uses `repeat(var(--k), minmax(0, 1fr))` and `.sf-col` / `.sf-sheet .card` set `min-width: 0`. Grid `1fr` has an implicit min-content floor, so the first track could be wider than the others; the fit measured the first track and a later column could be 8 px taller and clip. All tracks now match the measured width.
   - Triple bump `v0.6.76` / `versionCode: 136` / `CACHE_NAME: study-forge-v0.6.76`.
