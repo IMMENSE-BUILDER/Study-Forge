@@ -9550,6 +9550,9 @@ document.addEventListener("DOMContentLoaded", () => {
   renderAll();
   updateGoalProgressLabel();
   initTheme();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.body.classList.remove("sf-boot");
+  }));
   if (typeof renderTimetable === "function") {
     setInterval(renderTimetable, 60000);
   }

@@ -942,8 +942,16 @@
         }
       }
 
-      syncFallbackPill();
-      scheduleFrame();
+      if (snap) {
+        anim.targetDark = isDarkMode() ? 1 : 0;
+        anim.dark = anim.targetDark;
+        anim.darkV = 0;
+        lastNow = performance.now();
+        renderFrame(true);
+      } else {
+        syncFallbackPill();
+        scheduleFrame();
+      }
     }
 
     function updateActiveTarget() {
@@ -1066,6 +1074,41 @@
       }
     }
 
+    function renderFrame(still) {
+      var dropletHw = 0;
+      var dropletHh = 0;
+      if (lensSelector) {
+        var stretch = still ? 0 : clamp(Math.abs(anim.lensVx) * 0.00028, 0, 0.22);
+        var pressBoost = 1 + anim.press * 0.035;
+        dropletHw = (anim.lensW * 0.5) * (1 + stretch) * pressBoost * 0.94;
+        dropletHh = (anim.lensH * 0.5) * (1 - stretch * 0.42) * pressBoost * 0.94;
+        syncFallbackPill();
+      }
+
+      if (renderer) {
+        renderer.draw({
+          pillCx: bleedX + metrics.width * 0.5,
+          pillCy: bleedY + metrics.height * 0.5,
+          pillHw: metrics.width * 0.5,
+          pillHh: metrics.height * 0.5,
+          radius: metrics.radius,
+          lensCx: bleedX + anim.lensX,
+          lensCy: bleedY + anim.lensY,
+          lensHw: dropletHw,
+          lensHh: dropletHh,
+          lensRadius: Math.min(dropletHw, dropletHh),
+          lensLift: 2.8 + anim.press * 1.4,
+          pointerX: anim.pointerInside ? anim.pointerX : -9999,
+          pointerY: anim.pointerInside ? anim.pointerY : -9999,
+          pull: anim.pull,
+          lightX: anim.lightX,
+          lightY: anim.lightY,
+          press: anim.press,
+          dark: clamp(anim.dark, 0, 1)
+        });
+      }
+    }
+
     function tick(now) {
       rafId = 0;
       if (sleeping || document.hidden) return;
@@ -1101,38 +1144,7 @@
         anim.dark = r7[0]; anim.darkV = r7[1];
       }
 
-      var dropletHw = 0;
-      var dropletHh = 0;
-      if (lensSelector) {
-        var stretch = still ? 0 : clamp(Math.abs(anim.lensVx) * 0.00028, 0, 0.22);
-        var pressBoost = 1 + anim.press * 0.035;
-        dropletHw = (anim.lensW * 0.5) * (1 + stretch) * pressBoost * 0.94;
-        dropletHh = (anim.lensH * 0.5) * (1 - stretch * 0.42) * pressBoost * 0.94;
-        syncFallbackPill();
-      }
-
-      if (renderer) {
-        renderer.draw({
-          pillCx: bleedX + metrics.width * 0.5,
-          pillCy: bleedY + metrics.height * 0.5,
-          pillHw: metrics.width * 0.5,
-          pillHh: metrics.height * 0.5,
-          radius: metrics.radius,
-          lensCx: bleedX + anim.lensX,
-          lensCy: bleedY + anim.lensY,
-          lensHw: dropletHw,
-          lensHh: dropletHh,
-          lensRadius: Math.min(dropletHw, dropletHh),
-          lensLift: 2.8 + anim.press * 1.4,
-          pointerX: anim.pointerInside ? anim.pointerX : -9999,
-          pointerY: anim.pointerInside ? anim.pointerY : -9999,
-          pull: anim.pull,
-          lightX: anim.lightX,
-          lightY: anim.lightY,
-          press: anim.press,
-          dark: clamp(anim.dark, 0, 1)
-        });
-      }
+      renderFrame(still);
 
       var moving =
         (lensSelector && (
@@ -1175,7 +1187,10 @@
     function wake(snap) {
       sleeping = false;
       anim.targetDark = isDarkMode() ? 1 : 0;
-      if (snap) anim.dark = anim.targetDark;
+      if (snap) {
+        anim.dark = anim.targetDark;
+        anim.darkV = 0;
+      }
       measure(!!snap);
     }
 
@@ -1224,7 +1239,12 @@
   /* ------------------------------------------------------------
      Bootstrap Main Surfaces & Lazy Ask AI Page Surfaces
      ------------------------------------------------------------ */
+  var didInitSurfaces = false;
+
   function initAllLiquidGlassSurfaces() {
+    if (didInitSurfaces) return;
+    didInitSurfaces = true;
+
     var nav = document.getElementById('bottomNav');
     var searchInner = document.querySelector('#aiSearchBar > .ai-search-inner');
     var aiPage = document.getElementById('aiPage');
@@ -1247,10 +1267,17 @@
       pullMax: 4.8
     }) : null;
 
-    requestAnimationFrame(function () {
-      if (navCtrl) navCtrl.wake(true);
-      if (searchCtrl) searchCtrl.wake(true);
-    });
+    if (navCtrl) navCtrl.wake(true);
+    if (searchCtrl) searchCtrl.wake(true);
+
+    function resnapMainSurfaces() {
+      if (navCtrl) navCtrl.measure(true);
+      if (searchCtrl) searchCtrl.measure(true);
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(resnapMainSurfaces);
+    }
+    window.addEventListener('load', resnapMainSurfaces, { once: true });
 
     if (!aiPage) return;
 
@@ -1331,9 +1358,14 @@
       var open = aiPage.classList.contains('open');
       if (open) {
         var list = ensureAiControllers();
+        for (var i = 0; i < list.length; i++) {
+          if (list[i]) list[i].wake(true);
+        }
+        syncAiChromePadding();
         requestAnimationFrame(function () {
-          for (var i = 0; i < list.length; i++) {
-            if (list[i]) list[i].wake(true);
+          if (!aiPage.classList.contains('open')) return;
+          for (var k = 0; k < list.length; k++) {
+            if (list[k]) list[k].measure(true);
           }
           syncAiChromePadding();
         });
@@ -1389,7 +1421,9 @@
     }
   }
 
-  if (document.readyState === 'loading') {
+  if (document.getElementById('bottomNav') || document.getElementById('aiSearchBar')) {
+    initAllLiquidGlassSurfaces();
+  } else if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAllLiquidGlassSurfaces);
   } else {
     initAllLiquidGlassSurfaces();

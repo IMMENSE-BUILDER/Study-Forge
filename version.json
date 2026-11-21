@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 139,
-  "latest": "v0.6.79",
-  "notes": "Ray-traced Liquid Glass across Ask AI bar and full Ask AI interface: multi-surface dual-layer WebGL + per-surface SVG Snell/TIR refraction on #aiSearchBar > .ai-search-inner, floating .ai-page-header, .ai-mode-bar (with spring-sliding active droplet), and floating .ai-input-bar, plus translucent liquid-glass welcome cards, chat bubbles, history drawer, and 360px mobile layout fixes.",
+  "versionCode": 140,
+  "latest": "v0.6.80",
+  "notes": "Zero-flash first-paint liquid glass startup (synchronous dark-theme boot, non-blocking KaTeX/confetti CDNs, immediate 0-frame WebGL + SVG refraction paint, and borderless crystal fallback glass), plus compact Muse Ember model label in Ask AI mode bar.",
   "apkUrl": ""
 }

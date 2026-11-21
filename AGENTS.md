@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.79** [build 139]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.80** [build 140]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -173,7 +173,12 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.79):
+Recent major changes (Nov 2026, now v0.6.80):
+- v0.6.80 (Build 140):
+  - **Zero-flash first-paint Liquid Glass & instant theme boot**: added synchronous `sf-boot` / `sf_theme` script immediately after `<body>` in `index.html` (clears after double `rAF` in `script.js` so manual toggles keep smooth transitions), made `katex.min.css` non-render-blocking and `katex.min.js` + `confetti.browser.min.js` `async` (removed unused `auto-render.min.js`).
+  - **0-frame Liquid Glass paint (`liquid-glass-nav.js`)**: `attachLiquidGlassSurface()` renders WebGL + SVG refraction synchronously inside `measure(true)` / `wake(true)` at parse time (with font/load re-snap), and `styles.css` matches Light/Dark pre-JS fallback glass with borderless inset crystal rims (0px layout bump).
+  - Shortened `#aiModelSelect` display text in `index.html` to `Muse Ember` (keeping `value="meta/muse-ember"`) so the compact Ask AI mode bar fits cleanly.
+  - Triple bump `v0.6.80` / `versionCode: 140` / `CACHE_NAME: study-forge-v0.6.80`.
 - v0.6.79 (Build 139):
   - **Ray-traced Liquid Glass across Ask AI bar & full interface** (`liquid-glass-nav.js` refactored into `attachLiquidGlassSurface()`): applies live-DOM 3D Snell + TIR SVG `backdrop-filter` (`#sf-lg-filter-<id>`) + transparent WebGL 3D SDF glass across `#aiSearchBar > .ai-search-inner`, floating `.ai-page-header`, `.ai-mode-bar` (with smooth-min spring-sliding active droplet between Chat/Cheatsheet), and floating `.ai-input-bar` (lazy-activated on `#aiPage.open` and sleeping when closed, staying within 5 WebGL contexts).
   - Full optical liquid glass theme in `styles.css` across `.ai-page`, `.ai-chat-area` (dynamic `--ai-chrome-top`/`--ai-chrome-bottom` scroll-under padding via `syncAiChromePadding()`), `.ai-sheet-bar`, `.ai-image-preview-tray`, `.ai-welcome` cards/pills, `.ai-msg` bubbles/actions, and `.ai-history-sidebar`. Fixed narrow-viewport mode bar wrapping/truncation and `.ai-send-btn` horizontal squishing at 360px.

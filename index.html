@@ -15,9 +15,9 @@
     href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" /></noscript>
+  <script async src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
   <!-- PWA & Mobile -->
   <link rel="manifest" href="manifest.json">
@@ -28,6 +28,7 @@
 </head>
 
 <body>
+  <script>try{document.body.classList.add('sf-boot');if(localStorage.getItem('sf_theme')==='dark'){document.body.setAttribute('data-theme','dark');}}catch(e){}</script>
   <div class="grain"></div>
   <header class="top-bar">
     <div class="brand">
@@ -157,7 +158,7 @@
       <button type="button" class="ai-mode-btn active" id="aiModeChatBtn" role="tab" aria-selected="true">💬 Chat</button>
       <button type="button" class="ai-mode-btn" id="aiModeSheetBtn" role="tab" aria-selected="false">📄 Cheatsheet</button>
       <select id="aiModelSelect" class="ai-model-select" title="Server model: meta/muse-ember" disabled>
-        <option value="meta/muse-ember" selected>meta/muse-ember</option>
+        <option value="meta/muse-ember" selected>Muse Ember</option>
       </select>
     </div>
     <div class="ai-sheet-bar" id="aiSheetBar" style="display:none;">
@@ -989,7 +990,7 @@
     </button>
   </nav>
 
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="syllabus.js"></script>
   <script src="script.js"></script>
   <script src="liquid-glass-nav.js"></script>
