@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 142,
-  "latest": "v0.6.82",
-  "notes": "Ask AI custom liquid-glass model picker dropdown supporting both Muse Ember (meta/muse-ember) and MiniMax M3.1 Flash (minimax/minimax-m3.1-flash) through the allowlisted Vercel AI Gateway proxy, with localStorage persistence (sf_ai_model) and frosted popover menu.",
+  "versionCode": 143,
+  "latest": "v0.6.83",
+  "notes": "OpenDesign-style sticky scroll-reactive liquid-glass header taskbar: Study Forged + sprint menu + Theme/Calendar/New Sprint controls smoothly stay pinned in a full-width chromatic SVG+CSS liquid-glass strip when scrolling down, while the eyebrow and XP/Streak bar scroll naturally underneath.",
   "apkUrl": ""
 }

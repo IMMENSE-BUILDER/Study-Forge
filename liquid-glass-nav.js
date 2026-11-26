@@ -297,14 +297,15 @@
     return filter;
   }
 
-  function updateSvgDisplacementFilter(filterId, width, height, radius, maxDisp) {
-    var map = buildRayTracedDisplacementURL(width, height, radius, maxDisp);
+  function updateSvgDisplacementFilter(filterId, width, height, radius, maxDisp, opts) {
+    var mapWidth = (opts && opts.maxMapWidth) ? Math.min(width, opts.maxMapWidth) : width;
+    var map = buildRayTracedDisplacementURL(mapWidth, height, radius, maxDisp);
     if (!map) return false;
     var filter = ensureSvgFilter(filterId);
     if (!filter) return false;
 
-    var W = String(map.width);
-    var H = String(map.height);
+    var W = String(Math.max(1, Math.round(width)));
+    var H = String(Math.max(1, Math.round(height)));
 
     filter.setAttribute('filterUnits', 'userSpaceOnUse');
     filter.setAttribute('primitiveUnits', 'userSpaceOnUse');
@@ -1942,6 +1943,69 @@
   }
 
   /* ------------------------------------------------------------
+     Sticky Scroll-Reactive Topbar Liquid-Glass Strip
+     Turns invisible at scrollY = 0 and condenses smoothly into a
+     full-width OpenDesign-style chromatic glass taskbar on scroll.
+     ------------------------------------------------------------ */
+  function attachStickyTopBarGlass(topBarEl) {
+    if (!topBarEl) return null;
+    if (topBarEl.dataset.lgBarInit === '1' && topBarEl._sfLgBarCtrl) {
+      return topBarEl._sfLgBarCtrl;
+    }
+    topBarEl.dataset.lgBarInit = '1';
+
+    var barLayer = document.createElement('div');
+    barLayer.className = 'sf-lg-topbar-bar';
+    barLayer.setAttribute('aria-hidden', 'true');
+    barLayer.style.setProperty('--sf-lg-filter', 'url(#sf-lg-filter-topbar)');
+    topBarEl.insertBefore(barLayer, topBarEl.firstChild);
+
+    var useSvgRefract = sharedSvgSupported;
+    topBarEl.dataset.lgBarRefract = useSvgRefract ? 'svg' : 'css';
+    var lastKey = '';
+
+    function updateFilter() {
+      var rect = topBarEl.getBoundingClientRect();
+      if (rect.width < 20 || rect.height < 20) return;
+      if (!useSvgRefract) return;
+      var key = Math.round(rect.width) + 'x' + Math.round(rect.height);
+      if (key === lastKey) return;
+      lastKey = key;
+      var ok = updateSvgDisplacementFilter('sf-lg-filter-topbar', rect.width, rect.height, 0, 12, { maxMapWidth: 256 });
+      if (!ok) {
+        useSvgRefract = false;
+        topBarEl.dataset.lgBarRefract = 'css';
+      }
+    }
+
+    function syncScroll() {
+      var y = window.scrollY !== undefined ? window.scrollY : (document.documentElement ? document.documentElement.scrollTop : 0) || 0;
+      var condensed = y > 10;
+      if (topBarEl.classList.contains('is-condensed') !== condensed) {
+        topBarEl.classList.toggle('is-condensed', condensed);
+      }
+    }
+
+    window.addEventListener('scroll', syncScroll, { passive: true });
+    if (typeof ResizeObserver === 'function') {
+      var ro = new ResizeObserver(function () {
+        updateFilter();
+        syncScroll();
+      });
+      ro.observe(topBarEl);
+    } else {
+      window.addEventListener('resize', updateFilter, { passive: true });
+    }
+
+    updateFilter();
+    syncScroll();
+
+    var barCtrl = { measure: updateFilter, syncScroll: syncScroll };
+    topBarEl._sfLgBarCtrl = barCtrl;
+    return barCtrl;
+  }
+
+  /* ------------------------------------------------------------
      Bootstrap Main Surfaces & Lazy Ask AI Page Surfaces
      ------------------------------------------------------------ */
   var didInitSurfaces = false;
@@ -1951,14 +2015,15 @@
     didInitSurfaces = true;
 
     var headerEl = document.querySelector('header.top-bar');
+    var headerInner = headerEl ? (headerEl.querySelector('.top-bar-inner') || headerEl) : null;
     var nav = document.getElementById('bottomNav');
     var searchInner = document.querySelector('#aiSearchBar > .ai-search-inner');
     var aiPage = document.getElementById('aiPage');
 
-    var headerCtrl = headerEl ? attachHeaderLiquidGlass(headerEl, [
-      { id: 'hdr-menu', el: headerEl.querySelector('.title-row .menu.inline .menu-button'), tint: [0, 0, 0, 0] },
-      { id: 'hdr-xp', el: document.getElementById('xpLabel'), tint: [0, 0, 0, 0] },
-      { id: 'hdr-streak', el: document.getElementById('streakBadge'), tint: [0.92, 0.40, 0.02, 0.80] },
+    var topBarGlassCtrl = headerEl ? attachStickyTopBarGlass(headerEl) : null;
+
+    var headerCtrl = headerInner ? attachHeaderLiquidGlass(headerInner, [
+      { id: 'hdr-menu', el: headerInner.querySelector('.title-row .menu.inline .menu-button'), tint: [0, 0, 0, 0] },
       { id: 'hdr-theme', el: document.getElementById('themeToggle'), tint: [0, 0, 0, 0] },
       { id: 'hdr-cal', el: document.getElementById('calendarBtn'), tint: [0, 0, 0, 0] },
       { id: 'hdr-sprint', el: document.getElementById('newSprintBtn'), tint: [0.88, 0.27, 0.09, 0.84] }
@@ -1982,11 +2047,19 @@
       pullMax: 4.8
     }) : null;
 
+    if (topBarGlassCtrl) {
+      topBarGlassCtrl.measure();
+      topBarGlassCtrl.syncScroll();
+    }
     if (headerCtrl) headerCtrl.wake(true);
     if (navCtrl) navCtrl.wake(true);
     if (searchCtrl) searchCtrl.wake(true);
 
     function resnapMainSurfaces() {
+      if (topBarGlassCtrl) {
+        topBarGlassCtrl.measure();
+        topBarGlassCtrl.syncScroll();
+      }
       if (headerCtrl) headerCtrl.measure(true);
       if (navCtrl) navCtrl.measure(true);
       if (searchCtrl) searchCtrl.measure(true);
