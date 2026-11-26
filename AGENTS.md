@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.83** [build 143]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.84** [build 144]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -173,7 +173,11 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.83):
+Recent major changes (Nov 2026, now v0.6.84):
+- v0.6.84 (Build 144):
+  - **Bottom nav droplet perspective centering & bouncier switching (`liquid-glass-nav.js`)**: added `lensPerspectiveScale(halfDepth)` inside `FRAGMENT_SHADER` (`solid()` + `main()`) so elevated edge-tab droplets (`Goals` leftmost, `Syllabus` rightmost) project centered on their tab icons/labels instead of drifting outward by ~5.3px.
+  - Tuned `#bottomNav` spring to `lensStiffness: 420, lensDamping: 19.5` with elastic end-wall rebound (`*-0.42`), organic wall-kiss squish, and safe inner rim clamping so bouncy transitions stay inside `#bottomNav`.
+  - Triple bump `v0.6.84` / `versionCode: 144` / `CACHE_NAME: study-forge-v0.6.84`.
 - v0.6.83 (Build 143):
   - **Sticky scroll-reactive OpenDesign-style liquid-glass header taskbar (`index.html`, `styles.css`, `liquid-glass-nav.js`)**: split top area into `.top-eyebrow-strip` (scrolls away), sticky `.top-bar#topBar` (`position: sticky; top: 0` with `.top-bar-inner` holding `Study Forged`, Sprint `⋯` menu, `#themeToggle`, `#calendarBtn`, and `#newSprintBtn`), and `.top-stats-strip` (XP bar, `#xpLabel`, `#streakBadge`, scrolling naturally underneath). Switched `html, body` to `overflow-x: clip` for native sticky support.
   - Added `attachStickyTopBarGlass()` + capped-width `#sf-lg-filter-topbar` chromatic SVG displacement + chained `blur(7px) saturate(1.45)` inside `.sf-lg-topbar-bar` (`opacity: 0` at top -> smooth fade on `.is-condensed`), paired with the 4-item shared WebGL/SVG header controls inside `.top-bar-inner`.

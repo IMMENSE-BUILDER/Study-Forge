@@ -458,12 +458,18 @@
     '  return vec3(d, normalize(n + 1e-6));',
     '}',
     '',
-    'vec3 lensField(vec2 p) {',
-    '  float d = sdBox2(p, u_lens.zw, u_lensRadius);',
+    'vec3 lensField(vec2 p, vec2 halfSize, float radius) {',
+    '  float d = sdBox2(p, halfSize, radius);',
     '  vec2 e = vec2(0.5, 0.0);',
-    '  vec2 n = vec2(sdBox2(p + e.xy, u_lens.zw, u_lensRadius) - sdBox2(p - e.xy, u_lens.zw, u_lensRadius),',
-    '                sdBox2(p + e.yx, u_lens.zw, u_lensRadius) - sdBox2(p - e.yx, u_lens.zw, u_lensRadius));',
+    '  vec2 n = vec2(sdBox2(p + e.xy, halfSize, radius) - sdBox2(p - e.xy, halfSize, radius),',
+    '                sdBox2(p + e.yx, halfSize, radius) - sdBox2(p - e.yx, halfSize, radius));',
     '  return vec3(d, normalize(n + 1e-6));',
+    '}',
+    '',
+    'float lensPerspectiveScale(float halfDepth) {',
+    '  float lHalfZ = halfDepth * 0.36 + u_lensLift;',
+    '  float lensZ = halfDepth * 0.72 + lHalfZ * 0.85;',
+    '  return (CAMERA - lensZ) / CAMERA;',
     '}',
     '',
     'vec4 solid(vec3 p) {',
@@ -482,11 +488,15 @@
     '  vec3 grad = w.x * vec3(b.yz, 0.0) + w.y * vec3(-domeGrad, sign(p.z));',
     '',
     '  if (u_lens.z > 2.0 && u_lens.w > 2.0) {',
-    '    vec2 lLocal = p.xy - u_lens.xy;',
-    '    vec3 lb = lensField(lLocal);',
-    '    vec2 lRad = max(u_lens.zw, vec2(14.0));',
+    '    float pScale = lensPerspectiveScale(halfDepth);',
+    '    vec2 lensCenter = u_pill.xy + (u_lens.xy - u_pill.xy) * pScale;',
+    '    vec2 lensHalf = u_lens.zw * pScale;',
+    '    float lensRad = u_lensRadius * pScale;',
+    '    vec2 lLocal = p.xy - lensCenter;',
+    '    vec3 lb = lensField(lLocal, lensHalf, lensRad);',
+    '    vec2 lRad = max(lensHalf, vec2(14.0));',
     '    float lHalfZ = halfDepth * 0.36 + u_lensLift;',
-    '    float lRound = min(9.5, u_lens.w * 0.42);',
+    '    float lRound = min(9.5, lensHalf.y * 0.42);',
     '    float lDome = 4.2 * exp(-1.7 * dot(lLocal / lRad, lLocal / lRad));',
     '    vec2 lDomeGrad = -3.4 * lDome * lLocal / (lRad * lRad);',
     '    float lz = p.z - halfDepth * 0.72;',
@@ -598,7 +608,11 @@
     '  float lensBodyMask = 0.0;',
     '  float lensTopRim = 0.0;',
     '  if (u_lens.z > 2.0 && u_lens.w > 2.0) {',
-    '    float ld = sdBox2(front.xy - u_lens.xy, u_lens.zw, u_lensRadius);',
+    '    float halfDepthM = min(18.0, u_pill.w * 0.58);',
+    '    float pScaleM = lensPerspectiveScale(halfDepthM);',
+    '    vec2 lensCenterM = u_pill.xy + (u_lens.xy - u_pill.xy) * pScaleM;',
+    '    vec2 lensHalfM = u_lens.zw * pScaleM;',
+    '    float ld = sdBox2(front.xy - lensCenterM, lensHalfM, u_lensRadius * pScaleM);',
     '    lensBodyMask = 1.0 - smoothstep(-1.5, 1.5, ld);',
     '    lensEdgeMask = 1.0 - smoothstep(0.0, 4.5, abs(ld + 1.0));',
     '    lensTopRim = lensEdgeMask * clamp(-normal.y * 0.9 + 0.4, 0.0, 1.0);',
@@ -1105,6 +1119,8 @@
     var lensSelector = opts.lensSelector || null;
     var scrubSelector = opts.scrubSelector || null;
     var focusSelector = opts.focusSelector || null;
+    var lensStiffness = opts.lensStiffness !== undefined ? opts.lensStiffness : 420;
+    var lensDamping = opts.lensDamping !== undefined ? opts.lensDamping : 19.5;
 
     hostEl.style.setProperty('--lg-bleed-x', bleedX + 'px');
     hostEl.style.setProperty('--lg-bleed-y', bleedY + 'px');
@@ -1179,11 +1195,12 @@
     var lastFilterKey = '';
     var sleeping = false;
 
-    function syncFallbackPill() {
+    function syncFallbackPill(drawX) {
       if (!pillFallback || !lensSelector) return;
       var pw = Math.max(32, anim.lensW);
       var ph = Math.max(28, anim.lensH);
-      var px = anim.lensX - pw * 0.5;
+      var cx = drawX !== undefined ? drawX : anim.lensX;
+      var px = cx - pw * 0.5;
       var py = anim.lensY - ph * 0.5;
       pillFallback.style.width = pw.toFixed(1) + 'px';
       pillFallback.style.height = ph.toFixed(1) + 'px';
@@ -1399,12 +1416,24 @@
     function renderFrame(still) {
       var dropletHw = 0;
       var dropletHh = 0;
+      var drawLensX = anim.lensX;
+      var stretch = 0;
       if (lensSelector) {
-        var stretch = still ? 0 : clamp(Math.abs(anim.lensVx) * 0.00028, 0, 0.22);
+        stretch = still ? 0 : clamp(Math.abs(anim.lensVx) * 0.00034, 0, 0.25);
         var pressBoost = 1 + anim.press * 0.035;
-        dropletHw = (anim.lensW * 0.5) * (1 + stretch) * pressBoost * 0.94;
-        dropletHh = (anim.lensH * 0.5) * (1 - stretch * 0.42) * pressBoost * 0.94;
-        syncFallbackPill();
+        var wallSquish = 0;
+        if (metrics.tabs.length >= 2) {
+          var minCenter = metrics.tabs[0].cx;
+          var maxCenter = metrics.tabs[metrics.tabs.length - 1].cx;
+          if (drawLensX < minCenter) wallSquish = clamp((minCenter - drawLensX) / 14, 0, 0.12);
+          else if (drawLensX > maxCenter) wallSquish = clamp((drawLensX - maxCenter) / 14, 0, 0.12);
+        }
+        dropletHw = (anim.lensW * 0.5) * (1 + stretch - wallSquish) * pressBoost * 0.94;
+        dropletHh = (anim.lensH * 0.5) * (1 - stretch * 0.44 + wallSquish * 0.65) * pressBoost * 0.94;
+        if (metrics.width > dropletHw * 2 + 7) {
+          drawLensX = clamp(drawLensX, dropletHw + 3.5, metrics.width - dropletHw - 3.5);
+        }
+        syncFallbackPill(drawLensX);
       }
 
       if (renderer) {
@@ -1414,12 +1443,12 @@
           pillHw: metrics.width * 0.5,
           pillHh: metrics.height * 0.5,
           radius: metrics.radius,
-          lensCx: bleedX + anim.lensX,
+          lensCx: bleedX + drawLensX,
           lensCy: bleedY + anim.lensY,
           lensHw: dropletHw,
           lensHh: dropletHh,
           lensRadius: Math.min(dropletHw, dropletHh),
-          lensLift: 2.8 + anim.press * 1.4,
+          lensLift: 2.8 + anim.press * 1.4 + stretch * 1.6,
           pointerX: anim.pointerInside ? anim.pointerX : -9999,
           pointerY: anim.pointerInside ? anim.pointerY : -9999,
           pull: anim.pull,
@@ -1449,10 +1478,21 @@
         anim.lensVx = anim.lensVw = anim.pullV = anim.pressV = anim.lightVx = anim.lightVy = anim.darkV = 0;
       } else {
         if (lensSelector) {
-          var r1 = stepSpring(anim.lensX, anim.lensVx, anim.targetLensX, dt, 380, 24);
+          var r1 = stepSpring(anim.lensX, anim.lensVx, anim.targetLensX, dt, lensStiffness, lensDamping);
           anim.lensX = r1[0]; anim.lensVx = r1[1];
-          var r2 = stepSpring(anim.lensW, anim.lensVw, anim.targetLensW, dt, 380, 24);
+          var r2 = stepSpring(anim.lensW, anim.lensVw, anim.targetLensW, dt, 400, 21);
           anim.lensW = r2[0]; anim.lensVw = r2[1];
+          if (metrics.tabs.length >= 2) {
+            var minWall = metrics.tabs[0].cx - 5;
+            var maxWall = metrics.tabs[metrics.tabs.length - 1].cx + 5;
+            if (anim.lensX < minWall) {
+              anim.lensX = minWall;
+              if (anim.lensVx < 0) anim.lensVx *= -0.42;
+            } else if (anim.lensX > maxWall) {
+              anim.lensX = maxWall;
+              if (anim.lensVx > 0) anim.lensVx *= -0.42;
+            }
+          }
         }
         var r3 = stepSpring(anim.pull, anim.pullV, anim.targetPull, dt, 260, 18);
         anim.pull = r3[0]; anim.pullV = r3[1];
@@ -2036,7 +2076,9 @@
       maxDisp: 18,
       pullMax: 5.5,
       lensSelector: '.nav-tab.active',
-      scrubSelector: '.nav-tab'
+      scrubSelector: '.nav-tab',
+      lensStiffness: 420,
+      lensDamping: 19.5
     }) : null;
 
     var searchCtrl = searchInner ? attachLiquidGlassSurface(searchInner, {
@@ -2131,7 +2173,9 @@
           maxDisp: 16,
           pullMax: 4.8,
           lensSelector: '.ai-mode-btn.active',
-          scrubSelector: '.ai-mode-btn'
+          scrubSelector: '.ai-mode-btn',
+          lensStiffness: 400,
+          lensDamping: 22
         }));
       }
       if (aiInputBar) {

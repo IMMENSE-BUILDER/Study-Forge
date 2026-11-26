@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 143,
-  "latest": "v0.6.83",
-  "notes": "OpenDesign-style sticky scroll-reactive liquid-glass header taskbar: Study Forged + sprint menu + Theme/Calendar/New Sprint controls smoothly stay pinned in a full-width chromatic SVG+CSS liquid-glass strip when scrolling down, while the eyebrow and XP/Streak bar scroll naturally underneath.",
+  "versionCode": 144,
+  "latest": "v0.6.84",
+  "notes": "Bottom navigation bar liquid-glass droplet symmetry & bounce polish: perspective-compensated droplet projection in FRAGMENT_SHADER so edge tabs (Goals left / Syllabus right) stay dead-center without outward parallax drift, plus a bouncier switching spring (stiffness 420, damping 19.5) with elastic end-wall cushioning and clamping.",
   "apkUrl": ""
 }
