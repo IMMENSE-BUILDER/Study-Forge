@@ -13,11 +13,27 @@
   <link rel="dns-prefetch" href="https://ai-gateway.vercel.sh" />
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
-    rel="stylesheet" />
+    rel="stylesheet" media="print" onload="this.media='all'" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" media="print" onload="this.media='all'" />
-  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" /></noscript>
-  <script async src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  </noscript>
+  <script>
+    window.addEventListener('load', function () {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+      document.head.appendChild(l);
+      ['https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js',
+       'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js'].forEach(function (src) {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = src;
+        document.head.appendChild(s);
+      });
+    }, { once: true });
+  </script>
 
   <!-- PWA & Mobile -->
   <link rel="manifest" href="manifest.json">
@@ -1018,7 +1034,6 @@
     </button>
   </nav>
 
-  <script async src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="syllabus.js"></script>
   <script src="script.js"></script>
   <script src="liquid-glass-nav.js"></script>

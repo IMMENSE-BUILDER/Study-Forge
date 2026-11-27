@@ -5,9 +5,11 @@ try {
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 } catch (e) {}
 function scrollPageToTop() {
+  const curY = window.scrollY || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+  if (curY === 0) return;
   try { window.scrollTo(0, 0); } catch (e) {}
-  try { document.documentElement.scrollTop = 0; } catch (e) {}
-  try { document.body.scrollTop = 0; } catch (e) {}
+  if (document.documentElement && document.documentElement.scrollTop) document.documentElement.scrollTop = 0;
+  if (document.body && document.body.scrollTop) document.body.scrollTop = 0;
 }
 const DEFAULT_DEEPGRAM_KEY = 'b836a67d381f08fec71c60b8a32c84b9d2154017';
 
@@ -2003,6 +2005,7 @@ function wireEvents() {
   }
 
   document.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
     spawnClickEffect(event.clientX, event.clientY);
   }, { passive: true });
@@ -2279,6 +2282,8 @@ function initBottomNav() {
   function switchTab(targetPage) {
     if (targetPage === currentTab) return;
 
+    // Read scroll offset BEFORE dirtying DOM classes so Blink does not force synchronous layout inside click().
+    const hadScroll = (window.scrollY || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0) > 0;
     const oldIndex = tabOrder.indexOf(currentTab);
     const newIndex = tabOrder.indexOf(targetPage);
     const direction = newIndex > oldIndex ? 'right' : 'left';
@@ -2302,9 +2307,9 @@ function initBottomNav() {
 
     currentTab = targetPage;
     localStorage.setItem('activeTab', targetPage);
-    // v0.6.18: each panel opens at its top — leftover scroll from a taller panel
-    // otherwise clamps the new (shorter) panel straight to its bottom.
-    scrollPageToTop();
+    if (hadScroll) {
+      requestAnimationFrame(scrollPageToTop);
+    }
   }
 
   // Wire click events
@@ -3367,6 +3372,21 @@ function initAskAI() {
   }
 
   // Open AI page
+  let aiFocusTimer = 0;
+  let aiAnimTimer = 0;
+
+  if (aiPage) {
+    aiPage.addEventListener('transitionend', (e) => {
+      if (e.target === aiPage && e.propertyName === 'transform') {
+        aiPage.classList.remove('sf-animating');
+        if (aiPage.classList.contains('open') && bottomNav) {
+          bottomNav.style.visibility = 'hidden';
+          bottomNav.style.pointerEvents = 'none';
+        }
+      }
+    }, { passive: true });
+  }
+
   function openAI() {
     if (isGenerating) handleStopGeneration();
     saveCurrentChat();
@@ -3374,11 +3394,19 @@ function initAskAI() {
     // Always start with a fresh, clean chatbox session curated for our app
     startNewChat();
 
-    aiPage.classList.add('open');
-    if (bottomNav) bottomNav.style.display = 'none';
+    if (aiFocusTimer) { clearTimeout(aiFocusTimer); aiFocusTimer = 0; }
+    if (aiAnimTimer) { clearTimeout(aiAnimTimer); aiAnimTimer = 0; }
+    aiPage.classList.add('sf-animating', 'open');
+    aiAnimTimer = setTimeout(() => {
+      aiPage.classList.remove('sf-animating');
+    }, 340);
     if (chatInput) {
       chatInput.value = '';
-      setTimeout(() => chatInput.focus(), 250);
+      // Wait for slide transition completion before focusing so virtual keyboard resize never stutters animation.
+      aiFocusTimer = setTimeout(() => {
+        aiFocusTimer = 0;
+        if (aiPage.classList.contains('open') && chatInput) chatInput.focus();
+      }, 320);
     }
   }
 
@@ -3391,8 +3419,18 @@ function initAskAI() {
     if (!hasAssistant) {
       startNewChat();
     }
+    if (aiFocusTimer) { clearTimeout(aiFocusTimer); aiFocusTimer = 0; }
+    if (aiAnimTimer) { clearTimeout(aiAnimTimer); aiAnimTimer = 0; }
+    if (bottomNav) {
+      bottomNav.style.display = 'flex';
+      bottomNav.style.visibility = '';
+      bottomNav.style.pointerEvents = '';
+    }
+    aiPage.classList.add('sf-animating');
     aiPage.classList.remove('open');
-    if (bottomNav) bottomNav.style.display = 'flex';
+    aiAnimTimer = setTimeout(() => {
+      aiPage.classList.remove('sf-animating');
+    }, 340);
   }
 
   // Active thinking timer controller

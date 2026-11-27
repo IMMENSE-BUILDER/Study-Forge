@@ -1,7 +1,7 @@
 {
   "app": "StudyForged",
-  "versionCode": 144,
-  "latest": "v0.6.84",
-  "notes": "Bottom navigation bar liquid-glass droplet symmetry & bounce polish: perspective-compensated droplet projection in FRAGMENT_SHADER so edge tabs (Goals left / Syllabus right) stay dead-center without outward parallax drift, plus a bouncier switching spring (stiffness 420, damping 19.5) with elastic end-wall cushioning and clamping.",
+  "versionCode": 145,
+  "latest": "v0.6.85",
+  "notes": "Mobile performance & responsiveness optimization: eliminated software SVG feDisplacementMap backdrop-filter passes and full-viewport .grain blend compositing on coarse-pointer phones, capped mobile WebGL DPR at 1.25 with early-out + reduced raymarch steps, fixed switchTab synchronous scroll reflow, idle-prewarmed Ask AI surfaces + deferred input focus past slide transition, skipped touch tap DOM spark bursts, and moved KaTeX/Confetti CDN loads post-load.",
   "apkUrl": ""
 }

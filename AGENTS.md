@@ -11,7 +11,7 @@ Sec-E class timetable with a Today agenda layer. **No backend, no database, no a
 requires nothing (the old fake "One-Click Login (Bypass)" gate was removed in v0.6.45). All user data lives
 in the browser's `localStorage` on the device.
 
-Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.84** [build 144]). AI buddy, voice,
+Status: live in production at `https://study-forged.vercel.app` (also `https://studyforged.vercel.app`) and `https://studyforged.netlify.app` (currently **v0.6.85** [build 145]). AI buddy, voice,
 and most editing still happen through the local dev loop (PC + USB). No test suite; verification is
 `node --check` + purpose-built smoke harnesses + live serve checks (see §6).
 
@@ -173,7 +173,12 @@ python readpdf.py / readscheme*.py / analyze_*.py  # pypdf-based, live in Temp/o
 
 ## 7. Current Status / Important Notes
 
-Recent major changes (Nov 2026, now v0.6.84):
+Recent major changes (Nov 2026, now v0.6.85):
+- v0.6.85 (Build 145):
+  - **Mobile responsiveness, swipe & Ask AI transition optimization (`liquid-glass-nav.js`, `styles.css`, `script.js`, `index.html`)**: bypassed heavy multi-pass SVG `feDisplacementMap` backdrop-filters on coarse-pointer (`pointer: coarse`) mobile devices (using hardware-accelerated CSS frosted blur + live WebGL 3D crystal glass), removed fixed full-viewport `.grain` `mix-blend-mode: multiply` blend overhead on mobile, removed stacked inner `backdrop-filter` blur passes on scrolling cards under `(pointer: coarse)`, and added `touch-action: manipulation` + `overscroll-behavior-y: contain`.
+  - **WebGL & CPU displacement optimization (`liquid-glass-nav.js`)**: capped WebGL `dpr` to `1.25` on coarse-pointer devices, added outer-bleed early-out (`outerDist > 16.0`) and tightened SDF raymarch step bounds (`24/18` enter/exit), eliminated heap allocations inside `buildRayTracedDisplacementURL` at 0.5x map resolution, ignored passive touch `pointermove` WebGL wakeups outside active tab scrubbing, idle-prewarmed `#aiPage` WebGL controllers (`scheduleIdleWarmup()` + `ensureAllAiControllersStaggered()`), and slept main WebGL surfaces while Ask AI is open.
+  - **Tap & transition latency fixes (`script.js`, `styles.css`, `index.html`)**: fixed synchronous Blink layout reflow inside `switchTab()` by checking scroll offset before mutating panel classes and deferring `scrollPageToTop()` to `rAF`, moved `chatInput.focus()` past `#aiPage`'s `0.30s` slide transition (`visibility: hidden` + `contain: layout style` when closed, `.sf-animating` GPU layer promotion), skipped 7-node `.click-pop` DOM sparks for touch pointers, added `document.fonts` `loadingdone` header chip re-snap, and moved KaTeX/Confetti CDN tags cleanly post-`load`.
+  - Triple bump `v0.6.85` / `versionCode: 145` / `CACHE_NAME: study-forge-v0.6.85`.
 - v0.6.84 (Build 144):
   - **Bottom nav droplet perspective centering & bouncier switching (`liquid-glass-nav.js`)**: added `lensPerspectiveScale(halfDepth)` inside `FRAGMENT_SHADER` (`solid()` + `main()`) so elevated edge-tab droplets (`Goals` leftmost, `Syllabus` rightmost) project centered on their tab icons/labels instead of drifting outward by ~5.3px.
   - Tuned `#bottomNav` spring to `lensStiffness: 420, lensDamping: 19.5` with elastic end-wall rebound (`*-0.42`), organic wall-kiss squish, and safe inner rim clamping so bouncy transitions stay inside `#bottomNav`.

@@ -33,7 +33,7 @@
 
   /** Frame-rate-independent damped spring integrator (ported from panes.ts). */
   function stepSpring(value, velocity, target, deltaSeconds, stiffness, damping) {
-    var duration = clamp(Number.isFinite(deltaSeconds) ? deltaSeconds : 0, 0, 1 / 15);
+    var duration = clamp(Number.isFinite(deltaSeconds) ? deltaSeconds : 0, 0, 1 / 12);
     var steps = Math.max(1, Math.ceil(duration / (1 / 240)));
     var dt = duration / steps;
     var position = value;
@@ -48,7 +48,11 @@
   }
 
   /** Detect whether Chromium's SVG url() backdrop-filter pipeline is supported. */
+  var isCoarseDevice = typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: coarse)').matches;
+
   function supportsSvgBackdropRefraction() {
+    if (isCoarseDevice) return false;
     if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') return false;
     var hasBackdrop = CSS.supports('backdrop-filter', 'blur(1px)') || CSS.supports('-webkit-backdrop-filter', 'blur(1px)');
     if (!hasBackdrop) return false;
@@ -64,35 +68,26 @@
   function sdRoundedBox2D(px, py, hw, hh, r) {
     var qx = Math.abs(px) - hw + r;
     var qy = Math.abs(py) - hh + r;
-    var ax = Math.max(qx, 0);
-    var ay = Math.max(qy, 0);
-    return Math.min(Math.max(qx, qy), 0) + Math.hypot(ax, ay) - r;
-  }
-
-  function refract3(ix, iy, iz, nx, ny, nz, eta) {
-    var ndi = ix * nx + iy * ny + iz * nz;
-    var k = 1.0 - eta * eta * (1.0 - ndi * ndi);
-    if (k < 0.0) return null;
-    var scale = eta * ndi + Math.sqrt(k);
-    return [eta * ix - scale * nx, eta * iy - scale * ny, eta * iz - scale * nz];
-  }
-
-  function reflect3(ix, iy, iz, nx, ny, nz) {
-    var d = 2.0 * (ix * nx + iy * ny + iz * nz);
-    return [ix - d * nx, iy - d * ny, iz - d * nz];
+    var ax = qx > 0 ? qx : 0;
+    var ay = qy > 0 ? qy : 0;
+    return Math.min(qx > qy ? qx : qy, 0) + Math.sqrt(ax * ax + ay * ay) - r;
   }
 
   function buildRayTracedDisplacementURL(width, height, radius, maxDisp) {
-    var W = Math.max(32, Math.round(width));
-    var H = Math.max(24, Math.round(height));
+    // Render displacement map at 0.5x scale (up to 180px wide) — CSS feImage scales smoothly while cutting CPU raymarch cost ~10x.
+    var scale = Math.min(0.5, 180 / Math.max(width, 1));
+    var W = Math.max(36, Math.round(width * scale));
+    var H = Math.max(20, Math.round(height * scale));
+    var coordScale = W / Math.max(width, 1);
     var hw = W * 0.5;
     var hh = H * 0.5;
-    var r = Math.min(radius, hw, hh);
-    var halfDepth = Math.min(18, hh * 0.58);
-    var rounding = Math.min(11, hh * 0.36);
-    var domeHeight = 2.6;
-    var rx = Math.max(hw, 20);
-    var ry = Math.max(hh, 20);
+    var r = Math.min(radius * coordScale, hw, hh);
+    var scaledMaxDisp = Math.max(2, maxDisp * coordScale);
+    var halfDepth = Math.min(18 * coordScale, hh * 0.58);
+    var rounding = Math.min(11 * coordScale, hh * 0.36);
+    var domeHeight = 2.6 * coordScale;
+    var rx = Math.max(hw, 12);
+    var ry = Math.max(hh, 12);
     var invRx2 = 1.0 / (rx * rx);
     var invRy2 = 1.0 / (ry * ry);
 
@@ -105,28 +100,30 @@
     var img = ctx.createImageData(W, H);
     var data = img.data;
 
-    function field2D(px, py) {
-      var d = sdRoundedBox2D(px, py, hw, hh, r);
-      var eps = 0.5;
-      var dx = sdRoundedBox2D(px + eps, py, hw, hh, r) - sdRoundedBox2D(px - eps, py, hw, hh, r);
-      var dy = sdRoundedBox2D(px, py + eps, hw, hh, r) - sdRoundedBox2D(px, py - eps, hw, hh, r);
-      var len = Math.hypot(dx, dy) + 1e-6;
-      return [d, dx / len, dy / len];
-    }
+    // Flat scratch registers avoid per-step heap array allocations and GC pauses.
+    var sgD = 0, sgGx = 0, sgGy = 0, sgGz = 0;
+    var rOx = 0, rOy = 0, rOz = 0;
 
-    function solidDistAndGrad(px, py, pz) {
-      var b = field2D(px, py);
+    function evalSolid(px, py, pz) {
+      var d2 = sdRoundedBox2D(px, py, hw, hh, r);
+      var eps = 0.5;
+      var dx2 = sdRoundedBox2D(px + eps, py, hw, hh, r) - sdRoundedBox2D(px - eps, py, hw, hh, r);
+      var dy2 = sdRoundedBox2D(px, py + eps, hw, hh, r) - sdRoundedBox2D(px, py - eps, hw, hh, r);
+      var len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) + 1e-6;
+      var bx = dx2 / len2;
+      var by = dy2 / len2;
+
       var qxNorm = px / rx;
       var qyNorm = py / ry;
       var dome = domeHeight * Math.exp(-1.5 * (qxNorm * qxNorm + qyNorm * qyNorm));
       var dgx = -3.0 * dome * px * invRx2;
       var dgy = -3.0 * dome * py * invRy2;
 
-      var qx = b[0] + rounding;
+      var qx = d2 + rounding;
       var qy = Math.abs(pz) - halfDepth - dome + rounding;
-      var ox = Math.max(qx, 0);
-      var oy = Math.max(qy, 0);
-      var olen = Math.hypot(ox, oy);
+      var ox = qx > 0 ? qx : 0;
+      var oy = qy > 0 ? qy : 0;
+      var olen = Math.sqrt(ox * ox + oy * oy);
       var wx, wy;
       if (olen > 0.0001) {
         wx = ox / olen;
@@ -138,18 +135,40 @@
         wx = 0.0;
         wy = 1.0;
       }
-      var dist = Math.min(Math.max(qx, qy), 0) + olen - rounding;
+      sgD = (qx > qy ? (qx < 0 ? qx : 0) : (qy < 0 ? qy : 0)) + olen - rounding;
       var sz = pz >= 0 ? 1.0 : -1.0;
-      var gx = wx * b[1] - wy * dgx;
-      var gy = wx * b[2] - wy * dgy;
+      var gx = wx * bx - wy * dgx;
+      var gy = wx * by - wy * dgy;
       var gz = wy * sz;
-      var glen = Math.hypot(gx, gy, gz) || 1.0;
-      return [dist, gx / glen, gy / glen, gz / glen];
+      var glen = Math.sqrt(gx * gx + gy * gy + gz * gz) || 1.0;
+      sgGx = gx / glen;
+      sgGy = gy / glen;
+      sgGz = gz / glen;
     }
 
-    var boundX = hw + 4;
-    var boundY = hh + 4;
-    var boundZ = halfDepth + domeHeight + 8;
+    function tryRefract(ix, iy, iz, nx, ny, nz, eta) {
+      var ndi = ix * nx + iy * ny + iz * nz;
+      var k = 1.0 - eta * eta * (1.0 - ndi * ndi);
+      if (k < 0.0) return false;
+      var s = eta * ndi + Math.sqrt(k);
+      rOx = eta * ix - s * nx;
+      rOy = eta * iy - s * ny;
+      rOz = eta * iz - s * nz;
+      return true;
+    }
+
+    function doReflect(ix, iy, iz, nx, ny, nz) {
+      var d = 2.0 * (ix * nx + iy * ny + iz * nz);
+      rOx = ix - d * nx;
+      rOy = iy - d * ny;
+      rOz = iz - d * nz;
+    }
+
+    var cam = RAY_CAMERA * coordScale;
+    var backZ = RAY_BACK * coordScale;
+    var boundX = hw + 3;
+    var boundY = hh + 3;
+    var boundZ = halfDepth + domeHeight + 6;
     var exitLimit = 2.0 * (hw + hh) + 2.0 * halfDepth;
 
     for (var pyIdx = 0; pyIdx < H; pyIdx++) {
@@ -160,8 +179,8 @@
 
         var rdx = lx;
         var rdy = ly;
-        var rdz = -RAY_CAMERA;
-        var rlen = Math.hypot(rdx, rdy, rdz);
+        var rdz = -cam;
+        var rlen = Math.sqrt(rdx * rdx + rdy * rdy + rdz * rdz);
         rdx /= rlen;
         rdy /= rlen;
         rdz /= rlen;
@@ -173,8 +192,8 @@
         var ax1 = (boundX) * invX;
         var ay0 = (-boundY) * invY;
         var ay1 = (boundY) * invY;
-        var az0 = (-boundZ - RAY_CAMERA) * invZ;
-        var az1 = (boundZ - RAY_CAMERA) * invZ;
+        var az0 = (-boundZ - cam) * invZ;
+        var az1 = (boundZ - cam) * invZ;
         var tNear = Math.max(0.0, Math.max(Math.min(ax0, ax1), Math.min(ay0, ay1), Math.min(az0, az1)));
         var tFar = Math.min(Math.max(ax0, ax1), Math.max(ay0, ay1), Math.max(az0, az1));
 
@@ -185,79 +204,74 @@
           var t = tNear;
           var hit = false;
           var fx = 0, fy = 0, fz = 0;
-          var sg = null;
-          for (var step = 0; step < 44; step++) {
+          for (var step = 0; step < 24; step++) {
             fx = rdx * t;
             fy = rdy * t;
-            fz = RAY_CAMERA + rdz * t;
-            sg = solidDistAndGrad(fx, fy, fz);
-            if (sg[0] < 0.14) {
+            fz = cam + rdz * t;
+            evalSolid(fx, fy, fz);
+            if (sgD < 0.14) {
               hit = true;
               break;
             }
-            t += Math.max(0.08, sg[0] * 0.78);
+            t += Math.max(0.12, sgD * 0.85);
             if (t > tFar) break;
           }
 
-          if (hit && sg) {
-            var inside = refract3(rdx, rdy, rdz, sg[1], sg[2], sg[3], 1.0 / GLASS_IOR);
-            if (inside) {
-              var travel = 0.6;
-              var rxPos = fx, ryPos = fy, rzPos = fz;
-              var rg = sg;
-              for (var eStep = 0; eStep < 36; eStep++) {
-                rxPos = fx + inside[0] * travel;
-                ryPos = fy + inside[1] * travel;
-                rzPos = fz + inside[2] * travel;
-                rg = solidDistAndGrad(rxPos, ryPos, rzPos);
-                if (eStep > 1 && -rg[0] < 0.14) break;
-                travel += Math.max(0.12, -rg[0] * 0.78);
-                if (travel > exitLimit) break;
-              }
+          if (hit && tryRefract(rdx, rdy, rdz, sgGx, sgGy, sgGz, 1.0 / GLASS_IOR)) {
+            var inX = rOx, inY = rOy, inZ = rOz;
+            var travel = 0.5;
+            var rxPos = fx, ryPos = fy, rzPos = fz;
+            for (var eStep = 0; eStep < 18; eStep++) {
+              rxPos = fx + inX * travel;
+              ryPos = fy + inY * travel;
+              rzPos = fz + inZ * travel;
+              evalSolid(rxPos, ryPos, rzPos);
+              if (eStep > 1 && -sgD < 0.14) break;
+              travel += Math.max(0.15, -sgD * 0.85);
+              if (travel > exitLimit) break;
+            }
 
-              var outgoing = refract3(inside[0], inside[1], inside[2], -rg[1], -rg[2], -rg[3], GLASS_IOR);
-              if (!outgoing) {
-                inside = reflect3(inside[0], inside[1], inside[2], rg[1], rg[2], rg[3]);
-                var bTravel = 0.6;
-                var bx = rxPos, by = ryPos, bz = rzPos;
-                for (var bStep = 0; bStep < 28; bStep++) {
-                  bx = rxPos + inside[0] * bTravel;
-                  by = ryPos + inside[1] * bTravel;
-                  bz = rzPos + inside[2] * bTravel;
-                  rg = solidDistAndGrad(bx, by, bz);
-                  if (bStep > 1 && -rg[0] < 0.14) break;
-                  bTravel += Math.max(0.12, -rg[0] * 0.78);
-                  if (bTravel > exitLimit) break;
-                }
-                rxPos = bx; ryPos = by; rzPos = bz;
-                outgoing = refract3(inside[0], inside[1], inside[2], -rg[1], -rg[2], -rg[3], GLASS_IOR);
-                if (!outgoing) {
-                  outgoing = reflect3(inside[0], inside[1], inside[2], rg[1], rg[2], rg[3]);
-                }
+            if (!tryRefract(inX, inY, inZ, -sgGx, -sgGy, -sgGz, GLASS_IOR)) {
+              doReflect(inX, inY, inZ, sgGx, sgGy, sgGz);
+              inX = rOx; inY = rOy; inZ = rOz;
+              var bTravel = 0.5;
+              var bxPos = rxPos, byPos = ryPos, bzPos = rzPos;
+              for (var bStep = 0; bStep < 12; bStep++) {
+                bxPos = rxPos + inX * bTravel;
+                byPos = ryPos + inY * bTravel;
+                bzPos = rzPos + inZ * bTravel;
+                evalSolid(bxPos, byPos, bzPos);
+                if (bStep > 1 && -sgD < 0.14) break;
+                bTravel += Math.max(0.15, -sgD * 0.85);
+                if (bTravel > exitLimit) break;
               }
+              rxPos = bxPos; ryPos = byPos; rzPos = bzPos;
+              if (!tryRefract(inX, inY, inZ, -sgGx, -sgGy, -sgGz, GLASS_IOR)) {
+                doReflect(inX, inY, inZ, sgGx, sgGy, sgGz);
+              }
+            }
 
-              var oz = outgoing[2];
-              if (oz > -0.18) {
-                var edgeTaper = clamp(-sdRoundedBox2D(lx, ly, hw, hh, r) / 4.0, 0.0, 1.0);
-                dxOut = clamp(outgoing[0] * maxDisp * 1.1 * edgeTaper, -maxDisp, maxDisp);
-                dyOut = clamp(outgoing[1] * maxDisp * 1.1 * edgeTaper, -maxDisp, maxDisp);
-              } else {
-                var rayDist = (RAY_BACK - rzPos) / oz;
-                var bgX = (rxPos + outgoing[0] * rayDist) * RAY_CAMERA / (RAY_CAMERA - RAY_BACK);
-                var bgY = (ryPos + outgoing[1] * rayDist) * RAY_CAMERA / (RAY_CAMERA - RAY_BACK);
-                var rawDx = bgX - lx;
-                var rawDy = bgY - ly;
-                var dEdge = sdRoundedBox2D(lx, ly, hw, hh, r);
-                var edgeFade = clamp(-dEdge / 1.5, 0.0, 1.0);
-                dxOut = clamp(rawDx * edgeFade, -maxDisp, maxDisp);
-                dyOut = clamp(rawDy * edgeFade, -maxDisp, maxDisp);
-              }
+            var oz = rOz;
+            if (oz > -0.18) {
+              var edgeTaper = clamp(-sdRoundedBox2D(lx, ly, hw, hh, r) / 3.0, 0.0, 1.0);
+              dxOut = clamp(rOx * scaledMaxDisp * 1.1 * edgeTaper, -scaledMaxDisp, scaledMaxDisp);
+              dyOut = clamp(rOy * scaledMaxDisp * 1.1 * edgeTaper, -scaledMaxDisp, scaledMaxDisp);
+            } else {
+              var rayDist = (backZ - rzPos) / oz;
+              var bgX = (rxPos + rOx * rayDist) * cam / (cam - backZ);
+              var bgY = (ryPos + rOy * rayDist) * cam / (cam - backZ);
+              var rawDx = bgX - lx;
+              var rawDy = bgY - ly;
+              var dEdge = sdRoundedBox2D(lx, ly, hw, hh, r);
+              var edgeFade = clamp(-dEdge / 1.2, 0.0, 1.0);
+              dxOut = clamp(rawDx * edgeFade, -scaledMaxDisp, scaledMaxDisp);
+              dyOut = clamp(rawDy * edgeFade, -scaledMaxDisp, scaledMaxDisp);
             }
           }
         }
 
-        data[idx] = clamp(Math.round(128 + (dxOut / maxDisp) * 127), 0, 255);
-        data[idx + 1] = clamp(Math.round(128 + (dyOut / maxDisp) * 127), 0, 255);
+        data[idx] = clamp(Math.round(128 + (dxOut / scaledMaxDisp) * 127), 0, 255);
+        data[idx + 1] = clamp(Math.round(128 + (dyOut / scaledMaxDisp) * 127), 0, 255);
         data[idx + 2] = 128;
         data[idx + 3] = 255;
       }
@@ -526,11 +540,11 @@
     '  float tFar = min(min(farB.x, farB.y), farB.z);',
     '  if (tFar < tNear) return false;',
     '  float t = tNear;',
-    '  for (int i = 0; i < 44; i++) {',
+    '  for (int i = 0; i < 24; i++) {',
     '    hit = origin + dir * t;',
     '    float d = solid(hit).x;',
-    '    if (d < 0.14) return true;',
-    '    t += max(0.08, d * 0.78);',
+    '    if (d < 0.16) return true;',
+    '    t += max(0.12, d * 0.85);',
     '    if (t > tFar) break;',
     '  }',
     '  return false;',
@@ -540,11 +554,11 @@
     '  float t = 0.6;',
     '  vec3 pt = origin + dir * t;',
     '  float limit = 2.0 * (u_pill.z + u_pill.w) + 44.0;',
-    '  for (int i = 0; i < 36; i++) {',
+    '  for (int i = 0; i < 18; i++) {',
     '    pt = origin + dir * t;',
     '    float d = -solid(pt).x;',
-    '    if (i > 1 && d < 0.14) break;',
-    '    t += max(0.12, d * 0.78);',
+    '    if (i > 1 && d < 0.16) break;',
+    '    t += max(0.16, d * 0.85);',
     '    if (t > limit) break;',
     '  }',
     '  traveled = t;',
@@ -567,6 +581,10 @@
     '  vec2 pixel = vec2(uv.x * u_size.x, (1.0 - uv.y) * u_size.y);',
     '  vec2 pLocal = pixel - u_pill.xy;',
     '  float outerDist = pillOutline(pLocal);',
+    '  if (outerDist > 16.0) {',
+    '    gl_FragColor = vec4(0.0);',
+    '    return;',
+    '  }',
     '',
     '  vec3 origin = vec3(u_pill.xy, CAMERA);',
     '  vec3 viewRay = normalize(vec3(pLocal, -CAMERA));',
@@ -739,7 +757,7 @@
       if (destroyed) return;
       cssWidth = Math.max(1, w);
       cssHeight = Math.max(1, h);
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, isCoarseDevice ? 1.25 : 2);
       var pw = Math.max(1, Math.round(cssWidth * dpr));
       var ph = Math.max(1, Math.round(cssHeight * dpr));
       if (canvas.width !== pw || canvas.height !== ph) {
@@ -861,11 +879,11 @@
     '  float tFar = min(min(farB.x, farB.y), farB.z);',
     '  if (tFar < tNear) return false;',
     '  float t = tNear;',
-    '  for (int i = 0; i < 40; i++) {',
+    '  for (int i = 0; i < 24; i++) {',
     '    hit = origin + dir * t;',
     '    float d = itemSolid(hit, rect, radius).x;',
-    '    if (d < 0.14) return true;',
-    '    t += max(0.08, d * 0.78);',
+    '    if (d < 0.16) return true;',
+    '    t += max(0.12, d * 0.85);',
     '    if (t > tFar) break;',
     '  }',
     '  return false;',
@@ -875,11 +893,11 @@
     '  float t = 0.5;',
     '  vec3 pt = origin + dir * t;',
     '  float limit = 2.0 * (rect.z + rect.w) + 32.0;',
-    '  for (int i = 0; i < 32; i++) {',
+    '  for (int i = 0; i < 18; i++) {',
     '    pt = origin + dir * t;',
     '    float d = -itemSolid(pt, rect, radius).x;',
-    '    if (i > 1 && d < 0.14) break;',
-    '    t += max(0.12, d * 0.78);',
+    '    if (i > 1 && d < 0.16) break;',
+    '    t += max(0.16, d * 0.85);',
     '    if (t > limit) break;',
     '  }',
     '  traveled = t;',
@@ -1044,7 +1062,7 @@
       if (destroyed) return;
       cssWidth = Math.max(1, w);
       cssHeight = Math.max(1, h);
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, isCoarseDevice ? 1.25 : 2);
       var pw = Math.max(1, Math.round(cssWidth * dpr));
       var ph = Math.max(1, Math.round(cssHeight * dpr));
       if (canvas.width !== pw || canvas.height !== ph) {
@@ -1338,8 +1356,12 @@
       scheduleFrame();
     }
 
-    hostEl.addEventListener('pointerenter', updatePointer, { passive: true });
+    hostEl.addEventListener('pointerenter', function (e) {
+      if (e.pointerType === 'touch') return;
+      updatePointer(e);
+    }, { passive: true });
     hostEl.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch' && !(anim.pointerDown && anim.canScrub)) return;
       updatePointer(e);
       if (anim.pointerDown && anim.canScrub && metrics.tabs.length) {
         var dx = Math.abs(e.clientX - anim.startClientX);
@@ -1463,7 +1485,7 @@
     function tick(now) {
       rafId = 0;
       if (sleeping || document.hidden) return;
-      var dt = lastNow ? clamp((now - lastNow) / 1000, 0, 1 / 15) : 1 / 60;
+      var dt = lastNow ? clamp((now - lastNow) / 1000, 0, 1 / 12) : 1 / 60;
       lastNow = now;
 
       var still = sharedMotionQuery && sharedMotionQuery.matches;
@@ -1548,7 +1570,16 @@
 
     function wake(snap) {
       sleeping = false;
-      anim.targetDark = isDarkMode() ? 1 : 0;
+      var nextDark = isDarkMode() ? 1 : 0;
+      anim.targetDark = nextDark;
+      if (snap === 'quiet' && anim.initialized) {
+        if (Math.abs(anim.dark - nextDark) > 0.01) {
+          anim.dark = nextDark;
+          anim.darkV = 0;
+          scheduleFrame();
+        }
+        return;
+      }
       if (snap) {
         anim.dark = anim.targetDark;
         anim.darkV = 0;
@@ -1827,10 +1858,12 @@
     }
 
     headerEl.addEventListener('pointerenter', function (e) {
+      if (e.pointerType === 'touch') return;
       updateHeaderPointer(e, anim.pointerDown);
     }, { passive: true });
 
     headerEl.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch') return;
       updateHeaderPointer(e, anim.pointerDown);
     }, { passive: true });
 
@@ -1862,7 +1895,7 @@
     function tick(now) {
       rafId = 0;
       if (sleeping || document.hidden) return;
-      var dt = lastNow ? clamp((now - lastNow) / 1000, 0, 1 / 15) : 1 / 60;
+      var dt = lastNow ? clamp((now - lastNow) / 1000, 0, 1 / 12) : 1 / 60;
       lastNow = now;
 
       var still = sharedMotionQuery && sharedMotionQuery.matches;
@@ -1933,7 +1966,16 @@
 
     function wake(snap) {
       sleeping = false;
-      anim.targetDark = isDarkMode() ? 1 : 0;
+      var nextDark = isDarkMode() ? 1 : 0;
+      anim.targetDark = nextDark;
+      if (snap === 'quiet' && anim.initialized) {
+        if (Math.abs(anim.dark - nextDark) > 0.01) {
+          anim.dark = nextDark;
+          anim.darkV = 0;
+          scheduleFrame();
+        }
+        return;
+      }
       if (snap) {
         anim.dark = anim.targetDark;
         anim.darkV = 0;
@@ -2109,14 +2151,23 @@
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', resnapMainSurfaces);
     }
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(resnapMainSurfaces);
+    if (document.fonts) {
+      if (document.fonts.ready) {
+        document.fonts.ready.then(resnapMainSurfaces);
+      }
+      if (typeof document.fonts.addEventListener === 'function') {
+        document.fonts.addEventListener('loadingdone', resnapMainSurfaces);
+      }
     }
     window.addEventListener('load', resnapMainSurfaces, { once: true });
 
     if (!aiPage) return;
 
     var aiControllers = null;
+    var aiBuilt = [false, false, false];
+    var aiWarmTimer = 0;
+    var aiInitFallbackTimer = 0;
+    var lastChromeKey = '';
     var aiHeader = aiPage.querySelector('.ai-page-header');
     var aiModeBar = aiPage.querySelector('.ai-mode-bar');
     var aiSheetBar = document.getElementById('aiSheetBar');
@@ -2149,24 +2200,28 @@
 
       var topPad = Math.max(118, Math.round(topEnd + 14));
       var bottomPad = Math.max(88, Math.round((pageRect.height - bottomStart) + 14));
+      var cKey = topPad + ':' + bottomPad;
+      if (cKey === lastChromeKey) return;
+      lastChromeKey = cKey;
       aiPage.style.setProperty('--ai-chrome-top', topPad + 'px');
       aiPage.style.setProperty('--ai-chrome-bottom', bottomPad + 'px');
     }
 
-    function ensureAiControllers() {
-      if (aiControllers) return aiControllers;
-      aiControllers = [];
-      if (aiHeader) {
-        aiControllers.push(attachLiquidGlassSurface(aiHeader, {
+    function buildAiControllerAt(idx, startSleeping) {
+      if (!aiControllers) aiControllers = [null, null, null];
+      if (aiBuilt[idx]) return aiControllers[idx];
+      aiBuilt[idx] = true;
+      var ctrl = null;
+      if (idx === 0 && aiHeader) {
+        ctrl = attachLiquidGlassSurface(aiHeader, {
           id: 'ai-header',
           bleedX: 10,
           bleedY: 14,
           maxDisp: 16,
           pullMax: 4.8
-        }));
-      }
-      if (aiModeBar) {
-        aiControllers.push(attachLiquidGlassSurface(aiModeBar, {
+        });
+      } else if (idx === 1 && aiModeBar) {
+        ctrl = attachLiquidGlassSurface(aiModeBar, {
           id: 'ai-mode',
           bleedX: 10,
           bleedY: 14,
@@ -2176,39 +2231,137 @@
           scrubSelector: '.ai-mode-btn',
           lensStiffness: 400,
           lensDamping: 22
-        }));
-      }
-      if (aiInputBar) {
-        aiControllers.push(attachLiquidGlassSurface(aiInputBar, {
+        });
+      } else if (idx === 2 && aiInputBar) {
+        ctrl = attachLiquidGlassSurface(aiInputBar, {
           id: 'ai-input',
           bleedX: 10,
           bleedY: 14,
           maxDisp: 16,
           pullMax: 4.8,
           focusSelector: '#aiChatInput'
-        }));
+        });
+      }
+      aiControllers[idx] = ctrl;
+      if (ctrl) {
+        if (startSleeping) {
+          ctrl.measure(true);
+          ctrl.sleep();
+        } else {
+          ctrl.wake(true);
+        }
+      }
+      return ctrl;
+    }
+
+    function ensureAllAiControllers(startSleeping) {
+      for (var i = 0; i < 3; i++) {
+        buildAiControllerAt(i, startSleeping);
       }
       return aiControllers;
     }
 
+    function ensureAllAiControllersStaggered() {
+      var idx = 0;
+      function nextStep() {
+        if (!aiPage.classList.contains('open')) return;
+        while (idx < 3 && aiBuilt[idx]) idx++;
+        if (idx >= 3) {
+          syncAiChromePadding();
+          return;
+        }
+        buildAiControllerAt(idx, false);
+        idx++;
+        if (idx < 3) {
+          requestAnimationFrame(nextStep);
+        } else {
+          syncAiChromePadding();
+        }
+      }
+      requestAnimationFrame(nextStep);
+    }
+
+    function allAiBuilt() {
+      return aiBuilt[0] && aiBuilt[1] && aiBuilt[2];
+    }
+
+    function scheduleIdleWarmup() {
+      var idx = 0;
+      function stepWarm() {
+        if (aiPage.classList.contains('open')) return;
+        while (idx < 3 && aiBuilt[idx]) idx++;
+        if (idx >= 3) return;
+        buildAiControllerAt(idx, true);
+        idx++;
+        if (idx < 3) {
+          if (typeof window.requestIdleCallback === 'function') {
+            aiWarmTimer = window.requestIdleCallback(stepWarm, { timeout: 600 });
+          } else {
+            aiWarmTimer = setTimeout(stepWarm, 120);
+          }
+        }
+      }
+      function armWarmup() {
+        setTimeout(function () {
+          if (aiPage.classList.contains('open')) return;
+          if (typeof window.requestIdleCallback === 'function') {
+            aiWarmTimer = window.requestIdleCallback(stepWarm, { timeout: 1000 });
+          } else {
+            aiWarmTimer = setTimeout(stepWarm, 180);
+          }
+        }, isCoarseDevice ? 800 : 3500);
+      }
+      if (document.readyState === 'complete') armWarmup();
+      else window.addEventListener('load', armWarmup, { once: true });
+    }
+
+    scheduleIdleWarmup();
+
+    var wasAiOpen = aiPage.classList.contains('open');
+
+    function setMainSurfacesSleeping(sleepNow) {
+      var mainCtrls = [headerCtrl, navCtrl, searchCtrl];
+      for (var i = 0; i < mainCtrls.length; i++) {
+        if (!mainCtrls[i]) continue;
+        if (sleepNow) mainCtrls[i].sleep();
+        else if (mainCtrls[i] === headerCtrl) mainCtrls[i].wake(false);
+        else mainCtrls[i].wake('quiet');
+      }
+    }
+
     function syncAiOpenState() {
       var open = aiPage.classList.contains('open');
+      if (open === wasAiOpen && (open || !aiControllers)) return;
+      wasAiOpen = open;
+      if (aiInitFallbackTimer) {
+        clearTimeout(aiInitFallbackTimer);
+        aiInitFallbackTimer = 0;
+      }
       if (open) {
-        var list = ensureAiControllers();
-        for (var i = 0; i < list.length; i++) {
-          if (list[i]) list[i].wake(true);
-        }
-        syncAiChromePadding();
-        requestAnimationFrame(function () {
-          if (!aiPage.classList.contains('open')) return;
-          for (var k = 0; k < list.length; k++) {
-            if (list[k]) list[k].measure(true);
+        setMainSurfacesSleeping(true);
+        if (allAiBuilt()) {
+          // Pre-warmed: canvases already hold their frame; avoid forced reflow or WebGL draw during slide-up.
+          for (var i = 0; i < aiControllers.length; i++) {
+            if (aiControllers[i]) aiControllers[i].wake('quiet');
           }
-          syncAiChromePadding();
-        });
-      } else if (aiControllers) {
-        for (var j = 0; j < aiControllers.length; j++) {
-          if (aiControllers[j]) aiControllers[j].sleep();
+          requestAnimationFrame(function () {
+            if (!aiPage.classList.contains('open')) return;
+            syncAiChromePadding();
+          });
+        } else {
+          // First open before idle warmup finished: let CSS transform transition run unblocked, then build staggered 1 per frame after transition.
+          aiInitFallbackTimer = setTimeout(function () {
+            aiInitFallbackTimer = 0;
+            if (!aiPage.classList.contains('open')) return;
+            ensureAllAiControllersStaggered();
+          }, 330);
+        }
+      } else {
+        setMainSurfacesSleeping(false);
+        if (aiControllers) {
+          for (var j = 0; j < aiControllers.length; j++) {
+            if (aiControllers[j]) aiControllers[j].sleep();
+          }
         }
       }
     }
@@ -2236,10 +2389,16 @@
     }
 
     aiPage.addEventListener('transitionend', function (e) {
-      if (e.target === aiPage && aiPage.classList.contains('open')) {
-        if (aiControllers) {
+      if (e.target === aiPage && e.propertyName === 'transform' && aiPage.classList.contains('open')) {
+        if (aiInitFallbackTimer) {
+          clearTimeout(aiInitFallbackTimer);
+          aiInitFallbackTimer = 0;
+        }
+        if (!allAiBuilt()) {
+          ensureAllAiControllersStaggered();
+        } else if (aiControllers) {
           for (var i = 0; i < aiControllers.length; i++) {
-            if (aiControllers[i]) aiControllers[i].measure(true);
+            if (aiControllers[i]) aiControllers[i].wake('quiet');
           }
         }
         syncAiChromePadding();
